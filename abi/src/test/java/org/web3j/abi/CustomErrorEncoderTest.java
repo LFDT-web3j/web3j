@@ -12,15 +12,16 @@
  */
 package org.web3j.abi;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
+
 import org.web3j.abi.datatypes.Address;
 import org.web3j.abi.datatypes.CustomError;
 import org.web3j.abi.datatypes.DynamicArray;
 import org.web3j.abi.datatypes.Utf8String;
 import org.web3j.abi.datatypes.generated.Uint256;
-
-import java.util.Arrays;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.web3j.abi.Utils.convert;

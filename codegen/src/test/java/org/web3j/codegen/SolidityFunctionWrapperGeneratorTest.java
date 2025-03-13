@@ -271,16 +271,8 @@ public class SolidityFunctionWrapperGeneratorTest extends TempFileProvider {
 
     @Test
     public void testCustomErrorGeneration() throws Exception {
-        testCodeGeneration(
-                "customerror",
-                "CustomError",
-                JAVA_TYPES_ARG,
-                false);
-        testCodeGeneration(
-                "customerror",
-                "CustomError",
-                SOLIDITY_TYPES_ARG,
-                false);
+        testCodeGeneration("customerror", "CustomError", JAVA_TYPES_ARG, false);
+        testCodeGeneration("customerror", "CustomError", SOLIDITY_TYPES_ARG, false);
     }
 
     private void compareJavaFile(String inputFileName, boolean useBin, boolean abiFuncs)

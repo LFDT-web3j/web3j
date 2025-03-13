@@ -1171,35 +1171,36 @@ public class SolidityFunctionWrapperTest extends TempFileProvider {
 
     @Test
     public void testBuildCustomErrorDefinitionsWithEmptyNameField() throws Exception {
-        List<AbiDefinition> abiDefinitions = List.of(
-                new AbiDefinition(
-                        false,
-                        List.of(new NamedType("reason", "string")),
-                        "Error",
-                        Collections.emptyList(),
-                        "error",
-                        false),
-                new AbiDefinition(
-                        false,
-                        List.of(new NamedType("account", "address")),
-                        "",
-                        Collections.emptyList(),
-                        "error",
-                        false),
-                new AbiDefinition(
-                        false,
-                        Collections.emptyList(),
-                        "",
-                        Collections.emptyList(),
-                        "error",
-                        false),
-                new AbiDefinition(
-                        false,
-                        Collections.emptyList(),
-                        "Empty",
-                        Collections.emptyList(),
-                        "error",
-                        false));
+        List<AbiDefinition> abiDefinitions =
+                List.of(
+                        new AbiDefinition(
+                                false,
+                                List.of(new NamedType("reason", "string")),
+                                "Error",
+                                Collections.emptyList(),
+                                "error",
+                                false),
+                        new AbiDefinition(
+                                false,
+                                List.of(new NamedType("account", "address")),
+                                "",
+                                Collections.emptyList(),
+                                "error",
+                                false),
+                        new AbiDefinition(
+                                false,
+                                Collections.emptyList(),
+                                "",
+                                Collections.emptyList(),
+                                "error",
+                                false),
+                        new AbiDefinition(
+                                false,
+                                Collections.emptyList(),
+                                "Empty",
+                                Collections.emptyList(),
+                                "error",
+                                false));
         String expectedJavaCode =
                 "class MyContract {\n"
                         + "  public static final org.web3j.abi.datatypes.CustomError ERROR_ERROR = new org.web3j.abi.datatypes.CustomError(\"Error\", \n"
@@ -1217,30 +1218,31 @@ public class SolidityFunctionWrapperTest extends TempFileProvider {
 
     @Test
     public void testBuildCustomErrorDefinitionsWithDuplicateNames() throws Exception {
-        List<AbiDefinition> abiDefinitions = List.of(
-                new AbiDefinition(
-                        false,
-                        List.of(new NamedType("account", "address")),
-                        "invalidAccess",
-                        Collections.emptyList(),
-                        "error",
-                        false),
-                new AbiDefinition(
-                        false,
-                        List.of(new NamedType("account", "address")),
-                        "InvalidAccesS",
-                        Collections.emptyList(),
-                        "error",
-                        false),
-                new AbiDefinition(
-                        false,
-                        Arrays.asList(
-                                new NamedType("account", "address"),
-                                new NamedType("reason", "string")),
-                        "InvalidAccess",
-                        Collections.emptyList(),
-                        "error",
-                        false));
+        List<AbiDefinition> abiDefinitions =
+                List.of(
+                        new AbiDefinition(
+                                false,
+                                List.of(new NamedType("account", "address")),
+                                "invalidAccess",
+                                Collections.emptyList(),
+                                "error",
+                                false),
+                        new AbiDefinition(
+                                false,
+                                List.of(new NamedType("account", "address")),
+                                "InvalidAccesS",
+                                Collections.emptyList(),
+                                "error",
+                                false),
+                        new AbiDefinition(
+                                false,
+                                Arrays.asList(
+                                        new NamedType("account", "address"),
+                                        new NamedType("reason", "string")),
+                                "InvalidAccess",
+                                Collections.emptyList(),
+                                "error",
+                                false));
         String expectedJavaCode =
                 "class MyContract {\n"
                         + "  public static final org.web3j.abi.datatypes.CustomError INVALIDACCESS2_ERROR = new org.web3j.abi.datatypes.CustomError(\"invalidAccess\", \n"
@@ -1261,44 +1263,45 @@ public class SolidityFunctionWrapperTest extends TempFileProvider {
 
     @Test
     public void testCreateCustomErrorList() {
-        List<AbiDefinition> abiDefinitions = List.of(
-                new AbiDefinition(
-                        false,
-                        List.of(new NamedType("reason", "string")),
-                        "Error",
-                        Collections.emptyList(),
-                        "error",
-                        false),
-                new AbiDefinition(
-                        false,
-                        Collections.emptyList(),
-                        "",
-                        Collections.emptyList(),
-                        "error",
-                        false),
-                new AbiDefinition(
-                        false,
-                        Collections.emptyList(),
-                        "Empty",
-                        Collections.emptyList(),
-                        "error",
-                        false),
-                new AbiDefinition(
-                        false,
-                        List.of(new NamedType("account", "address")),
-                        "invalidAccess",
-                        Collections.emptyList(),
-                        "error",
-                        false),
-                new AbiDefinition(
-                        false,
-                        Arrays.asList(
-                                new NamedType("account", "address"),
-                                new NamedType("reason", "string")),
-                        "InvalidAccess",
-                        Collections.emptyList(),
-                        "error",
-                        false));
+        List<AbiDefinition> abiDefinitions =
+                List.of(
+                        new AbiDefinition(
+                                false,
+                                List.of(new NamedType("reason", "string")),
+                                "Error",
+                                Collections.emptyList(),
+                                "error",
+                                false),
+                        new AbiDefinition(
+                                false,
+                                Collections.emptyList(),
+                                "",
+                                Collections.emptyList(),
+                                "error",
+                                false),
+                        new AbiDefinition(
+                                false,
+                                Collections.emptyList(),
+                                "Empty",
+                                Collections.emptyList(),
+                                "error",
+                                false),
+                        new AbiDefinition(
+                                false,
+                                List.of(new NamedType("account", "address")),
+                                "invalidAccess",
+                                Collections.emptyList(),
+                                "error",
+                                false),
+                        new AbiDefinition(
+                                false,
+                                Arrays.asList(
+                                        new NamedType("account", "address"),
+                                        new NamedType("reason", "string")),
+                                "InvalidAccess",
+                                Collections.emptyList(),
+                                "error",
+                                false));
         String expectedJavaCode =
                 "class MyContract {\n"
                         + "  public static final java.util.List CUSTOM_ERRORS = java.util.Arrays.<org.web3j.abi.datatypes.CustomError>asList(\n"

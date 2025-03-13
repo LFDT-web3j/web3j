@@ -12,13 +12,14 @@
  */
 package org.web3j.abi.datatypes;
 
-import org.junit.jupiter.api.Test;
-import org.web3j.abi.TypeReference;
-import org.web3j.abi.datatypes.generated.Uint256;
-
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+
+import org.junit.jupiter.api.Test;
+
+import org.web3j.abi.TypeReference;
+import org.web3j.abi.datatypes.generated.Uint256;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

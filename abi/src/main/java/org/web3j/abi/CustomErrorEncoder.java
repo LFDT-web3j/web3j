@@ -12,13 +12,13 @@
  */
 package org.web3j.abi;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.web3j.abi.datatypes.CustomError;
 import org.web3j.abi.datatypes.Type;
 import org.web3j.crypto.Hash;
 import org.web3j.utils.Numeric;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Ethereum custom error encoding. Further limited details are available <a
@@ -29,8 +29,7 @@ public class CustomErrorEncoder {
     private CustomErrorEncoder() {}
 
     public static String encode(CustomError error) {
-        return calculateSignatureHash(
-                buildErrorSignature(error.getName(), error.getParameters()));
+        return calculateSignatureHash(buildErrorSignature(error.getName(), error.getParameters()));
     }
 
     static <T extends Type> String buildErrorSignature(

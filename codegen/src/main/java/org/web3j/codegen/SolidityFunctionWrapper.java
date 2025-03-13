@@ -444,6 +444,7 @@ public class SolidityFunctionWrapper extends Generator {
 
     /**
      * Creates a list of CustomError variables defined previously.
+     *
      * <pre>{@code
      * Given error abi definitions;
      * [
@@ -468,24 +469,33 @@ public class SolidityFunctionWrapper extends Generator {
 
         // This will create a code string for list items
         // which includes all the custom error definition names.
-        String listItems = abiDefinitions.stream()
-                // filter error types from abi
-                .filter(abi -> TYPE_ERROR.equals(abi.getType()) && abi.getName() != null && !abi.getName().isEmpty())
-                // get error names
-                .map(abi -> buildCustomErrorDefinitionName(abi.getName(), customErrorsOccurrences))
-                // reduce to a code string for list definition
-                .collect(Collectors.joining(",\n"));
+        String listItems =
+                abiDefinitions.stream()
+                        // filter error types from abi
+                        .filter(
+                                abi ->
+                                        TYPE_ERROR.equals(abi.getType())
+                                                && abi.getName() != null
+                                                && !abi.getName().isEmpty())
+                        // get error names
+                        .map(
+                                abi ->
+                                        buildCustomErrorDefinitionName(
+                                                abi.getName(), customErrorsOccurrences))
+                        // reduce to a code string for list definition
+                        .collect(Collectors.joining(",\n"));
 
         if (listItems.isEmpty()) {
             return;
         }
 
-        CodeBlock codeBlock = CodeBlock.builder()
-                .addStatement(
-                        "$T.<$T>asList(\n" + listItems + ")",
-                        Arrays.class,
-                        CustomError.class)
-                .build();
+        CodeBlock codeBlock =
+                CodeBlock.builder()
+                        .addStatement(
+                                "$T.<$T>asList(\n" + listItems + ")",
+                                Arrays.class,
+                                CustomError.class)
+                        .build();
 
         classBuilder.addField(
                 FieldSpec.builder(List.class, "CUSTOM_ERRORS")
@@ -500,8 +510,9 @@ public class SolidityFunctionWrapper extends Generator {
             Map<String, Integer> customErrorsOccurrences)
             throws ClassNotFoundException {
         if (abiDefinition.getName().isEmpty()) {
-            System.out.println("\nWarning: Blank name field found in custom error abi definition. "
-                    + "No code will be generated for this abi definition.");
+            System.out.println(
+                    "\nWarning: Blank name field found in custom error abi definition. "
+                            + "No code will be generated for this abi definition.");
             return;
         }
 
@@ -520,18 +531,18 @@ public class SolidityFunctionWrapper extends Generator {
         }
 
         classBuilder.addField(
-                createCustomErrorDefinition(abiDefinition.getName(), parameters, customErrorsOccurrences));
+                createCustomErrorDefinition(
+                        abiDefinition.getName(), parameters, customErrorsOccurrences));
     }
 
     /**
-     * Generates code for CustomError instance definition.
-     * For example, with name of {@code InvalidAddress}, generates:
-     * <pre>
-     * {@code
-     *   public static final Event INVALIDADDRESS_ERROR = new CustomError(...);
-     *   ;
-     * }
-     * </pre>
+     * Generates code for CustomError instance definition. For example, with name of {@code
+     * InvalidAddress}, generates:
+     *
+     * <pre>{@code
+     * public static final Event INVALIDADDRESS_ERROR = new CustomError(...);
+     * ;
+     * }</pre>
      */
     @NotNull
     private FieldSpec createCustomErrorDefinition(
@@ -539,7 +550,8 @@ public class SolidityFunctionWrapper extends Generator {
             List<NamedTypeName> parameters,
             Map<String, Integer> customErrorsOccurrences) {
 
-        return FieldSpec.builder(CustomError.class,
+        return FieldSpec.builder(
+                        CustomError.class,
                         buildCustomErrorDefinitionName(customErrorName, customErrorsOccurrences))
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
                 .initializer(buildVariableLengthCustomErrorInitializer(customErrorName, parameters))
@@ -547,10 +559,9 @@ public class SolidityFunctionWrapper extends Generator {
     }
 
     /**
-     * Generates code for CustomError instance.
-     * For example, with abi definition of:
-     * <pre>
-     * {@code
+     * Generates code for CustomError instance. For example, with abi definition of:
+     *
+     * <pre>{@code
      * {
      *   "inputs":[
      *     {"internalType":"address","type":"address"},
@@ -559,20 +570,18 @@ public class SolidityFunctionWrapper extends Generator {
      *   "name":"InvalidAddress",
      *   "type":"error"
      * }
-     * }
-     * </pre>
+     * }</pre>
+     *
      * generates:
-     * <pre>
-     * {@code
-     *   new CustomError("InvalidAddress",
-     *         Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}, new TypeReference<Utf8String>() {}));
-     * }
-     * </pre>
+     *
+     * <pre>{@code
+     * new CustomError("InvalidAddress",
+     *       Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}, new TypeReference<Utf8String>() {}));
+     * }</pre>
      */
     @NotNull
     private static CodeBlock buildVariableLengthCustomErrorInitializer(
-            String errorName,
-            @NotNull List<NamedTypeName> parameterTypes) {
+            String errorName, @NotNull List<NamedTypeName> parameterTypes) {
 
         List<Object> objects = new ArrayList<>();
         objects.add(CustomError.class);
@@ -598,8 +607,9 @@ public class SolidityFunctionWrapper extends Generator {
     }
 
     /**
-     * Creates variable names for CustomError definitions.
-     * Duplicate names will be suffixed with number.
+     * Creates variable names for CustomError definitions. Duplicate names will be suffixed with
+     * number.
+     *
      * <pre>{@code
      * Given error abi definitions;
      * [
@@ -620,8 +630,7 @@ public class SolidityFunctionWrapper extends Generator {
      */
     @NotNull
     private String buildCustomErrorDefinitionName(
-            String customErrorName,
-            @NotNull Map<String, Integer> customErrorsOccurrences) {
+            String customErrorName, @NotNull Map<String, Integer> customErrorsOccurrences) {
 
         customErrorName = customErrorName.toUpperCase();
         Integer occurrences = customErrorsOccurrences.get(customErrorName);
@@ -644,7 +653,8 @@ public class SolidityFunctionWrapper extends Generator {
 
         Set<String> duplicateFunctionNames = getDuplicateFunctionNames(functionDefinitions);
         Map<String, Integer> eventsCount = getDuplicatedEventNames(functionDefinitions);
-        Map<String, Integer> customErrorsOccurrences = getDuplicateCustomErrorNames(functionDefinitions);
+        Map<String, Integer> customErrorsOccurrences =
+                getDuplicateCustomErrorNames(functionDefinitions);
         List<MethodSpec> methodSpecs = new ArrayList<>();
         for (AbiDefinition functionDefinition : functionDefinitions) {
             if (functionDefinition.getType().equals(TYPE_FUNCTION)) {
@@ -655,7 +665,8 @@ public class SolidityFunctionWrapper extends Generator {
                 methodSpecs.addAll(
                         buildEventFunctions(functionDefinition, classBuilder, eventsCount));
             } else if (functionDefinition.getType().equals(TYPE_ERROR)) {
-                buildCustomErrorDefinitions(functionDefinition, classBuilder, customErrorsOccurrences);
+                buildCustomErrorDefinitions(
+                        functionDefinition, classBuilder, customErrorsOccurrences);
             }
         }
         return methodSpecs;

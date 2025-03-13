@@ -12,9 +12,9 @@
  */
 package org.web3j.abi.datatypes;
 
-import org.web3j.abi.TypeReference;
-
 import java.util.List;
+
+import org.web3j.abi.TypeReference;
 
 import static org.web3j.abi.Utils.convert;
 
