@@ -51,6 +51,7 @@ import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Address;
 import org.web3j.abi.datatypes.Array;
+import org.web3j.abi.datatypes.CustomError;
 import org.web3j.abi.datatypes.DynamicArray;
 import org.web3j.abi.datatypes.DynamicStruct;
 import org.web3j.abi.datatypes.Event;
@@ -106,6 +107,7 @@ public class SolidityFunctionWrapper extends Generator {
     private static final String FUNC_NAME_PREFIX = "FUNC_";
     private static final String TYPE_FUNCTION = "function";
     private static final String TYPE_EVENT = "event";
+    private static final String TYPE_ERROR = "error";
     private static final String TYPE_CONSTRUCTOR = "constructor";
 
     private static final ClassName LOG = ClassName.get(Log.class);
@@ -268,6 +270,7 @@ public class SolidityFunctionWrapper extends Generator {
         }
 
         addAddressesSupport(classBuilder, addresses);
+        createCustomErrorList(classBuilder, abi);
 
         write(basePackageName, classBuilder.build(), destinationDir);
     }
@@ -439,6 +442,196 @@ public class SolidityFunctionWrapper extends Generator {
                 .build();
     }
 
+    /**
+     * Creates a list of CustomError variables defined previously.
+     * <pre>{@code
+     * Given error abi definitions;
+     * [
+     *   {"name": "aa", "type": "error", "inputs": []},
+     *   {"name": "aA", "type": "error", "inputs": []},
+     *   {"name": "bbb", "type": "error", "inputs": []},
+     *   {"name": "bBB", "type": "error", "inputs": [{"type": "string"}]},
+     *   {"name": "bbB", "type": "error", "inputs": []}
+     * ]
+     *
+     * Then the list will be;
+     * public static final List CUSTOM_ERRORS = Arrays.<org.web3j.abi.datatypes.CustomError>asList(
+     *         AA1_ERROR,
+     *         AA_ERROR,
+     *         BBB2_ERROR,
+     *         BBB1_ERROR,
+     *         BBB_ERROR);
+     * }</pre>
+     */
+    void createCustomErrorList(TypeSpec.Builder classBuilder, List<AbiDefinition> abiDefinitions) {
+        Map<String, Integer> customErrorsOccurrences = getDuplicateCustomErrorNames(abiDefinitions);
+
+        // This will create a code string for list items
+        // which includes all the custom error definition names.
+        String listItems = abiDefinitions.stream()
+                // filter error types from abi
+                .filter(abi -> TYPE_ERROR.equals(abi.getType()) && abi.getName() != null && !abi.getName().isEmpty())
+                // get error names
+                .map(abi -> buildCustomErrorDefinitionName(abi.getName(), customErrorsOccurrences))
+                // reduce to a code string for list definition
+                .collect(Collectors.joining(",\n"));
+
+        if (listItems.isEmpty()) {
+            return;
+        }
+
+        CodeBlock codeBlock = CodeBlock.builder()
+                .addStatement(
+                        "$T.<$T>asList(\n" + listItems + ")",
+                        Arrays.class,
+                        CustomError.class)
+                .build();
+
+        classBuilder.addField(
+                FieldSpec.builder(List.class, "CUSTOM_ERRORS")
+                        .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
+                        .initializer(codeBlock)
+                        .build());
+    }
+
+    void buildCustomErrorDefinitions(
+            @NotNull AbiDefinition abiDefinition,
+            TypeSpec.Builder classBuilder,
+            Map<String, Integer> customErrorsOccurrences)
+            throws ClassNotFoundException {
+        if (abiDefinition.getName().isEmpty()) {
+            System.out.println("\nWarning: Blank name field found in custom error abi definition. "
+                    + "No code will be generated for this abi definition.");
+            return;
+        }
+
+        List<NamedTypeName> parameters = new ArrayList<>();
+        for (AbiDefinition.NamedType namedType : abiDefinition.getInputs()) {
+            final TypeName typeName;
+            if (namedType.getType().equals("tuple")) {
+                typeName = structClassNameMap.get(namedType.structIdentifier());
+            } else if (namedType.getType().startsWith("tuple")
+                    && namedType.getType().contains("[")) {
+                typeName = buildStructArrayTypeName(namedType, false);
+            } else {
+                typeName = buildTypeName(namedType.getType(), useJavaPrimitiveTypes);
+            }
+            parameters.add(new NamedTypeName(namedType, typeName));
+        }
+
+        classBuilder.addField(
+                createCustomErrorDefinition(abiDefinition.getName(), parameters, customErrorsOccurrences));
+    }
+
+    /**
+     * Generates code for CustomError instance definition.
+     * For example, with name of {@code InvalidAddress}, generates:
+     * <pre>
+     * {@code
+     *   public static final Event INVALIDADDRESS_ERROR = new CustomError(...);
+     *   ;
+     * }
+     * </pre>
+     */
+    @NotNull
+    private FieldSpec createCustomErrorDefinition(
+            String customErrorName,
+            List<NamedTypeName> parameters,
+            Map<String, Integer> customErrorsOccurrences) {
+
+        return FieldSpec.builder(CustomError.class,
+                        buildCustomErrorDefinitionName(customErrorName, customErrorsOccurrences))
+                .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
+                .initializer(buildVariableLengthCustomErrorInitializer(customErrorName, parameters))
+                .build();
+    }
+
+    /**
+     * Generates code for CustomError instance.
+     * For example, with abi definition of:
+     * <pre>
+     * {@code
+     * {
+     *   "inputs":[
+     *     {"internalType":"address","type":"address"},
+     *     {"internalType":"string","type":"string"}
+     *   ],
+     *   "name":"InvalidAddress",
+     *   "type":"error"
+     * }
+     * }
+     * </pre>
+     * generates:
+     * <pre>
+     * {@code
+     *   new CustomError("InvalidAddress",
+     *         Arrays.<TypeReference<?>>asList(new TypeReference<Address>() {}, new TypeReference<Utf8String>() {}));
+     * }
+     * </pre>
+     */
+    @NotNull
+    private static CodeBlock buildVariableLengthCustomErrorInitializer(
+            String errorName,
+            @NotNull List<NamedTypeName> parameterTypes) {
+
+        List<Object> objects = new ArrayList<>();
+        objects.add(CustomError.class);
+        objects.add(errorName);
+
+        objects.add(Arrays.class);
+        objects.add(TypeReference.class);
+        for (NamedTypeName parameterType : parameterTypes) {
+            objects.add(TypeReference.class);
+            objects.add(parameterType.getTypeName());
+        }
+
+        String asListParams =
+                parameterTypes.stream()
+                        .map(type -> "new $T<$T>() {}")
+                        .collect(Collectors.joining(", "));
+
+        return CodeBlock.builder()
+                .addStatement(
+                        "new $T($S, \n" + "$T.<$T<?>>asList(" + asListParams + "))",
+                        objects.toArray())
+                .build();
+    }
+
+    /**
+     * Creates variable names for CustomError definitions.
+     * Duplicate names will be suffixed with number.
+     * <pre>{@code
+     * Given error abi definitions;
+     * [
+     *   {"name": "aa", "type": "error", "inputs": []},
+     *   {"name": "aA", "type": "error", "inputs": []},
+     *   {"name": "bbb", "type": "error", "inputs": []},
+     *   {"name": "bBB", "type": "error", "inputs": [{"type": "string"}]},
+     *   {"name": "bbB", "type": "error", "inputs": []}
+     * ]
+     *
+     * Then variables with names;
+     * public static final CustomError AA_ERROR = ...
+     * public static final CustomError AA1_ERROR = ...
+     * public static final CustomError BBB_ERROR = ...
+     * public static final CustomError BBB1_ERROR = ...
+     * public static final CustomError BBB2_ERROR = ...
+     * }</pre>
+     */
+    @NotNull
+    private String buildCustomErrorDefinitionName(
+            String customErrorName,
+            @NotNull Map<String, Integer> customErrorsOccurrences) {
+
+        customErrorName = customErrorName.toUpperCase();
+        Integer occurrences = customErrorsOccurrences.get(customErrorName);
+        if (occurrences > 1) {
+            customErrorsOccurrences.replace(customErrorName, occurrences - 1);
+            customErrorName = customErrorName + (occurrences - 1);
+        }
+        return customErrorName + "_ERROR";
+    }
+
     private String buildEventDefinitionName(String eventName) {
         return eventName.toUpperCase() + "_EVENT";
     }
@@ -451,6 +644,7 @@ public class SolidityFunctionWrapper extends Generator {
 
         Set<String> duplicateFunctionNames = getDuplicateFunctionNames(functionDefinitions);
         Map<String, Integer> eventsCount = getDuplicatedEventNames(functionDefinitions);
+        Map<String, Integer> customErrorsOccurrences = getDuplicateCustomErrorNames(functionDefinitions);
         List<MethodSpec> methodSpecs = new ArrayList<>();
         for (AbiDefinition functionDefinition : functionDefinitions) {
             if (functionDefinition.getType().equals(TYPE_FUNCTION)) {
@@ -460,9 +654,31 @@ public class SolidityFunctionWrapper extends Generator {
             } else if (functionDefinition.getType().equals(TYPE_EVENT)) {
                 methodSpecs.addAll(
                         buildEventFunctions(functionDefinition, classBuilder, eventsCount));
+            } else if (functionDefinition.getType().equals(TYPE_ERROR)) {
+                buildCustomErrorDefinitions(functionDefinition, classBuilder, customErrorsOccurrences);
             }
         }
         return methodSpecs;
+    }
+
+    // TODO: Refactor to use for types of function, event and error
+    Map<String, Integer> getDuplicateCustomErrorNames(@NotNull List<AbiDefinition> abiDefinitions) {
+        Map<String, Integer> countMap = new HashMap<>();
+
+        abiDefinitions.stream()
+                .filter(abi -> TYPE_ERROR.equals(abi.getType()) && abi.getName() != null)
+                .forEach(
+                        abi -> {
+                            String functionName = abi.getName().toUpperCase();
+                            if (countMap.containsKey(functionName)) {
+                                int count = countMap.get(functionName);
+                                countMap.put(functionName, count + 1);
+                            } else {
+                                countMap.put(functionName, 1);
+                            }
+                        });
+
+        return countMap;
     }
 
     Map<String, Integer> getDuplicatedEventNames(List<AbiDefinition> functionDefinitions) {

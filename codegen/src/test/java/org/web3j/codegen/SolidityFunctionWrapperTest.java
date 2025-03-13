@@ -1168,4 +1168,160 @@ public class SolidityFunctionWrapperTest extends TempFileProvider {
                         + "__$927c5a12e2f339676f56d42ec1c0537964$__"
                         + "a".repeat(40000));
     }
+
+    @Test
+    public void testBuildCustomErrorDefinitionsWithEmptyNameField() throws Exception {
+        List<AbiDefinition> abiDefinitions = List.of(
+                new AbiDefinition(
+                        false,
+                        List.of(new NamedType("reason", "string")),
+                        "Error",
+                        Collections.emptyList(),
+                        "error",
+                        false),
+                new AbiDefinition(
+                        false,
+                        List.of(new NamedType("account", "address")),
+                        "",
+                        Collections.emptyList(),
+                        "error",
+                        false),
+                new AbiDefinition(
+                        false,
+                        Collections.emptyList(),
+                        "",
+                        Collections.emptyList(),
+                        "error",
+                        false),
+                new AbiDefinition(
+                        false,
+                        Collections.emptyList(),
+                        "Empty",
+                        Collections.emptyList(),
+                        "error",
+                        false));
+        String expectedJavaCode =
+                "class MyContract {\n"
+                        + "  public static final org.web3j.abi.datatypes.CustomError ERROR_ERROR = new org.web3j.abi.datatypes.CustomError(\"Error\", \n"
+                        + "      java.util.Arrays.<org.web3j.abi.TypeReference<?>>asList(new org.web3j.abi.TypeReference<org.web3j.abi.datatypes.Utf8String>() {}));\n"
+                        + "  ;\n\n"
+                        + "  public static final org.web3j.abi.datatypes.CustomError EMPTY_ERROR = new org.web3j.abi.datatypes.CustomError(\"Empty\", \n"
+                        + "      java.util.Arrays.<org.web3j.abi.TypeReference<?>>asList());\n"
+                        + "  ;\n}\n";
+
+        TypeSpec.Builder builder = TypeSpec.classBuilder("MyContract");
+        solidityFunctionWrapper.buildFunctionDefinitions("MyContract", builder, abiDefinitions);
+
+        assertEquals(expectedJavaCode, builder.build().toString());
+    }
+
+    @Test
+    public void testBuildCustomErrorDefinitionsWithDuplicateNames() throws Exception {
+        List<AbiDefinition> abiDefinitions = List.of(
+                new AbiDefinition(
+                        false,
+                        List.of(new NamedType("account", "address")),
+                        "invalidAccess",
+                        Collections.emptyList(),
+                        "error",
+                        false),
+                new AbiDefinition(
+                        false,
+                        List.of(new NamedType("account", "address")),
+                        "InvalidAccesS",
+                        Collections.emptyList(),
+                        "error",
+                        false),
+                new AbiDefinition(
+                        false,
+                        Arrays.asList(
+                                new NamedType("account", "address"),
+                                new NamedType("reason", "string")),
+                        "InvalidAccess",
+                        Collections.emptyList(),
+                        "error",
+                        false));
+        String expectedJavaCode =
+                "class MyContract {\n"
+                        + "  public static final org.web3j.abi.datatypes.CustomError INVALIDACCESS2_ERROR = new org.web3j.abi.datatypes.CustomError(\"invalidAccess\", \n"
+                        + "      java.util.Arrays.<org.web3j.abi.TypeReference<?>>asList(new org.web3j.abi.TypeReference<org.web3j.abi.datatypes.Address>() {}));\n"
+                        + "  ;\n\n"
+                        + "  public static final org.web3j.abi.datatypes.CustomError INVALIDACCESS1_ERROR = new org.web3j.abi.datatypes.CustomError(\"InvalidAccesS\", \n"
+                        + "      java.util.Arrays.<org.web3j.abi.TypeReference<?>>asList(new org.web3j.abi.TypeReference<org.web3j.abi.datatypes.Address>() {}));\n"
+                        + "  ;\n\n"
+                        + "  public static final org.web3j.abi.datatypes.CustomError INVALIDACCESS_ERROR = new org.web3j.abi.datatypes.CustomError(\"InvalidAccess\", \n"
+                        + "      java.util.Arrays.<org.web3j.abi.TypeReference<?>>asList(new org.web3j.abi.TypeReference<org.web3j.abi.datatypes.Address>() {}, new org.web3j.abi.TypeReference<org.web3j.abi.datatypes.Utf8String>() {}));\n"
+                        + "  ;\n}\n";
+
+        TypeSpec.Builder builder = TypeSpec.classBuilder("MyContract");
+        solidityFunctionWrapper.buildFunctionDefinitions("MyContract", builder, abiDefinitions);
+
+        assertEquals(expectedJavaCode, builder.build().toString());
+    }
+
+    @Test
+    public void testCreateCustomErrorList() {
+        List<AbiDefinition> abiDefinitions = List.of(
+                new AbiDefinition(
+                        false,
+                        List.of(new NamedType("reason", "string")),
+                        "Error",
+                        Collections.emptyList(),
+                        "error",
+                        false),
+                new AbiDefinition(
+                        false,
+                        Collections.emptyList(),
+                        "",
+                        Collections.emptyList(),
+                        "error",
+                        false),
+                new AbiDefinition(
+                        false,
+                        Collections.emptyList(),
+                        "Empty",
+                        Collections.emptyList(),
+                        "error",
+                        false),
+                new AbiDefinition(
+                        false,
+                        List.of(new NamedType("account", "address")),
+                        "invalidAccess",
+                        Collections.emptyList(),
+                        "error",
+                        false),
+                new AbiDefinition(
+                        false,
+                        Arrays.asList(
+                                new NamedType("account", "address"),
+                                new NamedType("reason", "string")),
+                        "InvalidAccess",
+                        Collections.emptyList(),
+                        "error",
+                        false));
+        String expectedJavaCode =
+                "class MyContract {\n"
+                        + "  public static final java.util.List CUSTOM_ERRORS = java.util.Arrays.<org.web3j.abi.datatypes.CustomError>asList(\n"
+                        + "      ERROR_ERROR,\n"
+                        + "      EMPTY_ERROR,\n"
+                        + "      INVALIDACCESS1_ERROR,\n"
+                        + "      INVALIDACCESS_ERROR);\n"
+                        + "  ;\n}\n";
+
+        TypeSpec.Builder builder = TypeSpec.classBuilder("MyContract");
+        solidityFunctionWrapper.createCustomErrorList(builder, abiDefinitions);
+
+        assertEquals(expectedJavaCode, builder.build().toString());
+    }
+
+    @Test
+    public void testCreateCustomErrorListWithoutCustomErrors() {
+        List<AbiDefinition> abiDefinitions = List.of();
+        String expectedJavaCode = "class MyContract {\n}\n";
+
+        TypeSpec.Builder builder = TypeSpec.classBuilder("MyContract");
+        solidityFunctionWrapper.createCustomErrorList(builder, abiDefinitions);
+
+        assertEquals(expectedJavaCode, builder.build().toString());
+    }
 }
