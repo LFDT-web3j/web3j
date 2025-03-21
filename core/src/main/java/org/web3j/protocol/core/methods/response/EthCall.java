@@ -14,12 +14,16 @@ package org.web3j.protocol.core.methods.response;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 import org.web3j.abi.FunctionReturnDecoder;
+import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.AbiTypes;
 import org.web3j.abi.datatypes.Type;
 import org.web3j.abi.datatypes.Utf8String;
+import org.web3j.abi.datatypes.CustomError;
 import org.web3j.protocol.core.Response;
 import org.web3j.utils.EnsUtils;
 
@@ -65,5 +69,54 @@ public class EthCall extends Response<String> {
             return getError().getMessage();
         }
         return null;
+    }
+
+    /**
+     * Gets the revert reason as a string for a custom error.
+     * If the revert data matches the supplied custom error definition, returns a formatted string
+     * with the error name and decoded parameters. Otherwise, returns null.
+     * 
+     * @param customError The custom error definition.
+     * @return the custom error revert reason as a string, or null if not a custom error.
+     */
+    @SuppressWarnings("unchecked")
+    public String getRevertReason(CustomError customError) {
+        if (!hasError() && !isReverted()) {
+            return null;
+        }
+
+        String data = getValue();
+        if (data == null || data.length() < 10) { // At least 4 bytes for selector
+            return null;
+        }
+
+        // Calculate error selector and compare with the supplied custom error
+        String customErrorSelector = customError.getSelector();
+        String actualSelector = data.substring(0, 10);
+        
+        if (!customErrorSelector.equals(actualSelector)) {
+            return null;
+        }
+
+        // Get the encoded parameters after the selector
+        String encodedParameters = data.substring(10);
+        if (encodedParameters.isEmpty()) {
+            return customError.getName() + "()";
+        }
+
+        // Convert TypeReference<?> to TypeReference<Type>
+        List<TypeReference<Type>> typeReferences = customError.getParameters().stream()
+            .map(param -> (TypeReference<Type>) param)
+            .collect(Collectors.toList());
+
+        // Decode parameters using the custom error's parameter types
+        List<Type> decodedParameters = FunctionReturnDecoder.decode(encodedParameters, typeReferences);
+
+        // Convert parameters into a string representation.
+        String parametersString = decodedParameters.stream()
+            .map(t -> t.getValue() == null ? "null" : t.getValue().toString())
+            .collect(Collectors.joining(", "));
+
+        return customError.getName() + "(" + parametersString + ")";
     }
 }
