@@ -331,4 +331,62 @@ public class Utils {
 
         return type.getName();
     }
+
+    /**
+     * Gets the Solidity type name for a given TypeReference.
+     * This method handles both simple types and complex types (arrays, structs).
+     *
+     * @param typeReference the TypeReference to get the Solidity type name for
+     * @return the Solidity type name (e.g. "uint256", "address", "string[]")
+     */
+    public static String getSolidityTypeName(TypeReference<?> typeReference) {
+        try {
+            java.lang.reflect.Type reflectedType = typeReference.getType();
+            Class<?> type;
+
+            if (reflectedType instanceof ParameterizedType) {
+                type = (Class<?>) ((ParameterizedType) reflectedType).getRawType();
+                if (DynamicArray.class.isAssignableFrom(type)) {
+                    Class<?> componentType = getParameterizedTypeFromArray(typeReference);
+                    return getSoliditySimpleTypeName(componentType) + "[]";
+                } else if (StaticArray.class.isAssignableFrom(type)) {
+                    Class<?> componentType = getParameterizedTypeFromArray(typeReference);
+                    int length = ((TypeReference.StaticArrayTypeReference) typeReference).getSize();
+                    return getSoliditySimpleTypeName(componentType) + "[" + length + "]";
+                }
+            }
+
+            type = typeReference.getClassType();
+            return getSoliditySimpleTypeName(type);
+        } catch (ClassNotFoundException e) {
+            throw new UnsupportedOperationException("Invalid class reference provided", e);
+        }
+    }
+
+    private static String getSoliditySimpleTypeName(Class<?> type) {
+        if (Uint.class.isAssignableFrom(type)) {
+            return "uint256";
+        } else if (Int.class.isAssignableFrom(type)) {
+            return "int256";
+        } else if (Ufixed.class.isAssignableFrom(type)) {
+            return "ufixed256";
+        } else if (Fixed.class.isAssignableFrom(type)) {
+            return "fixed256";
+        } else if (Utf8String.class.isAssignableFrom(type)) {
+            return "string";
+        } else if (DynamicBytes.class.isAssignableFrom(type)) {
+            return "bytes";
+        } else if (org.web3j.abi.datatypes.Address.class.isAssignableFrom(type)) {
+            return "address";
+        } else if (org.web3j.abi.datatypes.Bool.class.isAssignableFrom(type)) {
+            return "bool";
+        } else if (org.web3j.abi.datatypes.Bytes.class.isAssignableFrom(type)) {
+            String typeName = type.getSimpleName();
+            return typeName.toLowerCase();
+        } else if (StructType.class.isAssignableFrom(type)) {
+            return getStructType(type);
+        } else {
+            return type.getSimpleName().toLowerCase();
+        }
+    }
 }
