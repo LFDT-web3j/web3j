@@ -1,4 +1,4 @@
-# [Hyperledger Code of Conduct](https://wiki.hyperledger.org/community/hyperledger-project-code-of-conduct)
+# [Hyperledger Code of Conduct](https://lf-hyperledger.atlassian.net/wiki/spaces/HYP/pages/19595281/Hyperledger+Code+of+Conduct)
 
 Hyperledger is a collaborative project at The Linux Foundation. It is an open-source and open
 community project where participants choose to work together, and in that process experience
