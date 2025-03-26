@@ -15,7 +15,6 @@ package org.web3j.crypto;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -307,19 +306,19 @@ public class StructuredDataEncoder {
 
         List<String> encTypes = new ArrayList<>();
         List<Object> encValues = new ArrayList<>();
-        List<byte[]> dynamicData = new ArrayList<>();  // Store dynamic data
+        List<byte[]> dynamicData = new ArrayList<>(); // Store dynamic data
 
         // Add typehash
         encTypes.add("bytes32");
         encValues.add(typeHash(primaryType));
 
         // Calculate header size (static part)
-        int headSize = 32;  // typehash
+        int headSize = 32; // typehash
         for (StructuredData.Entry field : types.get(primaryType)) {
             if (field.getType().contains("[]")) {
-                headSize += 32;  // Dynamic array offset takes 32 bytes
+                headSize += 32; // Dynamic array offset takes 32 bytes
             } else {
-                headSize += 32;  // Static type takes 32 bytes
+                headSize += 32; // Static type takes 32 bytes
             }
         }
 
@@ -341,7 +340,8 @@ public class StructuredDataEncoder {
                 encValues.add(sha3(Numeric.hexStringToByteArray((String) value)));
             } else if (types.containsKey(field.getType())) {
                 // User Defined Type
-                byte[] hashedValue = sha3(encodeData(field.getType(), (HashMap<String, Object>) value));
+                byte[] hashedValue =
+                        sha3(encodeData(field.getType(), (HashMap<String, Object>) value));
                 encTypes.add("bytes32");
                 encValues.add(hashedValue);
             } else if (bytesTypePattern.matcher(field.getType()).find()) {
@@ -350,44 +350,54 @@ public class StructuredDataEncoder {
             } else if (arrayTypePattern.matcher(field.getType()).find()) {
                 String baseTypeName = field.getType().substring(0, field.getType().indexOf('['));
                 List<Object> arrayItems = getArrayItems(field, value);
-                
-                if (baseTypeName.startsWith("uint") || baseTypeName.startsWith("int") || 
-                    baseTypeName.equals("address") || baseTypeName.equals("bool")) {
+
+                if (baseTypeName.startsWith("uint")
+                        || baseTypeName.startsWith("int")
+                        || baseTypeName.equals("address")
+                        || baseTypeName.equals("bool")) {
                     // Handle dynamic array
-                    encTypes.add(baseTypeName);  // Use base type instead of array type
+                    encTypes.add(baseTypeName); // Use base type instead of array type
                     // Add offset position, considering actual size of all previous dynamic data
                     encValues.add(BigInteger.valueOf(headSize + dynamicDataSize));
-                    
+
                     // Prepare dynamic data
                     ByteArrayOutputStream dynamicBuffer = new ByteArrayOutputStream();
                     // Write array length
-                    byte[] lengthBytes = Numeric.toBytesPadded(BigInteger.valueOf(arrayItems.size()), 32);
+                    byte[] lengthBytes =
+                            Numeric.toBytesPadded(BigInteger.valueOf(arrayItems.size()), 32);
                     dynamicBuffer.write(lengthBytes, 0, lengthBytes.length);
-                    
+
                     // Write array elements
                     for (Object arrayItem : arrayItems) {
                         BigInteger itemValue = convertToBigInt(arrayItem);
                         byte[] itemBytes = Numeric.toBytesPadded(itemValue, 32);
                         dynamicBuffer.write(itemBytes, 0, itemBytes.length);
                     }
-                    
+
                     byte[] dynamicBytes = dynamicBuffer.toByteArray();
                     dynamicData.add(dynamicBytes);
                     // Update total size of dynamic data
                     dynamicDataSize += dynamicBytes.length;
                 } else {
                     // Handle other types of arrays
-                    ByteArrayOutputStream concatenatedArrayEncodingBuffer = new ByteArrayOutputStream();
+                    ByteArrayOutputStream concatenatedArrayEncodingBuffer =
+                            new ByteArrayOutputStream();
                     for (Object arrayItem : arrayItems) {
                         byte[] arrayItemEncoding;
                         if (types.containsKey(baseTypeName)) {
-                            arrayItemEncoding = sha3(encodeData(baseTypeName, (HashMap<String, Object>) arrayItem));
+                            arrayItemEncoding =
+                                    sha3(
+                                            encodeData(
+                                                    baseTypeName,
+                                                    (HashMap<String, Object>) arrayItem));
                         } else {
                             arrayItemEncoding = convertToEncodedItem(baseTypeName, arrayItem);
                         }
-                        concatenatedArrayEncodingBuffer.write(arrayItemEncoding, 0, arrayItemEncoding.length);
+                        concatenatedArrayEncodingBuffer.write(
+                                arrayItemEncoding, 0, arrayItemEncoding.length);
                     }
-                    byte[] concatenatedArrayEncodings = concatenatedArrayEncodingBuffer.toByteArray();
+                    byte[] concatenatedArrayEncodings =
+                            concatenatedArrayEncodingBuffer.toByteArray();
                     byte[] hashedValue = sha3(concatenatedArrayEncodings);
                     encTypes.add("bytes32");
                     encValues.add(hashedValue);
@@ -407,12 +417,12 @@ public class StructuredDataEncoder {
 
         // Write all data
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        
+
         // Write header (static data and offsets)
         for (int i = 0; i < encTypes.size(); i++) {
             String type = encTypes.get(i);
             Object value = encValues.get(i);
-            
+
             if (type.equals("bytes32")) {
                 if (value instanceof byte[]) {
                     baos.write((byte[]) value, 0, ((byte[]) value).length);
@@ -423,27 +433,29 @@ public class StructuredDataEncoder {
                 Class<Type> typeClazz = (Class<Type>) AbiTypes.getType(type);
                 Constructor[] constructors = typeClazz.getConstructors();
                 boolean encoded = false;
-                
+
                 for (Constructor constructor : constructors) {
                     try {
                         Class[] parameterTypes = constructor.getParameterTypes();
-                        byte[] temp = Numeric.hexStringToByteArray(
-                                TypeEncoder.encode(
-                                        typeClazz.getDeclaredConstructor(parameterTypes)
-                                                .newInstance(value)));
+                        byte[] temp =
+                                Numeric.hexStringToByteArray(
+                                        TypeEncoder.encode(
+                                                typeClazz
+                                                        .getDeclaredConstructor(parameterTypes)
+                                                        .newInstance(value)));
                         baos.write(temp, 0, temp.length);
                         encoded = true;
                         break;
                     } catch (Exception ignored) {
                     }
                 }
-                
+
                 if (!encoded) {
                     throw new RuntimeException("Failed to encode parameter");
                 }
             }
         }
-        
+
         // Write dynamic data
         for (byte[] dynamicBytes : dynamicData) {
             baos.write(dynamicBytes, 0, dynamicBytes.length);
