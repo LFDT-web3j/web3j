@@ -45,6 +45,7 @@ public class Transaction {
     private List<AccessListObject> accessList;
     private String maxFeePerBlobGas;
     private List<String> blobVersionedHashes;
+    private List<Authorization> authorizationList;
 
     public Transaction() {}
 
@@ -118,7 +119,9 @@ public class Transaction {
             String type,
             String maxFeePerGas,
             String maxPriorityFeePerGas,
-            List accessList) {
+            List accessList,
+            List<Authorization> authorizationList
+            ) {
         this.hash = hash;
         this.nonce = nonce;
         this.blockHash = blockHash;
@@ -142,6 +145,7 @@ public class Transaction {
         this.maxFeePerGas = maxFeePerGas;
         this.maxPriorityFeePerGas = maxPriorityFeePerGas;
         this.accessList = accessList;
+        this.authorizationList = authorizationList;
     }
 
     public Transaction(
@@ -169,7 +173,9 @@ public class Transaction {
             String maxPriorityFeePerGas,
             List accessList,
             String maxFeePerBlobGas,
-            List versionedHashes) {
+            List versionedHashes,
+            List<Authorization> authorizationList
+            ) {
         this.hash = hash;
         this.nonce = nonce;
         this.blockHash = blockHash;
@@ -195,6 +201,7 @@ public class Transaction {
         this.accessList = accessList;
         this.maxFeePerBlobGas = maxFeePerBlobGas;
         this.blobVersionedHashes = versionedHashes;
+        this.authorizationList = authorizationList;
     }
 
     public void setChainId(String chainId) {
@@ -355,6 +362,14 @@ public class Transaction {
 
     public long getV() {
         return v;
+    }
+
+    public List<Authorization> getAuthorizationList() {
+        return authorizationList;
+    }
+
+    public void setAuthorizationList(List<Authorization> authorizationList) {
+        this.authorizationList = authorizationList;
     }
 
     // Workaround until Geth & Parity return consistent values. At present
@@ -575,6 +590,10 @@ public class Transaction {
                 : that.getAccessList() != null) {
             return false;
         }
+        if (getAuthorizationList() !=null ? !getAuthorizationList().equals(that.getAuthorizationList()) :
+                that.getAuthorizationList() != null) {
+            return false;
+        }
         return getS() != null ? getS().equals(that.getS()) : that.getS() == null;
     }
 
@@ -621,6 +640,7 @@ public class Transaction {
                                 ? getBlobVersionedHashes().hashCode()
                                 : 0);
         result = 31 * result + (getAccessList() != null ? getAccessList().hashCode() : 0);
+        result = 31 * result + (getAuthorizationList() != null ? getAuthorizationList().hashCode() : 0);
         return result;
     }
 }
