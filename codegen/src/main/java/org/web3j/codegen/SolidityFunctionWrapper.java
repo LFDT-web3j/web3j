@@ -270,7 +270,6 @@ public class SolidityFunctionWrapper extends Generator {
         }
 
         addAddressesSupport(classBuilder, addresses);
-        createCustomErrorList(classBuilder, abi);
 
         write(basePackageName, classBuilder.build(), destinationDir);
     }
@@ -440,68 +439,6 @@ public class SolidityFunctionWrapper extends Generator {
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
                 .initializer(initializer)
                 .build();
-    }
-
-    /**
-     * Creates a list of CustomError variables defined previously.
-     *
-     * <pre>{@code
-     * Given error abi definitions;
-     * [
-     *   {"name": "aa", "type": "error", "inputs": []},
-     *   {"name": "aA", "type": "error", "inputs": []},
-     *   {"name": "bbb", "type": "error", "inputs": []},
-     *   {"name": "bBB", "type": "error", "inputs": [{"type": "string"}]},
-     *   {"name": "bbB", "type": "error", "inputs": []}
-     * ]
-     *
-     * Then the list will be;
-     * public static final List CUSTOM_ERRORS = Arrays.<org.web3j.abi.datatypes.CustomError>asList(
-     *         AA1_ERROR,
-     *         AA_ERROR,
-     *         BBB2_ERROR,
-     *         BBB1_ERROR,
-     *         BBB_ERROR);
-     * }</pre>
-     */
-    void createCustomErrorList(TypeSpec.Builder classBuilder, List<AbiDefinition> abiDefinitions) {
-        Map<String, Integer> customErrorsOccurrences = getDuplicateCustomErrorNames(abiDefinitions);
-
-        // This will create a code string for list items
-        // which includes all the custom error definition names.
-        String listItems =
-                abiDefinitions.stream()
-                        // filter error types from abi
-                        .filter(
-                                abi ->
-                                        TYPE_ERROR.equals(abi.getType())
-                                                && abi.getName() != null
-                                                && !abi.getName().isEmpty())
-                        // get error names
-                        .map(
-                                abi ->
-                                        buildCustomErrorDefinitionName(
-                                                abi.getName(), customErrorsOccurrences))
-                        // reduce to a code string for list definition
-                        .collect(Collectors.joining(",\n"));
-
-        if (listItems.isEmpty()) {
-            return;
-        }
-
-        CodeBlock codeBlock =
-                CodeBlock.builder()
-                        .addStatement(
-                                "$T.<$T>asList(\n" + listItems + ")",
-                                Arrays.class,
-                                CustomError.class)
-                        .build();
-
-        classBuilder.addField(
-                FieldSpec.builder(List.class, "CUSTOM_ERRORS")
-                        .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
-                        .initializer(codeBlock)
-                        .build());
     }
 
     void buildCustomErrorDefinitions(
