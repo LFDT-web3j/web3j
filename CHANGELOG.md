@@ -5,6 +5,8 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 # [4.14.0]() (Upcoming)
 
+* Add support for code generation of custom error type introduced with `solidity v0.8.4` [#2173](https://github.com/LFDT-web3j/web3j/pull/2173)
+
 ### Bug Fixes
 
 * update copyright year to 2025 [#2152](https://github.com/LFDT-web3j/web3j/pull/2152)
