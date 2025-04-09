@@ -118,11 +118,11 @@ Java:
 <dependency>
   <groupId>org.web3j</groupId>
   <artifactId>core</artifactId>
-  <version>4.13.0</version>
+  <version>4.14.0</version>
 </dependency>
 ```
 
-**Note:** The Web3j Java binaries are compiled using Java 17. Java 17 or a more recent version is required to use Web3j
+**Note:** The Web3j Java binaries are compiled using Java 21. Java 21 or a more recent version is required to use Web3j
  as a dependency.
 
 Android:
@@ -141,7 +141,7 @@ Gradle
 Java:
 
 ```groovy
-implementation ('org.web3j:core:4.13.0')
+implementation ('org.web3j:core:4.14.0')
 ```
 
 Android:
