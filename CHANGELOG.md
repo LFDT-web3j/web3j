@@ -5,8 +5,6 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 # [4.14.0]() (Upcoming)
 
-* Add support for code generation of custom error type introduced with `solidity v0.8.4` [#2173](https://github.com/LFDT-web3j/web3j/pull/2173)
-
 ### Bug Fixes
 
 * update copyright year to 2025 [#2152](https://github.com/LFDT-web3j/web3j/pull/2152)
@@ -17,6 +15,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 * bump snapshot version to 4.13.1 [#2160](https://github.com/hyperledger-web3j/web3j/pull/2160)
 * Upgrade to https://github.com/Consensys/tuweni/releases/tag/v2.7.0 [#2170](https://github.com/LFDT-web3j/web3j/pull/2170)
+* Add support for code generation of custom error type introduced with `solidity v0.8.4` [#2173](https://github.com/LFDT-web3j/web3j/pull/2173)
 
 
 ### BREAKING CHANGES
