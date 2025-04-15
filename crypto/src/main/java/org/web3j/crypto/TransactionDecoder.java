@@ -32,6 +32,7 @@ public class TransactionDecoder {
     private static final int UNSIGNED_EIP1559TX_RLP_LIST_SIZE = 9;
     private static final int UNSIGNED_EIP2930TX_RLP_LIST_SIZE = 8;
     private static final int UNSIGNED_EIP4844TX_RLP_LIST_SIZE = 11;
+    private static final int UNSIGNED_EIP7702TX_RLP_LIST_SIZE = 10;
 
     public static RawTransaction decode(final String hexTransaction) {
         final byte[] transaction = Numeric.hexStringToByteArray(hexTransaction);
@@ -44,8 +45,110 @@ public class TransactionDecoder {
                 return decodeEIP4844Transaction(transaction);
             case EIP2930:
                 return decodeEIP2930Transaction(transaction);
+            case EIP7702:
+                return decodeEIP7702Transaction(transaction);
             default:
                 return decodeLegacyTransaction(transaction);
+        }
+    }
+
+    private static RawTransaction decodeEIP7702Transaction(final byte[] transaction) {
+        // Strip off the type byte (0x04) before decoding the RLP list
+        final byte[] encodedTx = Arrays.copyOfRange(transaction, 1, transaction.length);
+        final RlpList rlpList = RlpDecoder.decode(encodedTx);
+        final RlpList values = (RlpList) rlpList.getValues().get(0);
+        final List<RlpType> fields = values.getValues();
+    
+        // 0. chain_id
+        final long chainId =
+            ((RlpString) fields.get(0)).asPositiveBigInteger().longValue();
+    
+        // 1. nonce
+        final BigInteger nonce =
+            ((RlpString) fields.get(1)).asPositiveBigInteger();
+    
+        // 2. max_priority_fee_per_gas
+        final BigInteger maxPriorityFeePerGas =
+            ((RlpString) fields.get(2)).asPositiveBigInteger();
+    
+        // 3. max_fee_per_gas
+        final BigInteger maxFeePerGas =
+            ((RlpString) fields.get(3)).asPositiveBigInteger();
+    
+        // 4. gas_limit
+        final BigInteger gasLimit =
+            ((RlpString) fields.get(4)).asPositiveBigInteger();
+    
+        // 5. destination (EIP-7702 forbids a null/empty 'to', but you can decide how to handle that)
+        final String to =
+            ((RlpString) fields.get(5)).asString();
+    
+        // 6. value
+        final BigInteger value =
+            ((RlpString) fields.get(6)).asPositiveBigInteger();
+    
+        // 7. data
+        final String data =
+            ((RlpString) fields.get(7)).asString();
+    
+        // 8. access_list (same decoding logic you already have)
+        final List<RlpType> accessListRlp =
+            ((RlpList) fields.get(8)).getValues();
+        final List<AccessListObject> accessList = decodeAccessList(accessListRlp);
+    
+        // 9. authorization_list
+        final List<AuthorizationTuple> authorizationList =
+            decodeAuthorizationList(((RlpList) fields.get(9)).getValues());
+        // The EIP states that an empty authorization list (size=0) is invalid,
+        // but you can choose to handle that or let it fail in validation later.
+    
+        // Construct the raw transaction
+        final RawTransaction rawTransaction =
+            RawTransaction.createTransactionEIP7702(
+                chainId,
+                nonce,
+                maxPriorityFeePerGas,
+                maxFeePerGas,
+                gasLimit,
+                to,
+                value,
+                data,
+                accessList,
+                authorizationList
+            );
+    
+        // Check if signature fields are present
+        if (fields.size() == UNSIGNED_EIP7702TX_RLP_LIST_SIZE) {
+            // No signature => return as-is
+            return rawTransaction;
+        } else {
+            // 10. signature_y_parity
+            final int yParity =
+                Numeric.toBigInt(((RlpString) fields.get(10)).getBytes()).intValue();
+    
+            // 11. signature_r
+            final byte[] rBytes =
+                Numeric.toBytesPadded(
+                    Numeric.toBigInt(((RlpString) fields.get(11)).getBytes()),
+                    32
+                );
+    
+            // 12. signature_s
+            final byte[] sBytes =
+                Numeric.toBytesPadded(
+                    Numeric.toBigInt(((RlpString) fields.get(12)).getBytes()),
+                    32
+                );
+    
+            // Convert y_parity into an ECDSA V value
+            final byte[] vBytes = Sign.getVFromRecId(yParity);
+    
+            // Build the signature data object
+            final Sign.SignatureData signatureData =
+                new Sign.SignatureData(vBytes, rBytes, sBytes);
+    
+            // Wrap the raw transaction in a SignedRawTransaction
+            return new SignedRawTransaction(rawTransaction.getTransaction(), signatureData);
         }
     }
 
@@ -55,6 +158,7 @@ public class TransactionDecoder {
         if (firstByte == TransactionType.EIP1559.getRlpType()) return TransactionType.EIP1559;
         else if (firstByte == TransactionType.EIP4844.getRlpType()) return TransactionType.EIP4844;
         else if (firstByte == TransactionType.EIP2930.getRlpType()) return TransactionType.EIP2930;
+        else if (firstByte == TransactionType.EIP7702.getRlpType()) return TransactionType.EIP7702;
         else return TransactionType.LEGACY;
     }
 
@@ -288,5 +392,30 @@ public class TransactionDecoder {
                             }
                         })
                 .collect(Collectors.toList());
+    }
+
+    private static List<AuthorizationTuple> decodeAuthorizationList(final List<RlpType> rlpList) {
+        return rlpList.stream()
+            .map(item -> (RlpList) item) // each authorization tuple is an RlpList
+            .map(tuple -> {
+                final List<RlpType> elements = tuple.getValues();
+                final BigInteger authChainId = ((RlpString) elements.get(0)).asPositiveBigInteger();
+                final String address = ((RlpString) elements.get(1)).asString();
+                final BigInteger authNonce = ((RlpString) elements.get(2)).asPositiveBigInteger();
+                final BigInteger yParity = ((RlpString) elements.get(3)).asPositiveBigInteger();
+                final BigInteger rValue = ((RlpString) elements.get(4)).asPositiveBigInteger();
+                final BigInteger sValue = ((RlpString) elements.get(5)).asPositiveBigInteger();
+    
+                // Convert or store them as desired; for example:
+                return new AuthorizationTuple(
+                    authChainId,
+                    address,
+                    authNonce,
+                    yParity,
+                    rValue,
+                    sValue
+                );
+            })
+            .collect(Collectors.toList());
     }
 }
