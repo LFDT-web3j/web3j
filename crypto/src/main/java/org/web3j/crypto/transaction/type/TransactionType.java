@@ -44,4 +44,8 @@ public enum TransactionType {
     public boolean isEip4844() {
         return this.equals(TransactionType.EIP4844);
     }
+
+    public boolean isEip7702() {
+        return this.equals(TransactionType.EIP7702);
+    }
 }

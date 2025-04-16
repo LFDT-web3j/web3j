@@ -1,6 +1,7 @@
 package org.web3j.crypto;
 
 import java.math.BigInteger;
+import java.util.Objects;
 
 public class AuthorizationTuple {
     private final BigInteger chainId;
@@ -25,7 +26,7 @@ public class AuthorizationTuple {
         this.r = r;
         this.s = s;
     }
-    
+
     public BigInteger getChainId() {
         return chainId;
     }
@@ -50,4 +51,21 @@ public class AuthorizationTuple {
         return s;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;          // same object in memory
+        if (!(o instanceof AuthorizationTuple)) return false;
+        AuthorizationTuple that = (AuthorizationTuple) o;
+        return Objects.equals(chainId, that.chainId)
+                && Objects.equals(address, that.address)
+                && Objects.equals(nonce, that.nonce)
+                && Objects.equals(yParity, that.yParity)
+                && Objects.equals(r, that.r)
+                && Objects.equals(s, that.s);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(chainId, address, nonce, yParity, r, s);
+    }
 }
