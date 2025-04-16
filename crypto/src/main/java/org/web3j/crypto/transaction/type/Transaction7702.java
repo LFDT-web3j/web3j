@@ -10,7 +10,6 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-
 package org.web3j.crypto.transaction.type;
 
 import java.math.BigInteger;
@@ -113,9 +112,6 @@ public class Transaction7702 extends Transaction1559 implements ITransaction {
         return TransactionType.EIP7702;
     }
 
-    /**
-     * Provide a static factory method to create an unsigned EIP-7702 transaction.
-     */
     public static Transaction7702 createTransaction(
             long chainId,
             BigInteger nonce,
