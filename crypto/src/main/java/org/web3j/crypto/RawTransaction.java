@@ -246,7 +246,7 @@ public class RawTransaction {
                         chainId, nonce, gasPrice, gasLimit, to, value, data, accessList));
     }
 
-    public static RawTransaction createTransactionEIP7702(
+    public static RawTransaction createTransaction(
         long chainId,
         BigInteger nonce,
         BigInteger maxPriorityFeePerGas,
@@ -258,19 +258,18 @@ public class RawTransaction {
         List<AccessListObject> accessList,
         List<AuthorizationTuple> authorizationList
 ) {
-    Transaction7702 tx = Transaction7702.createTransaction(
-            chainId,
-            nonce,
-            maxPriorityFeePerGas,
-            maxFeePerGas,
-            gasLimit,
-            to,
-            value,
-            data,
-            accessList,
-            authorizationList
-    );
-    return new RawTransaction(tx);
+    return new RawTransaction(
+            Transaction7702.createTransaction(
+                    chainId,
+                    nonce,
+                    maxPriorityFeePerGas,
+                    maxFeePerGas,
+                    gasLimit,
+                    to,
+                    value,
+                    data,
+                    accessList,
+                    authorizationList));
 }
 
     public BigInteger getNonce() {

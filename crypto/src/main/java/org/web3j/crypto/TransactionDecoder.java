@@ -104,7 +104,7 @@ public class TransactionDecoder {
     
         // Construct the raw transaction
         final RawTransaction rawTransaction =
-            RawTransaction.createTransactionEIP7702(
+            RawTransaction.createTransaction(
                 chainId,
                 nonce,
                 maxPriorityFeePerGas,
