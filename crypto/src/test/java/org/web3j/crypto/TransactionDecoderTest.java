@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.web3j.crypto.transaction.type.Transaction1559;
 import org.web3j.crypto.transaction.type.Transaction2930;
 import org.web3j.crypto.transaction.type.Transaction4844;
+import org.web3j.crypto.transaction.type.Transaction7702;
 import org.web3j.utils.Numeric;
 
 import static java.util.stream.Collectors.toList;
@@ -503,5 +504,112 @@ public class TransactionDecoderTest {
                 BigInteger.valueOf(0),
                 "",
                 BigInteger.valueOf(30000));
+    }
+
+    @Test
+    public void testDecoding7702() {
+        final RawTransaction rawTransaction = createEip7702RawTransaction();
+        final Transaction7702 tx7702 = (Transaction7702) rawTransaction.getTransaction();
+
+        final byte[] encoded = TransactionEncoder.encode(rawTransaction);
+        final String hexEncoded = Numeric.toHexString(encoded);
+
+        final RawTransaction decodedRawTx = TransactionDecoder.decode(hexEncoded);
+        assertNotNull(decodedRawTx);
+        assertTrue(decodedRawTx.getTransaction() instanceof Transaction7702);
+
+        final Transaction7702 decodedTx7702 = (Transaction7702) decodedRawTx.getTransaction();
+        assertEquals(tx7702.getChainId(), decodedTx7702.getChainId());
+        assertEquals(tx7702.getNonce(), decodedTx7702.getNonce());
+        assertEquals(tx7702.getMaxPriorityFeePerGas(), decodedTx7702.getMaxPriorityFeePerGas());
+        assertEquals(tx7702.getMaxFeePerGas(), decodedTx7702.getMaxFeePerGas());
+        assertEquals(tx7702.getGasLimit(), decodedTx7702.getGasLimit());
+        assertEquals(tx7702.getTo(), decodedTx7702.getTo());
+        assertEquals(tx7702.getValue(), decodedTx7702.getValue());
+        assertEquals(tx7702.getData(), decodedTx7702.getData());
+        assertIterableEquals(tx7702.getAccessList(), decodedTx7702.getAccessList());
+        assertIterableEquals(tx7702.getAuthorizationList(), decodedTx7702.getAuthorizationList());
+    }
+
+    @Test
+    public void testDecodingSigned7702() throws SignatureException {
+        final RawTransaction rawTransaction = createEip7702RawTransaction();
+        final Transaction7702 tx7702 = (Transaction7702) rawTransaction.getTransaction();
+
+        final byte[] signedMessage = TransactionEncoder.signMessage(rawTransaction, SampleKeys.CREDENTIALS);
+        final String signedHexMessage = Numeric.toHexString(signedMessage);
+
+        final RawTransaction decodedRawTx = TransactionDecoder.decode(signedHexMessage);
+        assertNotNull(decodedRawTx);
+        assertTrue(decodedRawTx.getTransaction() instanceof Transaction7702);
+
+        final Transaction7702 decodedTx7702 = (Transaction7702) decodedRawTx.getTransaction();
+
+        assertEquals(tx7702.getChainId(), decodedTx7702.getChainId());
+        assertEquals(tx7702.getNonce(), decodedTx7702.getNonce());
+        assertEquals(tx7702.getMaxPriorityFeePerGas(), decodedTx7702.getMaxPriorityFeePerGas());
+        assertEquals(tx7702.getMaxFeePerGas(), decodedTx7702.getMaxFeePerGas());
+        assertEquals(tx7702.getGasLimit(), decodedTx7702.getGasLimit());
+        assertEquals(tx7702.getTo(), decodedTx7702.getTo());
+        assertEquals(tx7702.getValue(), decodedTx7702.getValue());
+        assertEquals(tx7702.getData(), decodedTx7702.getData());
+        assertIterableEquals(tx7702.getAccessList(), decodedTx7702.getAccessList());
+        assertIterableEquals(tx7702.getAuthorizationList(), decodedTx7702.getAuthorizationList());
+
+        assertTrue(decodedRawTx instanceof SignedRawTransaction);
+        final SignedRawTransaction signedDecoded = (SignedRawTransaction) decodedRawTx;
+        assertNotNull(signedDecoded.getSignatureData());
+
+        final Sign.SignatureData sigData = signedDecoded.getSignatureData();
+        final byte[] encodedNoSignature = TransactionEncoder.encode(rawTransaction); // raw w/o the signature
+        final BigInteger recoveredKey = Sign.signedMessageToKey(encodedNoSignature, sigData);
+
+        assertEquals(SampleKeys.PUBLIC_KEY, recoveredKey);
+        assertEquals(SampleKeys.ADDRESS, signedDecoded.getFrom());
+
+        signedDecoded.verify(SampleKeys.ADDRESS);
+    }
+
+    private static RawTransaction createEip7702RawTransaction() {
+        // Example EIP-7702 data
+        long chainId = 42L;  // e.g. "Kovan" style, but this is just for demonstration
+        BigInteger nonce = BigInteger.valueOf(123);
+        BigInteger maxPriorityFeePerGas = BigInteger.valueOf(5_000_000_000L);
+        BigInteger maxFeePerGas = BigInteger.valueOf(30_000_000_000L);
+        BigInteger gasLimit = BigInteger.valueOf(1_000_000);
+        String to = "0x627306090abab3a6e1400e9345bc60c78a8bef57";
+        BigInteger value = BigInteger.ZERO;
+        String data = "0xdeadbeef";
+
+        List<AccessListObject> accessList = Collections.singletonList(
+            new AccessListObject(
+                "0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae",
+                Collections.singletonList("0x0000000000000000000000000000000000000000000000000000000000000003"))
+        );
+
+        List<AuthorizationTuple> authorizationList = Collections.singletonList(
+            new AuthorizationTuple(
+                BigInteger.valueOf(42),
+                "0xbaadf00d00000000000000000000000000000000",
+                BigInteger.TEN,
+                BigInteger.ONE,
+                new BigInteger("111111111111111111111"),
+                new BigInteger("222222222222222222222")
+            )
+        );
+
+        // Create an EIP-7702 transaction via your new factory method in RawTransaction.
+        return RawTransaction.createTransaction(
+                chainId,
+                nonce,
+                maxPriorityFeePerGas,
+                maxFeePerGas,
+                gasLimit,
+                to,
+                value,
+                data,
+                accessList,
+                authorizationList
+        );
     }
 }

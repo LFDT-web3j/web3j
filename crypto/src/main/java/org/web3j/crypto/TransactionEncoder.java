@@ -124,7 +124,8 @@ public class TransactionEncoder {
 
         if (rawTransaction.getType().isEip1559()
                 || rawTransaction.getType().isEip2930()
-                || rawTransaction.getType().isEip4844()) {
+                || rawTransaction.getType().isEip4844()
+                || rawTransaction.getType().isEip7702()) {
             return ByteBuffer.allocate(encoded.length + 1)
                     .put(rawTransaction.getType().getRlpType())
                     .put(encoded)
