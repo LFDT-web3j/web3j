@@ -53,7 +53,7 @@ public class AuthorizationTuple {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;          // same object in memory
+        if (this == o) return true;
         if (!(o instanceof AuthorizationTuple)) return false;
         AuthorizationTuple that = (AuthorizationTuple) o;
         return Objects.equals(chainId, that.chainId)

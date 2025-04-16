@@ -59,50 +59,30 @@ public class TransactionDecoder {
         final RlpList values = (RlpList) rlpList.getValues().get(0);
         final List<RlpType> fields = values.getValues();
     
-        // 0. chain_id
         final long chainId =
             ((RlpString) fields.get(0)).asPositiveBigInteger().longValue();
-    
-        // 1. nonce
         final BigInteger nonce =
             ((RlpString) fields.get(1)).asPositiveBigInteger();
-    
-        // 2. max_priority_fee_per_gas
         final BigInteger maxPriorityFeePerGas =
             ((RlpString) fields.get(2)).asPositiveBigInteger();
-    
-        // 3. max_fee_per_gas
         final BigInteger maxFeePerGas =
             ((RlpString) fields.get(3)).asPositiveBigInteger();
-    
-        // 4. gas_limit
         final BigInteger gasLimit =
             ((RlpString) fields.get(4)).asPositiveBigInteger();
-    
-        // 5. destination (EIP-7702 forbids a null/empty 'to', but you can decide how to handle that)
         final String to =
             ((RlpString) fields.get(5)).asString();
-    
-        // 6. value
         final BigInteger value =
             ((RlpString) fields.get(6)).asPositiveBigInteger();
-    
-        // 7. data
         final String data =
             ((RlpString) fields.get(7)).asString();
-    
-        // 8. access_list (same decoding logic you already have)
         final List<RlpType> accessListRlp =
             ((RlpList) fields.get(8)).getValues();
         final List<AccessListObject> accessList = decodeAccessList(accessListRlp);
-    
-        // 9. authorization_list
         final List<AuthorizationTuple> authorizationList =
             decodeAuthorizationList(((RlpList) fields.get(9)).getValues());
-        // The EIP states that an empty authorization list (size=0) is invalid,
-        // but you can choose to handle that or let it fail in validation later.
+        // INV: Per the EIP, authorization list should be nonempty. We don't
+        // enforce that here.
     
-        // Construct the raw transaction
         final RawTransaction rawTransaction =
             RawTransaction.createTransaction(
                 chainId,
@@ -117,37 +97,27 @@ public class TransactionDecoder {
                 authorizationList
             );
     
-        // Check if signature fields are present
         if (fields.size() == UNSIGNED_EIP7702TX_RLP_LIST_SIZE) {
-            // No signature => return as-is
             return rawTransaction;
         } else {
-            // 10. signature_y_parity
             final int yParity =
                 Numeric.toBigInt(((RlpString) fields.get(10)).getBytes()).intValue();
-    
-            // 11. signature_r
             final byte[] rBytes =
                 Numeric.toBytesPadded(
                     Numeric.toBigInt(((RlpString) fields.get(11)).getBytes()),
                     32
                 );
-    
-            // 12. signature_s
             final byte[] sBytes =
                 Numeric.toBytesPadded(
                     Numeric.toBigInt(((RlpString) fields.get(12)).getBytes()),
                     32
                 );
     
-            // Convert y_parity into an ECDSA V value
             final byte[] vBytes = Sign.getVFromRecId(yParity);
     
-            // Build the signature data object
             final Sign.SignatureData signatureData =
                 new Sign.SignatureData(vBytes, rBytes, sBytes);
     
-            // Wrap the raw transaction in a SignedRawTransaction
             return new SignedRawTransaction(rawTransaction.getTransaction(), signatureData);
         }
     }
