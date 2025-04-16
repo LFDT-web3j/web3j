@@ -79,9 +79,7 @@ public class Transaction7702 extends Transaction1559 implements ITransaction {
                             org.web3j.utils.Bytes.trimLeadingZeroes(signatureData.getS())));
         }
 
-        List<RlpType> wrapped = new ArrayList<>();
-        wrapped.add(new RlpList(values));
-        return wrapped;
+        return values;
     }
 
     private List<RlpType> convertAuthorizationListToRlp(List<AuthorizationTuple> authList) {

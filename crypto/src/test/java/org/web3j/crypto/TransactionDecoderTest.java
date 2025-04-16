@@ -562,8 +562,7 @@ public class TransactionDecoderTest {
         assertNotNull(signedDecoded.getSignatureData());
 
         final Sign.SignatureData sigData = signedDecoded.getSignatureData();
-        final byte[] encodedNoSignature =
-                TransactionEncoder.encode(rawTransaction);
+        final byte[] encodedNoSignature = TransactionEncoder.encode(rawTransaction);
         final BigInteger recoveredKey = Sign.signedMessageToKey(encodedNoSignature, sigData);
 
         assertEquals(SampleKeys.PUBLIC_KEY, recoveredKey);
