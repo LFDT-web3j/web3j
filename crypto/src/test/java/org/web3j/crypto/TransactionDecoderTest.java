@@ -563,7 +563,7 @@ public class TransactionDecoderTest {
 
         final Sign.SignatureData sigData = signedDecoded.getSignatureData();
         final byte[] encodedNoSignature =
-                TransactionEncoder.encode(rawTransaction); // raw w/o the signature
+                TransactionEncoder.encode(rawTransaction);
         final BigInteger recoveredKey = Sign.signedMessageToKey(encodedNoSignature, sigData);
 
         assertEquals(SampleKeys.PUBLIC_KEY, recoveredKey);
@@ -573,8 +573,7 @@ public class TransactionDecoderTest {
     }
 
     private static RawTransaction createEip7702RawTransaction() {
-        // Example EIP-7702 data
-        long chainId = 42L; // e.g. "Kovan" style, but this is just for demonstration
+        long chainId = 42L;
         BigInteger nonce = BigInteger.valueOf(123);
         BigInteger maxPriorityFeePerGas = BigInteger.valueOf(5_000_000_000L);
         BigInteger maxFeePerGas = BigInteger.valueOf(30_000_000_000L);
@@ -600,7 +599,6 @@ public class TransactionDecoderTest {
                                 new BigInteger("111111111111111111111"),
                                 new BigInteger("222222222222222222222")));
 
-        // Create an EIP-7702 transaction via your new factory method in RawTransaction.
         return RawTransaction.createTransaction(
                 chainId,
                 nonce,
