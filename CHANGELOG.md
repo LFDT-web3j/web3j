@@ -11,6 +11,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Features
 
 * bump snapshot version to 4.14.1 [#2176](https://github.com/hyperledger-web3j/web3j/pull/2176)
+* add encoding/decoding for EIP-7702 transactions [#2178](https://github.com/LFDT-web3j/web3j/pull/2178)
 
 ### BREAKING CHANGES
 
