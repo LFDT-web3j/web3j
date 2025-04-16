@@ -16,7 +16,8 @@ public enum TransactionType {
     LEGACY(null),
     EIP2930(((byte) 0x01)),
     EIP1559(((byte) 0x02)),
-    EIP4844(((byte) 0x03));
+    EIP4844(((byte) 0x03)),
+    EIP7702(((byte) 0x04));
 
     Byte type;
 
@@ -42,5 +43,9 @@ public enum TransactionType {
 
     public boolean isEip4844() {
         return this.equals(TransactionType.EIP4844);
+    }
+
+    public boolean isEip7702() {
+        return this.equals(TransactionType.EIP7702);
     }
 }

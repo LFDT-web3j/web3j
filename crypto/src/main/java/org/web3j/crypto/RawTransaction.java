@@ -23,6 +23,7 @@ import org.web3j.crypto.transaction.type.LegacyTransaction;
 import org.web3j.crypto.transaction.type.Transaction1559;
 import org.web3j.crypto.transaction.type.Transaction2930;
 import org.web3j.crypto.transaction.type.Transaction4844;
+import org.web3j.crypto.transaction.type.Transaction7702;
 import org.web3j.crypto.transaction.type.TransactionType;
 
 /**
@@ -243,6 +244,31 @@ public class RawTransaction {
         return new RawTransaction(
                 Transaction2930.createTransaction(
                         chainId, nonce, gasPrice, gasLimit, to, value, data, accessList));
+    }
+
+    public static RawTransaction createTransaction(
+            long chainId,
+            BigInteger nonce,
+            BigInteger maxPriorityFeePerGas,
+            BigInteger maxFeePerGas,
+            BigInteger gasLimit,
+            String to,
+            BigInteger value,
+            String data,
+            List<AccessListObject> accessList,
+            List<AuthorizationTuple> authorizationList) {
+        return new RawTransaction(
+                Transaction7702.createTransaction(
+                        chainId,
+                        nonce,
+                        maxPriorityFeePerGas,
+                        maxFeePerGas,
+                        gasLimit,
+                        to,
+                        value,
+                        data,
+                        accessList,
+                        authorizationList));
     }
 
     public BigInteger getNonce() {
