@@ -38,8 +38,7 @@ public class Transaction7702 extends Transaction1559 implements ITransaction {
             BigInteger value,
             String data,
             List<AccessListObject> accessList,
-            List<AuthorizationTuple> authorizationList
-    ) {
+            List<AuthorizationTuple> authorizationList) {
         super(chainId, nonce, gasLimit, to, value, data, maxPriorityFeePerGas, maxFeePerGas);
         this.authorizationList = authorizationList;
     }
@@ -71,17 +70,13 @@ public class Transaction7702 extends Transaction1559 implements ITransaction {
         values.add(new RlpList(authorizationRlp));
         if (signatureData != null) {
             int recId = Sign.getRecId(signatureData, getChainId());
-            values.add(RlpString.create(recId));  // y_parity
+            values.add(RlpString.create(recId)); // y_parity
             values.add(
                     RlpString.create(
-                            org.web3j.utils.Bytes.trimLeadingZeroes(signatureData.getR())
-                    )
-            );
+                            org.web3j.utils.Bytes.trimLeadingZeroes(signatureData.getR())));
             values.add(
                     RlpString.create(
-                            org.web3j.utils.Bytes.trimLeadingZeroes(signatureData.getS())
-                    )
-            );
+                            org.web3j.utils.Bytes.trimLeadingZeroes(signatureData.getS())));
         }
 
         List<RlpType> wrapped = new ArrayList<>();
@@ -122,8 +117,7 @@ public class Transaction7702 extends Transaction1559 implements ITransaction {
             BigInteger value,
             String data,
             List<AccessListObject> accessList,
-            List<AuthorizationTuple> authorizationList
-    ) {
+            List<AuthorizationTuple> authorizationList) {
         return new Transaction7702(
                 chainId,
                 nonce,
@@ -134,8 +128,7 @@ public class Transaction7702 extends Transaction1559 implements ITransaction {
                 value,
                 data,
                 accessList,
-                authorizationList
-        );
+                authorizationList);
     }
 
     public List<AuthorizationTuple> getAuthorizationList() {

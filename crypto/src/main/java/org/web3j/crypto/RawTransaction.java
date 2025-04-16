@@ -247,30 +247,29 @@ public class RawTransaction {
     }
 
     public static RawTransaction createTransaction(
-        long chainId,
-        BigInteger nonce,
-        BigInteger maxPriorityFeePerGas,
-        BigInteger maxFeePerGas,
-        BigInteger gasLimit,
-        String to,
-        BigInteger value,
-        String data,
-        List<AccessListObject> accessList,
-        List<AuthorizationTuple> authorizationList
-) {
-    return new RawTransaction(
-            Transaction7702.createTransaction(
-                    chainId,
-                    nonce,
-                    maxPriorityFeePerGas,
-                    maxFeePerGas,
-                    gasLimit,
-                    to,
-                    value,
-                    data,
-                    accessList,
-                    authorizationList));
-}
+            long chainId,
+            BigInteger nonce,
+            BigInteger maxPriorityFeePerGas,
+            BigInteger maxFeePerGas,
+            BigInteger gasLimit,
+            String to,
+            BigInteger value,
+            String data,
+            List<AccessListObject> accessList,
+            List<AuthorizationTuple> authorizationList) {
+        return new RawTransaction(
+                Transaction7702.createTransaction(
+                        chainId,
+                        nonce,
+                        maxPriorityFeePerGas,
+                        maxFeePerGas,
+                        gasLimit,
+                        to,
+                        value,
+                        data,
+                        accessList,
+                        authorizationList));
+    }
 
     public BigInteger getNonce() {
         return transaction.getNonce();

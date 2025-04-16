@@ -536,7 +536,8 @@ public class TransactionDecoderTest {
         final RawTransaction rawTransaction = createEip7702RawTransaction();
         final Transaction7702 tx7702 = (Transaction7702) rawTransaction.getTransaction();
 
-        final byte[] signedMessage = TransactionEncoder.signMessage(rawTransaction, SampleKeys.CREDENTIALS);
+        final byte[] signedMessage =
+                TransactionEncoder.signMessage(rawTransaction, SampleKeys.CREDENTIALS);
         final String signedHexMessage = Numeric.toHexString(signedMessage);
 
         final RawTransaction decodedRawTx = TransactionDecoder.decode(signedHexMessage);
@@ -561,7 +562,8 @@ public class TransactionDecoderTest {
         assertNotNull(signedDecoded.getSignatureData());
 
         final Sign.SignatureData sigData = signedDecoded.getSignatureData();
-        final byte[] encodedNoSignature = TransactionEncoder.encode(rawTransaction); // raw w/o the signature
+        final byte[] encodedNoSignature =
+                TransactionEncoder.encode(rawTransaction); // raw w/o the signature
         final BigInteger recoveredKey = Sign.signedMessageToKey(encodedNoSignature, sigData);
 
         assertEquals(SampleKeys.PUBLIC_KEY, recoveredKey);
@@ -572,7 +574,7 @@ public class TransactionDecoderTest {
 
     private static RawTransaction createEip7702RawTransaction() {
         // Example EIP-7702 data
-        long chainId = 42L;  // e.g. "Kovan" style, but this is just for demonstration
+        long chainId = 42L; // e.g. "Kovan" style, but this is just for demonstration
         BigInteger nonce = BigInteger.valueOf(123);
         BigInteger maxPriorityFeePerGas = BigInteger.valueOf(5_000_000_000L);
         BigInteger maxFeePerGas = BigInteger.valueOf(30_000_000_000L);
@@ -581,22 +583,22 @@ public class TransactionDecoderTest {
         BigInteger value = BigInteger.ZERO;
         String data = "0xdeadbeef";
 
-        List<AccessListObject> accessList = Collections.singletonList(
-            new AccessListObject(
-                "0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae",
-                Collections.singletonList("0x0000000000000000000000000000000000000000000000000000000000000003"))
-        );
+        List<AccessListObject> accessList =
+                Collections.singletonList(
+                        new AccessListObject(
+                                "0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae",
+                                Collections.singletonList(
+                                        "0x0000000000000000000000000000000000000000000000000000000000000003")));
 
-        List<AuthorizationTuple> authorizationList = Collections.singletonList(
-            new AuthorizationTuple(
-                BigInteger.valueOf(42),
-                "0xbaadf00d00000000000000000000000000000000",
-                BigInteger.TEN,
-                BigInteger.ONE,
-                new BigInteger("111111111111111111111"),
-                new BigInteger("222222222222222222222")
-            )
-        );
+        List<AuthorizationTuple> authorizationList =
+                Collections.singletonList(
+                        new AuthorizationTuple(
+                                BigInteger.valueOf(42),
+                                "0xbaadf00d00000000000000000000000000000000",
+                                BigInteger.TEN,
+                                BigInteger.ONE,
+                                new BigInteger("111111111111111111111"),
+                                new BigInteger("222222222222222222222")));
 
         // Create an EIP-7702 transaction via your new factory method in RawTransaction.
         return RawTransaction.createTransaction(
@@ -609,7 +611,6 @@ public class TransactionDecoderTest {
                 value,
                 data,
                 accessList,
-                authorizationList
-        );
+                authorizationList);
     }
 }
