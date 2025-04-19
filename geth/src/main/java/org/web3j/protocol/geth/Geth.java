@@ -23,7 +23,7 @@ import org.web3j.protocol.core.methods.response.MinerStartResponse;
 import org.web3j.protocol.geth.response.PersonalEcRecover;
 import org.web3j.protocol.geth.response.PersonalImportRawKey;
 import org.web3j.protocol.websocket.events.PendingTransactionNotification;
-import org.web3j.protocol.websocket.events.SyncingNotfication;
+import org.web3j.protocol.websocket.events.SyncingNotification;
 
 /** JSON-RPC Request object building factory for Geth. */
 public interface Geth extends Admin {
@@ -58,5 +58,5 @@ public interface Geth extends Admin {
      *
      * @return a {@link Flowable} instance that emits changes to syncing status
      */
-    Flowable<SyncingNotfication> syncingStatusNotifications();
+    Flowable<SyncingNotification> syncingStatusNotifications();
 }
