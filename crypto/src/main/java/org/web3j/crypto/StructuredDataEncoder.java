@@ -15,7 +15,6 @@ package org.web3j.crypto;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -102,7 +101,7 @@ public class StructuredDataEncoder {
                 String baseDeclarationTypeName =
                         arrayTypePattern.matcher(declarationFieldTypeName).find()
                                 ? declarationFieldTypeName.substring(
-                                        0, declarationFieldTypeName.indexOf('['))
+                                0, declarationFieldTypeName.indexOf('['))
                                 : declarationFieldTypeName;
                 if (!types.containsKey(baseDeclarationTypeName)) {
                     // Don't expand on non-user defined types
@@ -307,16 +306,21 @@ public class StructuredDataEncoder {
 
         List<String> encTypes = new ArrayList<>();
         List<Object> encValues = new ArrayList<>();
+        List<byte[]> dynamicData = new ArrayList<>(); // Store dynamic data
 
         // Add typehash
         encTypes.add("bytes32");
         encValues.add(typeHash(primaryType));
 
+
+
         // Add field contents
         for (StructuredData.Entry field : types.get(primaryType)) {
             Object value = data.get(field.getName());
 
-            if (value == null) continue;
+            if (value == null) {
+                continue;
+            }
 
             if (field.getType().equals("string")) {
                 encTypes.add("bytes32");
@@ -335,44 +339,70 @@ public class StructuredDataEncoder {
                 encTypes.add(field.getType());
                 encValues.add(Numeric.hexStringToByteArray((String) value));
             } else if (arrayTypePattern.matcher(field.getType()).find()) {
+                // Calculate header size (static part)
+                int headSize = 32;
+                // Track total size of dynamic data
+                int dynamicDataSize = 0;
                 String baseTypeName = field.getType().substring(0, field.getType().indexOf('['));
                 List<Object> arrayItems = getArrayItems(field, value);
-                ByteArrayOutputStream concatenatedArrayEncodingBuffer = new ByteArrayOutputStream();
 
-                for (Object arrayItem : arrayItems) {
-                    byte[] arrayItemEncoding;
-                    if (types.containsKey(baseTypeName)) {
-                        arrayItemEncoding =
-                                sha3(
-                                        encodeData(
-                                                baseTypeName,
-                                                (HashMap<String, Object>)
-                                                        arrayItem)); // need to hash each user type
-                        // before adding
-                    } else {
-                        arrayItemEncoding =
-                                convertToEncodedItem(
-                                        baseTypeName,
-                                        arrayItem); // add raw item, packed to 32 bytes
+                if (baseTypeName.startsWith("uint")
+                        || baseTypeName.startsWith("int")
+                        || baseTypeName.equals("address")
+                        || baseTypeName.equals("bool")) {
+                    // Handle dynamic array
+                    encTypes.add(baseTypeName); // Use base type instead of array type
+                    // Add offset position, considering actual size of all previous dynamic data
+                    encValues.add(BigInteger.valueOf(headSize + dynamicDataSize));
+
+                    // Prepare dynamic data
+                    ByteArrayOutputStream dynamicBuffer = new ByteArrayOutputStream();
+                    // Write array length
+                    byte[] lengthBytes =
+                            Numeric.toBytesPadded(BigInteger.valueOf(arrayItems.size()), 32);
+                    dynamicBuffer.write(lengthBytes, 0, lengthBytes.length);
+
+                    // Write array elements
+                    for (Object arrayItem : arrayItems) {
+                        BigInteger itemValue = convertToBigInt(arrayItem);
+                        byte[] itemBytes = Numeric.toBytesPadded(itemValue, 32);
+                        dynamicBuffer.write(itemBytes, 0, itemBytes.length);
                     }
 
-                    concatenatedArrayEncodingBuffer.write(
-                            arrayItemEncoding, 0, arrayItemEncoding.length);
+                    byte[] dynamicBytes = dynamicBuffer.toByteArray();
+                    dynamicData.add(dynamicBytes);
+                    // Update total size of dynamic data
+                    dynamicDataSize += dynamicBytes.length;
+                } else {
+                    // Handle other types of arrays
+                    ByteArrayOutputStream concatenatedArrayEncodingBuffer =
+                            new ByteArrayOutputStream();
+                    for (Object arrayItem : arrayItems) {
+                        byte[] arrayItemEncoding;
+                        if (types.containsKey(baseTypeName)) {
+                            arrayItemEncoding =
+                                    sha3(
+                                            encodeData(
+                                                    baseTypeName,
+                                                    (HashMap<String, Object>) arrayItem));
+                        } else {
+                            arrayItemEncoding = convertToEncodedItem(baseTypeName, arrayItem);
+                        }
+                        concatenatedArrayEncodingBuffer.write(
+                                arrayItemEncoding, 0, arrayItemEncoding.length);
+                    }
+                    byte[] concatenatedArrayEncodings =
+                            concatenatedArrayEncodingBuffer.toByteArray();
+                    byte[] hashedValue = sha3(concatenatedArrayEncodings);
+                    encTypes.add("bytes32");
+                    encValues.add(hashedValue);
                 }
-
-                byte[] concatenatedArrayEncodings = concatenatedArrayEncodingBuffer.toByteArray();
-                byte[] hashedValue = sha3(concatenatedArrayEncodings);
-                encTypes.add("bytes32");
-                encValues.add(hashedValue);
             } else if (field.getType().startsWith("uint") || field.getType().startsWith("int")) {
                 encTypes.add(field.getType());
-                // convert to BigInteger for ABI constructor compatibility
                 try {
                     encValues.add(convertToBigInt(value));
                 } catch (NumberFormatException | NullPointerException e) {
-                    encValues.add(
-                            value); // value null or failed to convert, fallback to add string as
-                    // before
+                    encValues.add(value);
                 }
             } else {
                 encTypes.add(field.getType());
@@ -380,41 +410,50 @@ public class StructuredDataEncoder {
             }
         }
 
+        // Write all data
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        for (int i = 0; i < encTypes.size(); i++) {
-            Class<Type> typeClazz = (Class<Type>) AbiTypes.getType(encTypes.get(i));
 
-            boolean atleastOneConstructorExistsForGivenParametersType = false;
-            // Using the Reflection API to get the types of the parameters
-            Constructor[] constructors = typeClazz.getConstructors();
-            for (Constructor constructor : constructors) {
-                // Check which constructor matches
-                try {
-                    Class[] parameterTypes = constructor.getParameterTypes();
-                    byte[] temp =
-                            Numeric.hexStringToByteArray(
-                                    TypeEncoder.encode(
-                                            typeClazz
-                                                    .getDeclaredConstructor(parameterTypes)
-                                                    .newInstance(encValues.get(i))));
-                    baos.write(temp, 0, temp.length);
-                    atleastOneConstructorExistsForGivenParametersType = true;
-                    break;
-                } catch (IllegalArgumentException
-                        | NoSuchMethodException
-                        | InstantiationException
-                        | IllegalAccessException
-                        | InvocationTargetException ignored) {
+        // Write header (static data and offsets)
+        for (int i = 0; i < encTypes.size(); i++) {
+            String type = encTypes.get(i);
+            Object value = encValues.get(i);
+
+            if (type.equals("bytes32")) {
+                if (value instanceof byte[]) {
+                    baos.write((byte[]) value, 0, ((byte[]) value).length);
+                } else {
+                    throw new RuntimeException("Expected byte[] for bytes32 type");
+                }
+            } else {
+                Class<Type> typeClazz = (Class<Type>) AbiTypes.getType(type);
+                Constructor[] constructors = typeClazz.getConstructors();
+                boolean encoded = false;
+
+                for (Constructor constructor : constructors) {
+                    try {
+                        Class[] parameterTypes = constructor.getParameterTypes();
+                        byte[] temp =
+                                Numeric.hexStringToByteArray(
+                                        TypeEncoder.encode(
+                                                typeClazz
+                                                        .getDeclaredConstructor(parameterTypes)
+                                                        .newInstance(value)));
+                        baos.write(temp, 0, temp.length);
+                        encoded = true;
+                        break;
+                    } catch (Exception ignored) {
+                    }
+                }
+
+                if (!encoded) {
+                    throw new RuntimeException("Failed to encode parameter");
                 }
             }
+        }
 
-            if (!atleastOneConstructorExistsForGivenParametersType) {
-                throw new RuntimeException(
-                        String.format(
-                                "Received an invalid argument for which no constructor"
-                                        + " exists for the ABI Class %s",
-                                typeClazz.getSimpleName()));
-            }
+        // Write dynamic data
+        for (byte[] dynamicBytes : dynamicData) {
+            baos.write(dynamicBytes, 0, dynamicBytes.length);
         }
 
         return baos.toByteArray();
