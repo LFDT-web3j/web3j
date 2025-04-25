@@ -312,24 +312,15 @@ public class StructuredDataEncoder {
         encTypes.add("bytes32");
         encValues.add(typeHash(primaryType));
 
-        // Calculate header size (static part)
-        int headSize = 32; // typehash
-        for (StructuredData.Entry field : types.get(primaryType)) {
-            if (field.getType().contains("[]")) {
-                headSize += 32; // Dynamic array offset takes 32 bytes
-            } else {
-                headSize += 32; // Static type takes 32 bytes
-            }
-        }
 
-        // Track total size of dynamic data
-        int dynamicDataSize = 0;
 
         // Add field contents
         for (StructuredData.Entry field : types.get(primaryType)) {
             Object value = data.get(field.getName());
 
-            if (value == null) continue;
+            if (value == null) {
+                continue;
+            }
 
             if (field.getType().equals("string")) {
                 encTypes.add("bytes32");
@@ -348,6 +339,10 @@ public class StructuredDataEncoder {
                 encTypes.add(field.getType());
                 encValues.add(Numeric.hexStringToByteArray((String) value));
             } else if (arrayTypePattern.matcher(field.getType()).find()) {
+                // Calculate header size (static part)
+                int headSize = 32;
+                // Track total size of dynamic data
+                int dynamicDataSize = 0;
                 String baseTypeName = field.getType().substring(0, field.getType().indexOf('['));
                 List<Object> arrayItems = getArrayItems(field, value);
 
