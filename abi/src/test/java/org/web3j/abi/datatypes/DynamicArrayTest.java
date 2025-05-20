@@ -54,9 +54,12 @@ public class DynamicArrayTest {
         List<List<BigInteger>> input = new ArrayList<>();
         DynamicArray<DynamicArray> array = new DynamicArray<>(
                 DynamicArray.class,
-                List.of(new DynamicArray<Uint256>(Uint256.class, new ArrayList<>()))
-       );
-        assertEquals( "uint256[][]", array.getTypeAsString());
+                List.of(new DynamicArray<DynamicArray>(
+                                DynamicArray.class,
+                                List.of(new DynamicArray<Uint256>(Uint256.class, new ArrayList<>()))
+                        )
+                ));
+        assertEquals("uint256[][][]", array.getTypeAsString());
     }
 
     private Uint[] arrayOfUints(int length) {
