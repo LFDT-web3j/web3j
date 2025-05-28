@@ -7,7 +7,8 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
-* 
+* fix multidimensional array encoding [#1912](https://github.com/LFDT-web3j/web3j/issues/1912)
+
 ### Features
 
 * bump snapshot version to 4.14.1 [#2176](https://github.com/hyperledger-web3j/web3j/pull/2176)
