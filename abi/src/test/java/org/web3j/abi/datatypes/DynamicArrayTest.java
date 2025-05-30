@@ -52,10 +52,9 @@ public class DynamicArrayTest {
 
     @Test
     public void testMultidimensionalDynamicArray() {
-        List<List<BigInteger>> input = new ArrayList<>();
         DynamicArray<DynamicArray> array = new DynamicArray<>(
                 DynamicArray.class,
-                List.of(new DynamicArray<DynamicArray>(
+                List.of(new DynamicArray<>(
                                 DynamicArray.class,
                                 List.of(new DynamicArray<Uint256>(Uint256.class, new ArrayList<>()))
                         )
