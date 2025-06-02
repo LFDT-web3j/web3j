@@ -27,7 +27,7 @@ import org.web3j.protocol.core.methods.response.MinerStartResponse;
 import org.web3j.protocol.geth.response.PersonalEcRecover;
 import org.web3j.protocol.geth.response.PersonalImportRawKey;
 import org.web3j.protocol.websocket.events.PendingTransactionNotification;
-import org.web3j.protocol.websocket.events.SyncingNotfication;
+import org.web3j.protocol.websocket.events.SyncingNotification;
 
 /** JSON-RPC 2.0 factory implementation for Geth. */
 public class JsonRpc2_0Geth extends JsonRpc2_0Admin implements Geth {
@@ -98,7 +98,7 @@ public class JsonRpc2_0Geth extends JsonRpc2_0Admin implements Geth {
     }
 
     @Override
-    public Flowable<SyncingNotfication> syncingStatusNotifications() {
+    public Flowable<SyncingNotification> syncingStatusNotifications() {
         return web3jService.subscribe(
                 new Request<>(
                         "eth_subscribe",
@@ -106,6 +106,6 @@ public class JsonRpc2_0Geth extends JsonRpc2_0Admin implements Geth {
                         web3jService,
                         EthSubscribe.class),
                 "eth_unsubscribe",
-                SyncingNotfication.class);
+                SyncingNotification.class);
     }
 }
