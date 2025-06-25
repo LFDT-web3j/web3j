@@ -25,6 +25,7 @@ import io.reactivex.Flowable;
 
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.Web3jService;
+import org.web3j.protocol.core.methods.request.EIP4337Transaction;
 import org.web3j.protocol.core.methods.request.ShhFilter;
 import org.web3j.protocol.core.methods.request.ShhPost;
 import org.web3j.protocol.core.methods.request.Transaction;
@@ -43,6 +44,7 @@ import org.web3j.protocol.core.methods.response.EthCompileLLL;
 import org.web3j.protocol.core.methods.response.EthCompileSerpent;
 import org.web3j.protocol.core.methods.response.EthCompileSolidity;
 import org.web3j.protocol.core.methods.response.EthEstimateGas;
+import org.web3j.protocol.core.methods.response.EthEstimateUserOperationGas;
 import org.web3j.protocol.core.methods.response.EthFeeHistory;
 import org.web3j.protocol.core.methods.response.EthFilter;
 import org.web3j.protocol.core.methods.response.EthGasPrice;
@@ -58,16 +60,20 @@ import org.web3j.protocol.core.methods.response.EthGetTransactionCount;
 import org.web3j.protocol.core.methods.response.EthGetTransactionReceipt;
 import org.web3j.protocol.core.methods.response.EthGetUncleCountByBlockHash;
 import org.web3j.protocol.core.methods.response.EthGetUncleCountByBlockNumber;
+import org.web3j.protocol.core.methods.response.EthGetUserOperationByHash;
+import org.web3j.protocol.core.methods.response.EthGetUserOperationReceipt;
 import org.web3j.protocol.core.methods.response.EthGetWork;
 import org.web3j.protocol.core.methods.response.EthHashrate;
 import org.web3j.protocol.core.methods.response.EthLog;
 import org.web3j.protocol.core.methods.response.EthMaxPriorityFeePerGas;
 import org.web3j.protocol.core.methods.response.EthMining;
 import org.web3j.protocol.core.methods.response.EthProtocolVersion;
+import org.web3j.protocol.core.methods.response.EthSendUserOperation;
 import org.web3j.protocol.core.methods.response.EthSign;
 import org.web3j.protocol.core.methods.response.EthSubmitHashrate;
 import org.web3j.protocol.core.methods.response.EthSubmitWork;
 import org.web3j.protocol.core.methods.response.EthSubscribe;
+import org.web3j.protocol.core.methods.response.EthSupportedEntryPoints;
 import org.web3j.protocol.core.methods.response.EthSyncing;
 import org.web3j.protocol.core.methods.response.EthTransaction;
 import org.web3j.protocol.core.methods.response.EthUninstallFilter;
@@ -399,6 +405,53 @@ public class JsonRpc2_0Web3j implements Web3j {
     public Request<?, EthEstimateGas> ethEstimateGas(Transaction transaction) {
         return new Request<>(
                 "eth_estimateGas", Arrays.asList(transaction), web3jService, EthEstimateGas.class);
+    }
+
+    @Override
+    public Request<?, EthSendUserOperation> ethSendUserOperation(
+            EIP4337Transaction transaction, String entryPointAddress) {
+        return new Request<>(
+                "eth_sendUserOperation",
+                Arrays.asList(transaction, entryPointAddress),
+                web3jService,
+                EthSendUserOperation.class);
+    }
+
+    @Override
+    public Request<?, EthEstimateUserOperationGas> ethEstimateUserOperationGas(
+            EIP4337Transaction transaction, String entryPointAddress) {
+        return new Request<>(
+                "eth_estimateUserOperationGas",
+                Arrays.asList(transaction, entryPointAddress),
+                web3jService,
+                EthEstimateUserOperationGas.class);
+    }
+
+    @Override
+    public Request<?, EthGetUserOperationByHash> ethGetUserOperationByHash(String hash) {
+        return new Request<>(
+                "eth_getUserOperationByHash",
+                Arrays.asList(hash),
+                web3jService,
+                EthGetUserOperationByHash.class);
+    }
+
+    @Override
+    public Request<?, EthGetUserOperationReceipt> ethGetUserOperationReceipt(String hash) {
+        return new Request<>(
+                "eth_getUserOperationReceipt",
+                Arrays.asList(hash),
+                web3jService,
+                EthGetUserOperationReceipt.class);
+    }
+
+    @Override
+    public Request<?, EthSupportedEntryPoints> ethSupportedEntryPoints() {
+        return new Request<>(
+                "eth_supportedEntryPoints",
+                Collections.<String>emptyList(),
+                web3jService,
+                EthSupportedEntryPoints.class);
     }
 
     @Override

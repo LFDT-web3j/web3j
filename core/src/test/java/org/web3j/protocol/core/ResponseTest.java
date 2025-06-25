@@ -41,6 +41,7 @@ import org.web3j.protocol.core.methods.response.EthCompileLLL;
 import org.web3j.protocol.core.methods.response.EthCompileSerpent;
 import org.web3j.protocol.core.methods.response.EthCompileSolidity;
 import org.web3j.protocol.core.methods.response.EthEstimateGas;
+import org.web3j.protocol.core.methods.response.EthEstimateUserOperationGas;
 import org.web3j.protocol.core.methods.response.EthFilter;
 import org.web3j.protocol.core.methods.response.EthGasPrice;
 import org.web3j.protocol.core.methods.response.EthGetBalance;
@@ -55,6 +56,8 @@ import org.web3j.protocol.core.methods.response.EthGetTransactionCount;
 import org.web3j.protocol.core.methods.response.EthGetTransactionReceipt;
 import org.web3j.protocol.core.methods.response.EthGetUncleCountByBlockHash;
 import org.web3j.protocol.core.methods.response.EthGetUncleCountByBlockNumber;
+import org.web3j.protocol.core.methods.response.EthGetUserOperationByHash;
+import org.web3j.protocol.core.methods.response.EthGetUserOperationReceipt;
 import org.web3j.protocol.core.methods.response.EthGetWork;
 import org.web3j.protocol.core.methods.response.EthHashrate;
 import org.web3j.protocol.core.methods.response.EthLog;
@@ -62,9 +65,11 @@ import org.web3j.protocol.core.methods.response.EthMining;
 import org.web3j.protocol.core.methods.response.EthProtocolVersion;
 import org.web3j.protocol.core.methods.response.EthSendRawTransaction;
 import org.web3j.protocol.core.methods.response.EthSendTransaction;
+import org.web3j.protocol.core.methods.response.EthSendUserOperation;
 import org.web3j.protocol.core.methods.response.EthSign;
 import org.web3j.protocol.core.methods.response.EthSubmitHashrate;
 import org.web3j.protocol.core.methods.response.EthSubmitWork;
+import org.web3j.protocol.core.methods.response.EthSupportedEntryPoints;
 import org.web3j.protocol.core.methods.response.EthSyncing;
 import org.web3j.protocol.core.methods.response.EthTransaction;
 import org.web3j.protocol.core.methods.response.EthUninstallFilter;
@@ -87,6 +92,8 @@ import org.web3j.protocol.core.methods.response.ShhVersion;
 import org.web3j.protocol.core.methods.response.Transaction;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.protocol.core.methods.response.TxPoolStatus;
+import org.web3j.protocol.core.methods.response.UserOperation;
+import org.web3j.protocol.core.methods.response.UserOperationReceipt;
 import org.web3j.protocol.core.methods.response.Web3ClientVersion;
 import org.web3j.protocol.core.methods.response.Web3Sha3;
 import org.web3j.protocol.core.methods.response.admin.AdminDataDir;
@@ -603,6 +610,208 @@ class ResponseTest extends ResponseTester {
 
         EthEstimateGas ethEstimateGas = deserialiseResponse(EthEstimateGas.class);
         assertEquals(ethEstimateGas.getAmountUsed(), (BigInteger.valueOf(21000)));
+    }
+
+    @Test
+    void testEthSendUserOperation() {
+        buildResponse(
+                "{\n"
+                        + "  \"id\":1,\n"
+                        + "  \"jsonrpc\": \"2.0\",\n"
+                        + "  \"result\": \"0x5208\"\n"
+                        + "}");
+
+        EthSendUserOperation ethEstimateGas = deserialiseResponse(EthSendUserOperation.class);
+        assertEquals("0x5208", ethEstimateGas.getUserOperationHash());
+    }
+
+    @Test
+    void testEthEstimateUserOperationGas() {
+        buildResponse(
+                "{\n"
+                        + "\"id\":1,\n"
+                        + "\"jsonrpc\":\"2.0\",\n"
+                        + "\"result\": {\n"
+                        + "    \"preVerificationGas\": \"0x9f759\",\n"
+                        + "    \"verificationGasLimit\": \"0x9f759\",\n"
+                        + "    \"callGasLimit\": \"0x9f759\",\n"
+                        + "    \"paymasterVerificationGasLimit\": \"0x9f759\"\n"
+                        + "  }\n"
+                        + "}");
+
+        EthEstimateUserOperationGas userGas =
+                deserialiseResponse(EthEstimateUserOperationGas.class);
+        EthEstimateUserOperationGas.UserOperationGas gas =
+                new EthEstimateUserOperationGas.UserOperationGas(
+                        "0x9f759", "0x9f759", "0x9f759", "0x9f759");
+
+        assertEquals(gas, userGas.getUserOperationGas());
+    }
+
+    @Test
+    void testEthGetUserOperationByHash() {
+        buildResponse(
+                "{\n"
+                        + "\"id\":1,\n"
+                        + "\"jsonrpc\":\"2.0\",\n"
+                        + "\"result\": {\n"
+                        + "    \"sender\": \"0x600160008035811a818181146012578301005b601b60013560255\",\n"
+                        + "    \"nonce\": \"0x1\",\n"
+                        + "    \"initCode\": \"0x9f759\",\n"
+                        + "    \"callData\": \"0x9f759\",\n"
+                        + "    \"callGasLimit\": \"0x9f759\",\n"
+                        + "    \"verificationGasLimit\": \"0x9f759\",\n"
+                        + "    \"preVerificationGas\": \"0x9f759\",\n"
+                        + "    \"maxFeePerGas\": \"0x9f759\",\n"
+                        + "    \"maxPriorityFeePerGas\": \"0x9f759\",\n"
+                        + "    \"paymasterAndData\": \"0x9f759\",\n"
+                        + "    \"signature\": \"0xbd685c98ec39490f50d15c67ba2a8e9b5b1d6d7601fca80b295e7d717446bd8b7127ea487110\",\n"
+                        + "    \"entryPoint\": \"0xa70e8dd61c5d32be8058bb8eb970870f07233156\",\n"
+                        + "    \"blockNumber\": \"0x1\",\n"
+                        + "    \"blockHash\": \"0xbd685c98ec39490f50d15c67ba2a8e9b5b1d6d7601fca80b295e7d717446bd8b7127ea4871e9\",\n"
+                        + "    \"transactionHash\": \"0xbd685c98ec39490f50d15c67ba2a8e9b5b1d6d7601fca80b295e7d717446bd8b7127ea4871e1\"\n"
+                        + "  }\n"
+                        + "}");
+
+        EthGetUserOperationByHash userOperationByHash =
+                deserialiseResponse(EthGetUserOperationByHash.class);
+
+        UserOperation userOperation =
+                new UserOperation(
+                        "0x600160008035811a818181146012578301005b601b60013560255",
+                        "0x1",
+                        "0x9f759",
+                        "0x9f759",
+                        "0x9f759",
+                        "0x9f759",
+                        "0x9f759",
+                        "0x9f759",
+                        "0x9f759",
+                        "0x9f759",
+                        "0xbd685c98ec39490f50d15c67ba2a8e9b5b1d6d7601fca80b295e7d717446bd8b7127ea487110",
+                        "0xa70e8dd61c5d32be8058bb8eb970870f07233156",
+                        "0x1",
+                        "0xbd685c98ec39490f50d15c67ba2a8e9b5b1d6d7601fca80b295e7d717446bd8b7127ea4871e9",
+                        "0xbd685c98ec39490f50d15c67ba2a8e9b5b1d6d7601fca80b295e7d717446bd8b7127ea4871e1");
+
+        assertEquals(userOperation, userOperationByHash.getUserOperation());
+    }
+
+    @Test
+    void testEthGetUserOperationReceipt() {
+        buildResponse(
+                "{\n"
+                        + "\"id\":1,\n"
+                        + "\"jsonrpc\":\"2.0\",\n"
+                        + "\"result\": {\n"
+                        + "    \"userOpHash\": \"0x13574b2256b73bdc33fb121052f64b3803161e5ec602a6dc9e56177ba387e700\",\n"
+                        + "    \"entryPoint\": \"0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789\",\n"
+                        + "    \"sender\": \"0x023fEF87894773DF227587d9B29af8D17b4dBB5A\",\n"
+                        + "    \"nonce\": \"0x1\",\n"
+                        + "    \"paymaster\": null,\n"
+                        + "    \"actualGasCost\": \"0x6f75ef8d\",\n"
+                        + "    \"actualGasUsed\": \"0x329af\",\n"
+                        + "    \"success\": true,\n"
+                        + "    \"reason\": \"\",\n"
+                        + "    \"logs\": [\n"
+                        + "      {\n"
+                        + "        \"address\": \"0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789\",\n"
+                        + "        \"topics\": [\n"
+                        + "          \"0xbb47ee3e183a558b1a2ff0874b079f3fc5478b7454eacf2bfc5af2ff5878f972\"\n"
+                        + "        ],\n"
+                        + "        \"data\": \"0x\",\n"
+                        + "        \"blockNumber\": \"0x27fb22e\",\n"
+                        + "        \"transactionHash\": \"0x0f9b0e5868beaf345d8d55895c8037ae85adb91c422c00badcdcae8a0bf247a1\",\n"
+                        + "        \"transactionIndex\": \"0x4\",\n"
+                        + "        \"blockHash\": \"0x965e08190b1093c078bde81f67362203834784e34cf499d516f1a7b9c7a7b29e\",\n"
+                        + "        \"logIndex\": \"0x13\",\n"
+                        + "        \"removed\": false\n"
+                        + "      }\n"
+                        + "    ],\n"
+                        + "    \"receipt\": {\n"
+                        + "      \"blockHash\": \"0x965e08190b1093c078bde81f67362203834784e34cf499d516f1a7b9c7a7b29e\",\n"
+                        + "      \"blockNumber\": \"0x27fb22e\",\n"
+                        + "      \"from\": \"0x425d190ef5F561aFc8728593cA13EAf2FD9E3380\",\n"
+                        + "      \"to\": \"0x25aD59adbe00C2d80c86d01e2E05e1294DA84823\",\n"
+                        + "      \"cumulativeGasUsed\": \"0xe13e1\",\n"
+                        + "      \"gasUsed\": \"0x329af\",\n"
+                        + "      \"contractAddress\": null,\n"
+                        + "      \"logs\": [null],\n"
+                        + "      \"logsBloom\": \"0x000000010000000000000000800000000000000000000008000000000200000000080000020000020002080100010000001080000000000000100210000000000000000000000008000000000000808010000000000000000001000000000000000000000e000000000000000000080000002200000000408880000000000040000020000000000001000000080000002040000000040000000000000008000020000000000100000040000000000000000000000000000000000220000000400000000000000000000100000010000044000000800020000a100000010020000000000040000081000000000000000000000000000000400000000000100000\",\n"
+                        + "      \"status\": 1,\n"
+                        + "      \"type\": \"0x2\",\n"
+                        + "      \"transactionHash\": \"0x0f9b0e5868beaf345d8d55895c8037ae85adb91c422c00badcdcae8a0bf247a1\",\n"
+                        + "      \"transactionIndex\": \"0x4\",\n"
+                        + "      \"effectiveGasPrice\": \"0x6f75ef8d\"\n"
+                        + "    }\n"
+                        + "  }\n"
+                        + "}");
+
+        EthGetUserOperationReceipt userOperationReceipt =
+                deserialiseResponse(EthGetUserOperationReceipt.class);
+
+        Log log = new Log();
+        log.setAddress("0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789");
+        log.setTopics(
+                Collections.singletonList(
+                        "0xbb47ee3e183a558b1a2ff0874b079f3fc5478b7454eacf2bfc5af2ff5878f972"));
+        log.setData("0x");
+        log.setBlockNumber("0x27fb22e");
+        log.setTransactionHash(
+                "0x0f9b0e5868beaf345d8d55895c8037ae85adb91c422c00badcdcae8a0bf247a1");
+        log.setTransactionIndex("0x4");
+        log.setBlockHash("0x965e08190b1093c078bde81f67362203834784e34cf499d516f1a7b9c7a7b29e");
+        log.setLogIndex("0x13");
+        log.setRemoved(false);
+
+        TransactionReceipt receipt = new TransactionReceipt();
+        receipt.setBlockHash("0x965e08190b1093c078bde81f67362203834784e34cf499d516f1a7b9c7a7b29e");
+        receipt.setBlockNumber("0x27fb22e");
+        receipt.setFrom("0x425d190ef5F561aFc8728593cA13EAf2FD9E3380");
+        receipt.setTo("0x25aD59adbe00C2d80c86d01e2E05e1294DA84823");
+        receipt.setCumulativeGasUsed("0xe13e1");
+        receipt.setGasUsed("0x329af");
+        receipt.setContractAddress(null);
+        receipt.setLogs(Collections.singletonList(null)); // JSON contains a single null log
+        receipt.setLogsBloom(
+                "0x000000010000000000000000800000000000000000000008000000000200000000080000020000020002080100010000001080000000000000100210000000000000000000000008000000000000808010000000000000000001000000000000000000000e000000000000000000080000002200000000408880000000000040000020000000000001000000080000002040000000040000000000000008000020000000000100000040000000000000000000000000000000000220000000400000000000000000000100000010000044000000800020000a100000010020000000000040000081000000000000000000000000000000400000000000100000");
+        receipt.setStatus("1");
+        receipt.setType("0x2");
+        receipt.setTransactionHash(
+                "0x0f9b0e5868beaf345d8d55895c8037ae85adb91c422c00badcdcae8a0bf247a1");
+        receipt.setTransactionIndex("0x4");
+        receipt.setEffectiveGasPrice("0x6f75ef8d");
+
+        UserOperationReceipt userOpReceipt = new UserOperationReceipt();
+        userOpReceipt.setUserOpHash(
+                "0x13574b2256b73bdc33fb121052f64b3803161e5ec602a6dc9e56177ba387e700");
+        userOpReceipt.setEntryPoint("0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789");
+        userOpReceipt.setSender("0x023fEF87894773DF227587d9B29af8D17b4dBB5A");
+        userOpReceipt.setNonce("0x1");
+        userOpReceipt.setPaymaster(null);
+        userOpReceipt.setActualGasCost("0x6f75ef8d");
+        userOpReceipt.setActualGasUsed("0x329af");
+        userOpReceipt.setSuccess(true);
+        userOpReceipt.setReason("");
+        userOpReceipt.setLogs(Collections.singletonList(log));
+        userOpReceipt.setReceipt(receipt);
+
+        assertEquals(userOpReceipt, userOperationReceipt.getOperationReceipt());
+    }
+
+    @Test
+    void testEthSupportedEntryPoints() {
+        buildResponse(
+                "{\n"
+                        + "  \"id\":1,\n"
+                        + "  \"jsonrpc\": \"2.0\",\n"
+                        + "  \"result\": [\"0x600160008035811a818181146012578301005b601b60013560255\"]\n"
+                        + "}");
+
+        EthSupportedEntryPoints entryPoints = deserialiseResponse(EthSupportedEntryPoints.class);
+        assertEquals(
+                List.of("0x600160008035811a818181146012578301005b601b60013560255"),
+                entryPoints.getSupportedEntryPoints());
     }
 
     @Test

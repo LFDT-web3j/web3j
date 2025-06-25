@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.web3j.protocol.RequestTester;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.Web3jService;
+import org.web3j.protocol.core.methods.request.EIP4337Transaction;
 import org.web3j.protocol.core.methods.request.EthFilter;
 import org.web3j.protocol.core.methods.request.ShhFilter;
 import org.web3j.protocol.core.methods.request.ShhPost;
@@ -358,6 +359,82 @@ class RequestTest extends RequestTester {
                         + "\"params\":[{\"from\":\"0xa70e8dd61c5d32be8058bb8eb970870f07233155\","
                         + "\"to\":\"0x52b93c80364dc2dd4444c146d73b9836bbbb2b3f\",\"data\":\"0x0\"}],"
                         + "\"id\":1}");
+    }
+
+    @Test
+    void testEthSendUserOperation() throws Exception {
+        web3j.ethSendUserOperation(
+                        EIP4337Transaction.createEthSendUserOperationTransaction(
+                                "0xa70e8dd61c5d32be8058bb8eb970870f07233155",
+                                BigInteger.ONE,
+                                "0x0",
+                                "0x0",
+                                "0x0",
+                                "0x0",
+                                "0x0",
+                                "0x0",
+                                "0x0",
+                                "0x0",
+                                "0x0"),
+                        "0xa70e8dd61c5d32be8058bb8eb970870f07233156")
+                .send();
+
+        verifyResult(
+                "{\"jsonrpc\":\"2.0\",\"method\":\"eth_sendUserOperation\","
+                        + "\"params\":[{\"sender\":\"0xa70e8dd61c5d32be8058bb8eb970870f07233155\",\"nonce\":\"0x1\",\"initCode\":\"0x0\",\"callData\":\"0x0\",\"callGasLimit\":\"0x0\",\"verificationGasLimit\":\"0x0\",\"preVerificationGas\":\"0x0\",\"maxFeePerGas\":\"0x0\",\"maxPriorityFeePerGas\":\"0x0\",\"signature\":\"0x0\",\"paymasterAndData\":\"0x0\"},\"0xa70e8dd61c5d32be8058bb8eb970870f07233156\"],"
+                        + "\"id\":1}");
+    }
+
+    @Test
+    void testEthEstimateUserOperationGas() throws Exception {
+        web3j.ethEstimateUserOperationGas(
+                        EIP4337Transaction.createEthEstimateUserOperationGasTransaction(
+                                "0xa70e8dd61c5d32be8058bb8eb970870f07233155",
+                                BigInteger.ONE,
+                                "0x0",
+                                "0x0",
+                                "0x0",
+                                "0x0",
+                                "0x0",
+                                "0x0",
+                                "0x0",
+                                "0x0",
+                                "0x0"),
+                        "0xa70e8dd61c5d32be8058bb8eb970870f07233156")
+                .send();
+
+        verifyResult(
+                "{\"jsonrpc\":\"2.0\",\"method\":\"eth_estimateUserOperationGas\","
+                        + "\"params\":[{\"sender\":\"0xa70e8dd61c5d32be8058bb8eb970870f07233155\",\"nonce\":\"0x1\",\"initCode\":\"0x0\",\"callData\":\"0x0\",\"callGasLimit\":\"0x0\",\"verificationGasLimit\":\"0x0\",\"preVerificationGas\":\"0x0\",\"maxFeePerGas\":\"0x0\",\"maxPriorityFeePerGas\":\"0x0\",\"signature\":\"0x0\",\"paymasterAndData\":\"0x0\"},\"0xa70e8dd61c5d32be8058bb8eb970870f07233156\"],"
+                        + "\"id\":1}");
+    }
+
+    @Test
+    void testEthGetUserOperationByHash() throws Exception {
+        web3j.ethGetUserOperationByHash("0xa70e8dd61c5d32be8058bb8eb970870f07233156").send();
+
+        verifyResult(
+                "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getUserOperationByHash\","
+                        + "\"params\":[\"0xa70e8dd61c5d32be8058bb8eb970870f07233156\"],"
+                        + "\"id\":1}");
+    }
+
+    @Test
+    void testEthGetUserOperationReceipt() throws Exception {
+        web3j.ethGetUserOperationReceipt("0xa70e8dd61c5d32be8058bb8eb970870f07233156").send();
+
+        verifyResult(
+                "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getUserOperationReceipt\","
+                        + "\"params\":[\"0xa70e8dd61c5d32be8058bb8eb970870f07233156\"],"
+                        + "\"id\":1}");
+    }
+
+    @Test
+    void testEthSupportedEntryPoints() throws Exception {
+        web3j.ethSupportedEntryPoints().send();
+
+        verifyResult(
+                "{\"jsonrpc\":\"2.0\",\"method\":\"eth_supportedEntryPoints\",\"params\":[],\"id\":1}");
     }
 
     @Test

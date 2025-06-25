@@ -31,6 +31,7 @@ import org.web3j.protocol.core.methods.response.EthCompileLLL;
 import org.web3j.protocol.core.methods.response.EthCompileSerpent;
 import org.web3j.protocol.core.methods.response.EthCompileSolidity;
 import org.web3j.protocol.core.methods.response.EthEstimateGas;
+import org.web3j.protocol.core.methods.response.EthEstimateUserOperationGas;
 import org.web3j.protocol.core.methods.response.EthFeeHistory;
 import org.web3j.protocol.core.methods.response.EthFilter;
 import org.web3j.protocol.core.methods.response.EthGasPrice;
@@ -46,15 +47,19 @@ import org.web3j.protocol.core.methods.response.EthGetTransactionCount;
 import org.web3j.protocol.core.methods.response.EthGetTransactionReceipt;
 import org.web3j.protocol.core.methods.response.EthGetUncleCountByBlockHash;
 import org.web3j.protocol.core.methods.response.EthGetUncleCountByBlockNumber;
+import org.web3j.protocol.core.methods.response.EthGetUserOperationByHash;
+import org.web3j.protocol.core.methods.response.EthGetUserOperationReceipt;
 import org.web3j.protocol.core.methods.response.EthGetWork;
 import org.web3j.protocol.core.methods.response.EthHashrate;
 import org.web3j.protocol.core.methods.response.EthLog;
 import org.web3j.protocol.core.methods.response.EthMaxPriorityFeePerGas;
 import org.web3j.protocol.core.methods.response.EthMining;
 import org.web3j.protocol.core.methods.response.EthProtocolVersion;
+import org.web3j.protocol.core.methods.response.EthSendUserOperation;
 import org.web3j.protocol.core.methods.response.EthSign;
 import org.web3j.protocol.core.methods.response.EthSubmitHashrate;
 import org.web3j.protocol.core.methods.response.EthSubmitWork;
+import org.web3j.protocol.core.methods.response.EthSupportedEntryPoints;
 import org.web3j.protocol.core.methods.response.EthSyncing;
 import org.web3j.protocol.core.methods.response.EthTransaction;
 import org.web3j.protocol.core.methods.response.EthUninstallFilter;
@@ -162,6 +167,20 @@ public interface Ethereum {
 
     Request<?, EthEstimateGas> ethEstimateGas(
             org.web3j.protocol.core.methods.request.Transaction transaction);
+
+    Request<?, EthSendUserOperation> ethSendUserOperation(
+            org.web3j.protocol.core.methods.request.EIP4337Transaction transaction,
+            String entryPointAddress);
+
+    Request<?, EthSupportedEntryPoints> ethSupportedEntryPoints();
+
+    Request<?, EthEstimateUserOperationGas> ethEstimateUserOperationGas(
+            org.web3j.protocol.core.methods.request.EIP4337Transaction transaction,
+            String entryPointAddress);
+
+    Request<?, EthGetUserOperationByHash> ethGetUserOperationByHash(String hash);
+
+    Request<?, EthGetUserOperationReceipt> ethGetUserOperationReceipt(String hash);
 
     Request<?, LineaEstimateGas> lineaEstimateGas(
             org.web3j.protocol.core.methods.request.Transaction transaction);
