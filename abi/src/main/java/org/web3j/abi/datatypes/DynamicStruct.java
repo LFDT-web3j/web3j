@@ -66,4 +66,23 @@ public class DynamicStruct extends DynamicArray<Type> implements StructType {
         type.append(")");
         return type.toString();
     }
+
+    //overriding toString method in SFWJ file
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("DynamicStruct(");
+        List<Type> values = getValue();
+
+        for (int i = 0; i < values.size(); i++) {
+            Type val = values.get(i);
+            sb.append("field").append(i).append(": ").append(val.toString());
+            if (i < values.size() - 1) {
+                sb.append(", ");
+            }
+        }
+
+        sb.append(")");
+        return sb.toString();
+    }
 }
