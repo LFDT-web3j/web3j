@@ -1557,9 +1557,7 @@ public class SolidityFunctionWrapper extends Generator {
         String functionName = functionDefinition.getName();
 
         if (outputParameterTypes.isEmpty()) {
-            methodBuilder.addStatement(
-                    "throw new RuntimeException"
-                            + "(\"cannot call constant function with void return type\")");
+            methodBuilder.addStatement("throw RuntimeException(\"cannot call constant function with void return type\")");
         } else if (outputParameterTypes.size() == 1) {
 
             TypeName typeName = outputParameterTypes.get(0);
@@ -1579,19 +1577,15 @@ public class SolidityFunctionWrapper extends Generator {
             methodBuilder.returns(buildRemoteFunctionCall(nativeReturnTypeName));
 
             methodBuilder.addStatement(
-                    "final $T function = "
-                            + "new $T($N, \n$T.<$T>asList($L), "
-                            + "\n$T.<$T<?>>asList(new $T<$T>() {}))",
+                    "val function = %T(%S, listOf<%T>($L), listOf(object : %T<%T>() {}))",
                     Function.class,
-                    Function.class,
-                    funcNameToConst(functionName, useUpperCase),
-                    Arrays.class,
+                    functionName,
                     Type.class,
                     inputParams,
-                    Arrays.class,
                     TypeReference.class,
-                    TypeReference.class,
-                    typeName);
+                    typeName
+            );
+
 
             if (useNativeJavaTypes) {
                 if (nativeReturnTypeName.equals(LIST)) {
@@ -1601,22 +1595,21 @@ public class SolidityFunctionWrapper extends Generator {
 
                     CodeBlock.Builder callCode = CodeBlock.builder();
                     callCode.addStatement(
-                            "$T result = "
-                                    + "($T) executeCallSingleValueReturn(function, $T.class)",
-                            listType,
-                            listType,
-                            nativeReturnTypeName);
+                            "val result = executeCallSingleValueReturn(function, %T::class.java) as %T",
+                            nativeReturnTypeName,
+                            listType);
                     callCode.addStatement("return convertToNative(result)");
+
+                    TypeName callableInterface = ParameterizedTypeName.get(
+                            ClassName.bestGuess("java.util.concurrent.Callable"),
+                            nativeReturnTypeName
+                    );
 
                     TypeSpec callableType =
                             TypeSpec.anonymousClassBuilder()
-                                    .addSuperinterface(nativeReturnTypeName,
-                                            String.valueOf(ParameterizedTypeName.get(
-                                                    ClassName.Companion.bestGuess("java.util.concurrent.Callable")
-                                                    )))
+                                    .addSuperinterface(callableInterface ,  CodeBlock.of(""))
                                     .addFunction(
                                             FunSpec.builder("call")
-                                                    .addAnnotation(Override.class)
                                                     .addAnnotation(
                                                             AnnotationSpec.builder(
                                                                             SuppressWarnings.class)
@@ -1625,19 +1618,19 @@ public class SolidityFunctionWrapper extends Generator {
                                                                             "$S",
                                                                             "unchecked")
                                                                     .build())
-                                                    .addModifiers(KModifier.PUBLIC)
+                                                    .addModifiers(KModifier.OVERRIDE)
                                                     .returns(nativeReturnTypeName)
                                                     .addCode(callCode.build())
                                                     .build())
                                     .build();
 
                     methodBuilder.addStatement(
-                            "return new $T(function,\n$L)",
+                            "return $T(function,\n$L)",
                             buildRemoteFunctionCall(nativeReturnTypeName),
                             callableType);
                 } else {
                     methodBuilder.addStatement(
-                            "return executeRemoteCallSingleValueReturn(function, $T.class)",
+                            "return executeRemoteCallSingleValueReturn(function, %T::class.java)",
                             nativeReturnTypeName);
                 }
             } else {
