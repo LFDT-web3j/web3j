@@ -1602,9 +1602,7 @@ public class SolidityFunctionWrapper extends Generator {
         String functionName = functionDefinition.getName();
 
         if (outputParameterTypes.isEmpty()) {
-            methodBuilder.addStatement(
-                    "throw new RuntimeException"
-                            + "(\"cannot call constant function with void return type\")");
+            methodBuilder.addStatement("throw RuntimeException(\"cannot call constant function with void return type\")");
         } else if (outputParameterTypes.size() == 1) {
 
             TypeName typeName = outputParameterTypes.get(0);
@@ -1644,25 +1642,21 @@ public class SolidityFunctionWrapper extends Generator {
 
                     CodeBlock.Builder callCode = CodeBlock.builder();
                     callCode.addStatement(
-                            "val result: %T = "
-                                    + "executeCallSingleValueReturn(function, %T::class.java) as %T",
-                            listType,
+                            "val result = executeCallSingleValueReturn(function, %T::class.java) as %T",
                             nativeReturnTypeName,
                             listType);
                     callCode.addStatement("return convertToNative(result)");
 
-            TypeSpec callableType =
-                TypeSpec.anonymousClassBuilder()
-                    .addSuperinterface(
-                        nativeReturnTypeName,
-                        CodeBlock.of(
-                            "%T",
-                            ParameterizedTypeName.get(
-                                ClassName.Companion.bestGuess(
-                                    "java.util.concurrent.Callable"))))
+                    TypeName callableInterface = ParameterizedTypeName.get(
+                            ClassName.bestGuess("java.util.concurrent.Callable"),
+                            nativeReturnTypeName
+                    );
+
+                    TypeSpec callableType =
+                            TypeSpec.anonymousClassBuilder()
+                                    .addSuperinterface(callableInterface ,  CodeBlock.of(""))
                                     .addFunction(
                                             FunSpec.builder("call")
-                                                    .addAnnotation(Override.class)
                                                     .addAnnotation(
                                                             AnnotationSpec.builder(
                                                                             SuppressWarnings.class)
@@ -1671,13 +1665,14 @@ public class SolidityFunctionWrapper extends Generator {
                                                                             "$S",
                                                                             "unchecked")
                                                                     .build())
+                                                    .addModifiers(KModifier.OVERRIDE)
                                                     .returns(nativeReturnTypeName)
                                                     .addCode(callCode.build())
                                                     .build())
                                     .build();
 
                     methodBuilder.addStatement(
-                            "return %T(function,\n%L)",
+                            "return $T(function,\n$L)",
                             buildRemoteFunctionCall(nativeReturnTypeName),
                             callableType);
                 } else {
