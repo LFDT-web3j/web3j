@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import javax.annotation.processing.Generated;
 import org.web3j.abi.EventEncoder;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Address;
@@ -36,6 +37,7 @@ import org.web3j.tx.gas.ContractGasProvider;
  * <p>Generated with web3j version none.
  */
 @SuppressWarnings("rawtypes")
+@Generated("org.web3j.codegen.SolidityFunctionWrapperGenerator")
 public class EventParameters extends Contract {
     public static final String BINARY = "Bin file was not provided";
 

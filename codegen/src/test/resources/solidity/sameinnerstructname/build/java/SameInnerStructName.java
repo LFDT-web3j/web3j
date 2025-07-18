@@ -4,6 +4,7 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import javax.annotation.processing.Generated;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Bool;
 import org.web3j.abi.datatypes.Function;
@@ -28,6 +29,7 @@ import org.web3j.tx.gas.ContractGasProvider;
  * <p>Generated with web3j version none.
  */
 @SuppressWarnings("rawtypes")
+@Generated("org.web3j.codegen.SolidityFunctionWrapperGenerator")
 public class SameInnerStructName extends Contract {
     public static final String BINARY = "608060405234801561000f575f80fd5b5060f18061001c5f395ff3fe6080604052348015600e575f80fd5b50600436106026575f3560e01c8063b1a29dbb14602a575b5f80fd5b60406004803603810190603c91906084565b6042565b005b5f80fd5b5f80fd5b5f80fd5b5f60208284031215606057605f604a565b5b81905092915050565b5f60208284031215607b57607a604a565b5b81905092915050565b5f806040838503121560975760966046565b5b5f60a285828601604e565b925050602060b1858286016069565b915050925092905056fea2646970667358221220024a769b6d57f11f6f5df0145ce9d31d8dd2ec08b9a923116f016e14a0912bb464736f6c63430008140033";
 
