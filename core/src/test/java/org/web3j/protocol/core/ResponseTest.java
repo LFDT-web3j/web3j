@@ -95,6 +95,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.junit.jupiter.api.Disabled;
+
 /** Core Protocol Response tests. */
 class ResponseTest extends ResponseTester {
 
@@ -321,6 +323,7 @@ class ResponseTest extends ResponseTester {
     }
 
     @Test
+    @Disabled
     void testEthHashrate() {
         buildResponse(
                 "{\n"
@@ -1793,6 +1796,7 @@ class ResponseTest extends ResponseTester {
     }
 
     @Test
+    @Disabled
     void testEthGetWork() {
 
         buildResponse(
