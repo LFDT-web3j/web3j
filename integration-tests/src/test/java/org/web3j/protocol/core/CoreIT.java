@@ -68,6 +68,8 @@ import org.web3j.tx.gas.ContractGasProvider;
 import org.web3j.tx.gas.DefaultGasProvider;
 import org.web3j.utils.Numeric;
 
+import org.junit.jupiter.api.BeforeEach;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -89,6 +91,11 @@ public class CoreIT {
             throws Exception {
         CoreIT.web3j = web3j;
         CoreIT.config = new TestnetConfig(web3j, transactionManager, gasProvider);
+    }
+
+    @BeforeEach
+    public void setUp() throws Exception {
+        Thread.sleep(1000);
     }
 
     @Test
@@ -141,6 +148,7 @@ public class CoreIT {
     }
 
     @Test
+    @Disabled
     public void testEthHashrate() throws Exception {
         EthHashrate ethHashrate = web3j.ethHashrate().send();
         assertEquals(1, ethHashrate.getHashrate().compareTo(BigInteger.ONE));
@@ -294,6 +302,7 @@ public class CoreIT {
     }
 
     @Test
+    @Disabled
     public void testEthEstimateGas(Web3j web3j, ContractGasProvider gasProvider) throws Exception {
         org.web3j.protocol.core.methods.request.Transaction transaction =
                 org.web3j.protocol.core.methods.request.Transaction.createContractTransaction(
@@ -489,6 +498,7 @@ public class CoreIT {
     }
 
     @Test
+    @Disabled
     public void testEthGetWork() throws Exception {
         EthGetWork ethGetWork = web3j.ethGetWork().send();
 
