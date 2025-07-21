@@ -409,8 +409,7 @@ public class SolidityFunctionWrapper extends Generator {
 
     PropertySpec createBinaryDefinition(String binary) {
         if (binary.length() < 65534) {
-            return PropertySpec.builder( BINARY, String.class)
-                    .addModifiers(KModifier.PUBLIC, KModifier.FINAL, KModifier.FINAL)
+            return PropertySpec.builder( BINARY,  ClassName.bestGuess("kotlin.String"))
                     .initializer("$S", binary)
                     .build();
         }
