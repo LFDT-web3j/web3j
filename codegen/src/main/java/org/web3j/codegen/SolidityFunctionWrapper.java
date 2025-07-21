@@ -416,7 +416,7 @@ public class SolidityFunctionWrapper extends Generator {
         }
 
         String[] argsArray = binary.split("(?<=\\G.{65534})");
-        StringBuilder stringBuilderString = new StringBuilder().append("new StringBuilder()");
+        StringBuilder stringBuilderString = new StringBuilder().append("StringBuilder()");
         for (String s : argsArray) {
             stringBuilderString.append(".append(\"");
             stringBuilderString.append(
@@ -424,8 +424,7 @@ public class SolidityFunctionWrapper extends Generator {
             stringBuilderString.append("\")");
         }
         stringBuilderString.append(".toString()");
-        return PropertySpec.builder( BINARY, String.class)
-                .addModifiers(KModifier.PUBLIC, KModifier.FINAL, KModifier.FINAL)
+        return PropertySpec.builder( BINARY, ClassName.bestGuess("kotlin.String"))
                 .initializer(CodeBlock.of(stringBuilderString.toString()))
                 .build();
     }
