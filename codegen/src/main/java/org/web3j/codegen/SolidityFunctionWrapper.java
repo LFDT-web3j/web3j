@@ -467,8 +467,7 @@ public class SolidityFunctionWrapper extends Generator {
             stringBuilderString.append("\")");
         }
         stringBuilderString.append(".toString()");
-        return PropertySpec.builder( BINARY, String.class)
-                .mutable(false)
+        return PropertySpec.builder( BINARY, ClassName.bestGuess("kotlin.String"))
                 .initializer(CodeBlock.of(stringBuilderString.toString()))
                 .build();
     }
