@@ -60,7 +60,7 @@ Features
 -   Support for [EEA Privacy features as described in EEA
     documentation](https://entethalliance.org/technical-documents/) and
     implemented in [Hyperledger
-    Besu](https://besu.hyperledger.org/en/latest/Reference/API-Methods/#eea-methods).
+    Besu](https://besu.hyperledger.org/private-networks/reference/api#eea-methods).
 
 It has five runtime dependencies:
 
