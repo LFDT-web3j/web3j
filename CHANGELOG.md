@@ -13,7 +13,9 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 * bump snapshot version to 4.14.1 [#2176](https://github.com/hyperledger-web3j/web3j/pull/2176)
 * add encoding/decoding for EIP-7702 transactions [#2178](https://github.com/LFDT-web3j/web3j/pull/2178)
+* add @javax.annotation.Generated to generated java classes [#2081](https://github.com/LFDT-web3j/web3j/issues/2081)
 * add support for Account Abstraction EIP-4337 transactions [#2187](https://github.com/LFDT-web3j/web3j/pull/2187)
+
 
 ### BREAKING CHANGES
 

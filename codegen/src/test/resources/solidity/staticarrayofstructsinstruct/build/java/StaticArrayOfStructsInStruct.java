@@ -4,6 +4,7 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import javax.annotation.processing.Generated;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Address;
 import org.web3j.abi.datatypes.Function;
@@ -32,6 +33,7 @@ import org.web3j.tx.gas.ContractGasProvider;
  * <p>Generated with web3j version none.
  */
 @SuppressWarnings("rawtypes")
+@Generated("org.web3j.codegen.SolidityFunctionWrapperGenerator")
 public class StaticArrayOfStructsInStruct extends Contract {
     public static final String BINARY = "608060405234801561000f575f80fd5b5060c58061001c5f395ff3fe6080604052348015600e575f80fd5b50600436106026575f3560e01c80639acc3bf114602a575b5f80fd5b60406004803603810190603c91906069565b6042565b005b5f80fd5b5f80fd5b5f80fd5b5f60a08284031215606057605f604a565b5b81905092915050565b5f60a08284031215607b57607a6046565b5b5f608684828501604e565b9150509291505056fea2646970667358221220a67d48af17079065cb181167be61364e31cd9d588c89b4a1ca7ceb1a9bf640a864736f6c63430008140033";
 

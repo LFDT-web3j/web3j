@@ -247,6 +247,12 @@ public class SolidityFunctionWrapper extends Generator {
                         .addMember("value", "\"rawtypes\"")
                         .build());
 
+        classBuilder.addAnnotation(
+                AnnotationSpec.builder(ClassName.get("javax.annotation.processing", "Generated"))
+                        .addMember(
+                                "value", "$S", "org.web3j.codegen.SolidityFunctionWrapperGenerator")
+                        .build());
+
         classBuilder.addMethod(buildConstructor(Credentials.class, CREDENTIALS, false));
         classBuilder.addMethod(buildConstructor(Credentials.class, CREDENTIALS, true));
         classBuilder.addMethod(

@@ -3,6 +3,7 @@ package org.web3j.unittests.java;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collections;
+import javax.annotation.processing.Generated;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Function;
 import org.web3j.abi.datatypes.Type;
@@ -24,6 +25,7 @@ import org.web3j.tx.gas.ContractGasProvider;
  * <p>Generated with web3j version none.
  */
 @SuppressWarnings("rawtypes")
+@Generated("org.web3j.codegen.SolidityFunctionWrapperGenerator")
 public class AbiFuncs extends Contract {
     public static final String BINARY = "Bin file was not provided";
 
