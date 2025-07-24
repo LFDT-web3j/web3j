@@ -14,6 +14,12 @@ package org.web3j.codegen;
 
 import java.io.IOException;
 import java.util.Collections;
+import javax.tools.JavaCompiler;
+import javax.tools.ToolProvider;
+import javax.tools.DiagnosticCollector;
+import javax.tools.JavaFileObject;
+import javax.tools.StandardJavaFileManager;
+
 
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
