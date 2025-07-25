@@ -2,10 +2,9 @@ name: Build
 
 on:
   push:
-    branches: [ main, web3j-android]
+    branches: [web3j-android]
   pull_request:
     branches:
-      - main
       - web3j-android
   workflow_dispatch:
 
@@ -20,7 +19,7 @@ jobs:
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: "zulu"
           java-version: 17
       - name: Cache Gradle packages
         uses: actions/cache@v4
@@ -39,7 +38,7 @@ jobs:
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: "zulu"
           java-version: 17
       - name: Cache Gradle packages
         uses: actions/cache@v4
