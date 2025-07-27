@@ -1568,11 +1568,11 @@ public class SolidityFunctionWrapper extends Generator {
             } else if (functionDefinition.getOutputs().get(0).getType().startsWith("tuple")
                     && functionDefinition.getOutputs().get(0).getType().contains("[")) {
                 nativeReturnTypeName =LIST;
-            } else if (useNativeJavaTypes) {
-                nativeReturnTypeName = getWrapperRawType(typeName);
-            } else {
-                nativeReturnTypeName = getWrapperType(typeName);
-            }
+                } else if (useNativeJavaTypes) {
+                    nativeReturnTypeName = getWrapperRawType(typeName);
+                } else {
+                    nativeReturnTypeName = getWrapperType(typeName);
+                }
             methodBuilder.returns(buildRemoteFunctionCall(nativeReturnTypeName));
 
             methodBuilder.addStatement(

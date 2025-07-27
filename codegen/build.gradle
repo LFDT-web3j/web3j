@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace 'com.org.web3j'
+    namespace 'org.web3j'
     compileSdkVersion 34
 
     defaultConfig {
@@ -30,9 +30,6 @@ android {
             java.srcDirs = ['src/test/java']
         }
 
-    }
-    kotlinOptions {
-        jvmTarget = "17"
     }
 }
 
@@ -86,9 +83,11 @@ file("src/test/resources/solidity").listFiles().each { File file ->
 repositories {
     mavenCentral()
 }
+
 kotlin {
-    jvmToolchain(21)
+    jvmToolchain(17)
 }
+
 //
 //tasks.named("spotlessJava").configure {
 //    dependsOn("spotlessGroovyGradle", "compileTestJava", "javadoc", "test", "jacocoTestReport")
