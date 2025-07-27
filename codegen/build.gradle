@@ -97,3 +97,12 @@ kotlin {
 //tasks.named("spotlessKotlin").configure {
 //    dependsOn("spotlessJava", "spotlessGroovyGradle", "compileTestJava", "processTestResources", "javadoc", "test", "jacocoTestReport")
 //}
+
+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs += ['--add-modules', 'jdk.compiler']
+}
+
+tasks.withType(Test).configureEach {
+    jvmArgs '--add-modules', 'jdk.compiler'
+}
