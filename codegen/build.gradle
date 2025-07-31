@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace 'com.org.web3j'
+    namespace 'org.web3j'
     compileSdkVersion 34
 
     defaultConfig {
@@ -31,9 +31,6 @@ android {
         }
 
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
 }
 
 description 'web3j project code generators'
@@ -58,8 +55,9 @@ dependencies {
     implementation "org.junit.platform:junit-platform-launcher:$junitPlatformLauncherVersion"
     implementation "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
     implementation "org.junit.vintage:junit-vintage-engine:$junitVersion"
-//    implementation 'org.eclipse.jdt:org.eclipse.jdt.core:3.32.0'
+    implementation 'org.eclipse.jdt:org.eclipse.jdt.core:3.32.0'
     testImplementation project(':android-test-utils')
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
 }
 
 file("src/test/resources/solidity").listFiles().each { File file ->
@@ -82,6 +80,14 @@ file("src/test/resources/solidity").listFiles().each { File file ->
         // test.dependsOn generateTask
     }
 }
+repositories {
+    mavenCentral()
+}
+
+kotlin {
+    jvmToolchain(17)
+}
+
 //
 //tasks.named("spotlessJava").configure {
 //    dependsOn("spotlessGroovyGradle", "compileTestJava", "javadoc", "test", "jacocoTestReport")
@@ -90,3 +96,4 @@ file("src/test/resources/solidity").listFiles().each { File file ->
 //tasks.named("spotlessKotlin").configure {
 //    dependsOn("spotlessJava", "spotlessGroovyGradle", "compileTestJava", "processTestResources", "javadoc", "test", "jacocoTestReport")
 //}
+

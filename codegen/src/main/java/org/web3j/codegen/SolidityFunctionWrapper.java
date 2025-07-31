@@ -324,48 +324,45 @@ public class SolidityFunctionWrapper extends Generator {
     private void addAddressesSupport(TypeSpec.Builder classBuilder, Map<String, String> addresses) {
         if (addresses != null) {
 
-            ClassName stringType = STRING;
-            ClassName mapType = ClassName.Companion.bestGuess("java.util.HashMap");
+            ClassName stringType = ClassName.bestGuess("kotlin.String");
+            ClassName mapType = ClassName.bestGuess("kotlin.collections.HashMap");
             TypeName mapStringString = ParameterizedTypeName.get(mapType, stringType, stringType);
             PropertySpec addressesStaticField;
+
+            String initializerString = addresses.entrySet().stream()
+                    .map(entry -> "\"" + entry.getKey() + "\" to \"" + entry.getValue() + "\"")
+                    .collect(Collectors.joining(", ", "hashMapOf(", ")"));
+
             addressesStaticField = PropertySpec.builder("_addresses",
-                            (java.lang.reflect.Type) mapStringString,
-                            KModifier.PROTECTED,
-                            KModifier.FINAL)
+                            mapStringString,
+                            KModifier.PROTECTED)
+                    .initializer(initializerString)
                     .build();
             classBuilder.addProperty(addressesStaticField);
 
-            final CodeBlock.Builder staticInit = CodeBlock.builder();
-            staticInit.addStatement("_addresses = new HashMap<String, String>()");
-            addresses.forEach(
-                    (k, v) ->
-                            staticInit.addStatement(
-                                    String.format("_addresses.put(\"%1s\", \"%2s\")", k, v)));
             // classBuilder.addStaticBlock(staticInit.build()); TODO:Find Alternative
-
             // See org.web3j.tx.Contract#getStaticDeployedAddress(String)
             FunSpec getAddress =
                     FunSpec.builder("getStaticDeployedAddress")
                             .addModifiers(KModifier.PROTECTED)
-                            .returns(stringType)
+                            .returns(stringType.copy(true,stringType.getAnnotations()))
                             .addParameter( "networkId", stringType)
                             .addCode(
                                     CodeBlock.builder()
-                                            .addStatement("return _addresses.get(networkId)")
+                                            .addStatement("return _addresses[networkId]")
                                             .build())
                             .build();
             classBuilder.addFunction(getAddress);
 
             FunSpec getPreviousAddress =
                     FunSpec.builder("getPreviouslyDeployedAddress")
-                            .addModifiers(KModifier.PUBLIC)
-                            .addModifiers(KModifier.FINAL)
-                            .returns(stringType)
-                            .addParameter( "networkId", stringType)
+                            .returns(stringType.copy(true,stringType.getAnnotations()))
+                            .addParameter("networkId", stringType)
                             .addCode(
                                     CodeBlock.builder()
-                                            .addStatement("return _addresses.get(networkId)")
-                                            .build())
+                                            .addStatement("return _addresses[networkId]")
+                                            .build()
+                            )
                             .build();
             classBuilder.addFunction(getPreviousAddress);
         }
@@ -1571,11 +1568,11 @@ public class SolidityFunctionWrapper extends Generator {
             } else if (functionDefinition.getOutputs().get(0).getType().startsWith("tuple")
                     && functionDefinition.getOutputs().get(0).getType().contains("[")) {
                 nativeReturnTypeName =LIST;
-            } else if (useNativeJavaTypes) {
-                nativeReturnTypeName = getWrapperRawType(typeName);
-            } else {
-                nativeReturnTypeName = getWrapperType(typeName);
-            }
+                } else if (useNativeJavaTypes) {
+                    nativeReturnTypeName = getWrapperRawType(typeName);
+                } else {
+                    nativeReturnTypeName = getWrapperType(typeName);
+                }
             methodBuilder.returns(buildRemoteFunctionCall(nativeReturnTypeName));
 
             methodBuilder.addStatement(
