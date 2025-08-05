@@ -42,6 +42,8 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import com.squareup.kotlinpoet.ClassNames;
 import com.squareup.kotlinpoet.FunSpec;
 //import com.squareup.javapoet.;
 
@@ -1242,7 +1244,13 @@ public class SolidityFunctionWrapper extends Generator {
             return getNativeType((ParameterizedTypeName) typeName);
         }
 
+
+
         String simpleName = ((ClassName) typeName).getSimpleName();
+
+        simpleName = simpleName.replace("class ", "");
+        simpleName = simpleName.substring(simpleName.lastIndexOf('.') + 1);
+
 
         if (simpleName.equals("Address")) {
             return new ClassName("kotlin", "String");
@@ -1770,6 +1778,8 @@ public class SolidityFunctionWrapper extends Generator {
                 typeName = buildStructArrayTypeName(namedType.namedType, true);
             } else {
                 typeName = getIndexedEventWrapperType(namedType.typeName);
+                System.out.println(namedType.typeName);
+                // Look into this part
             }
             String name =
                     createValidParamName(namedType.getName(), indexedParameters.indexOf(namedType));
