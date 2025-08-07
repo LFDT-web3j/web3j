@@ -139,7 +139,7 @@ public class Transaction4844 extends Transaction1559 implements ITransaction {
         resultTx.add(RlpString.create(data));
 
         // access list
-        result.add(new RlpList(rlpAccessListRlp()));
+        resultTx.add(new RlpList(rlpAccessListRlp()));
 
         // Blob Transaction: max_fee_per_blob_gas and versioned_hashes
         resultTx.add(RlpString.create(getMaxFeePerBlobGas()));
