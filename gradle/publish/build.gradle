@@ -79,9 +79,16 @@ jreleaser {
         maven {
             nexus2 {
                 'maven-central' {
-                    active = 'ALWAYS'
-                    url = 'https://s01.oss.sonatype.org/service/local'
+                    active = 'RELEASE'
+                    url = 'https://central.sonatype.com/api/v1/publisher'
+                    closeRepository = true
+                    releaseRepository = true
+                    stagingRepository('target/staging-deploy')
+                }
+                'maven-snapshots' {
+                    active = 'SNAPSHOT'
                     snapshotUrl = 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
+                    snapshotSupported = true
                     closeRepository = true
                     releaseRepository = true
                     stagingRepository('target/staging-deploy')
