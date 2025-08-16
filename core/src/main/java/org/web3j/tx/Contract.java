@@ -401,7 +401,7 @@ public abstract class Contract extends ManagedTransaction {
                                 data,
                                 weiValue,
                                 eip1559GasProvider.getGasLimit(
-                                        getGenericTransaction(data, constructor)),
+                                        getGenericTransaction(data, constructor, weiValue)),
                                 eip1559GasProvider.getMaxPriorityFeePerGas(),
                                 eip1559GasProvider.getMaxFeePerGas(),
                                 constructor);
@@ -414,7 +414,7 @@ public abstract class Contract extends ManagedTransaction {
                                 data,
                                 weiValue,
                                 gasProvider.getGasPrice(),
-                                gasProvider.getGasLimit(getGenericTransaction(data, constructor)),
+                                gasProvider.getGasLimit(getGenericTransaction(data, constructor, weiValue)),
                                 constructor);
             }
         } catch (JsonRpcError error) {
@@ -449,12 +449,14 @@ public abstract class Contract extends ManagedTransaction {
         return receipt;
     }
 
-    protected Transaction getGenericTransaction(String data, boolean constructor) {
+    protected Transaction getGenericTransaction(String data, boolean constructor, BigInteger weiValue) {
         if (constructor) {
             return Transaction.createContractTransaction(
                     this.transactionManager.getFromAddress(),
                     BigInteger.ONE,
                     gasProvider.getGasPrice(),
+                    gasProvider.getGasLimit(),
+                    weiValue,
                     data);
         } else {
             return Transaction.createFunctionCallTransaction(
@@ -463,6 +465,7 @@ public abstract class Contract extends ManagedTransaction {
                     gasProvider.getGasPrice(),
                     gasProvider.getGasLimit(),
                     contractAddress,
+                    weiValue,
                     data);
         }
     }
