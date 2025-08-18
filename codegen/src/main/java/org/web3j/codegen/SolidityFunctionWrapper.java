@@ -495,8 +495,7 @@ public class SolidityFunctionWrapper extends Generator {
             }
 
             final TypeSpec.Builder builder =
-                    TypeSpec.classBuilder(structName)
-                            .addModifiers(KModifier.PUBLIC, KModifier.FINAL);
+                    TypeSpec.classBuilder(structName);
 
             final FunSpec.Builder constructorBuilder =
                     FunSpec.constructorBuilder()
@@ -559,7 +558,12 @@ public class SolidityFunctionWrapper extends Generator {
                         !isValidJavaIdentifier(component.getName())
                                 ? "_" + component.getName()
                                 : component.getName();
-                builder.addProperty(componentName,typeName, KModifier.PUBLIC);
+                assert typeName != null;
+                builder.addProperty(
+                        PropertySpec.builder(componentName, typeName)
+                                .initializer(componentName)
+                                .build()
+                );
                 constructorBuilder.addParameter(componentName,typeName);
                 ParameterSpec.Builder nativeParameterBuilder =
                         ParameterSpec.builder(componentName,nativeTypeName);
@@ -568,20 +572,19 @@ public class SolidityFunctionWrapper extends Generator {
                 }
                 nativeConstructorBuilder.addParameter(nativeParameterBuilder.build());
 
-                constructorBuilder.addStatement("this." + componentName + " = " + componentName);
+                constructorBuilder.addStatement("this.%L = %L", componentName, componentName);
                 nativeConstructorBuilder.addStatement(
-                        "this."
-                                + componentName
-                                + " = "
-                                + componentName
-                                + adjustToNativeTypeIfNecessary(component),
-                        Collectors.class);
+                    "this.%L = %L%L",
+                    componentName,
+                    componentName,
+                    adjustToNativeTypeIfNecessary(component)
+            );
             }
 
             builder.superclass(namedType.isDynamic() ? DynamicStruct.class : StaticStruct.class);
             builder.addFunction(constructorBuilder.build());
             if (useNativeJavaTypes
-                    && namedType.getComponents().stream()
+                    && namedType.getComponents().stream()   
                             .anyMatch(
                                     component ->
                                             structClassNameMap.get(component.structIdentifier())
@@ -604,19 +607,19 @@ public class SolidityFunctionWrapper extends Generator {
         return structName;
     }
 
-    private String adjustToNativeTypeIfNecessary(NamedType component) {
+        private String adjustToNativeTypeIfNecessary(NamedType component) {
         if (useNativeJavaTypes && structClassNameMap.get(component.structIdentifier()) == null) {
             if (ARRAY_SUFFIX.matcher(component.getType()).find()
-                    && structClassNameMap.get(normalizeNamedType(component).structIdentifier())
-                            == null) {
-                return ".getValue().stream().map(v -> v.getValue()).collect($T.toList())";
+                    && structClassNameMap.get(normalizeNamedType(component).structIdentifier()) == null) {
+                return ".value.map { it.value }";
             } else {
-                return ".getValue()";
+                return ".value";
             }
         } else {
             return "";
         }
     }
+
 
     private NamedType normalizeNamedType(NamedType namedType) {
         // dynamic array
