@@ -122,8 +122,26 @@ public class TransactionDecoder {
         final RlpList rlpList = RlpDecoder.decode(encodedTx);
         final RlpList outerList = (RlpList) rlpList.getValues().get(0);
 
+        final RlpList txPayload;
+        final List<Blob> blobs;
+        final List<Bytes> kzgCommitments;
+        final List<Bytes> kzgProofs;
+        // Check if the first element of outerList is a list
+        if (outerList.getValues().get(0) instanceof RlpList) {
+            txPayload = (RlpList) outerList.getValues().get(0);
+
+            // Decode blobs, commitments, and proofs
+            blobs = decodeBlobs(((RlpList) outerList.getValues().get(1)).getValues());
+            kzgCommitments = decodeBytesList(((RlpList) outerList.getValues().get(2)).getValues());
+            kzgProofs = decodeBytesList(((RlpList) outerList.getValues().get(3)).getValues());
+        } else {
+            txPayload = (RlpList) outerList;
+            blobs = null;
+            kzgCommitments = null;
+            kzgProofs = null;
+        }
+
         // Decode the transaction payload
-        final RlpList txPayload = (RlpList) outerList.getValues().get(0);
         final List<RlpType> txValues = txPayload.getValues();
 
         final long chainId = ((RlpString) txValues.get(0)).asPositiveBigInteger().longValue();
@@ -138,13 +156,6 @@ public class TransactionDecoder {
         final BigInteger maxFeePerBlobGas = ((RlpString) txValues.get(9)).asPositiveBigInteger();
         final List<Bytes> versionedHashes =
                 decodeVersionedHashes(((RlpList) txValues.get(10)).getValues());
-
-        // Decode blobs, commitments, and proofs
-        final List<Blob> blobs = decodeBlobs(((RlpList) outerList.getValues().get(1)).getValues());
-        final List<Bytes> kzgCommitments =
-                decodeBytesList(((RlpList) outerList.getValues().get(2)).getValues());
-        final List<Bytes> kzgProofs =
-                decodeBytesList(((RlpList) outerList.getValues().get(3)).getValues());
 
         // Create the raw transaction object
         final RawTransaction rawTransaction =
@@ -187,7 +198,7 @@ public class TransactionDecoder {
                 .collect(Collectors.toList());
     }
 
-    //  Decoding logic for commitments and proofs
+    // Decoding logic for commitments and proofs
     private static List<Bytes> decodeBytesList(List<RlpType> rlpBytesList) {
         return rlpBytesList.stream()
                 .map(r -> Bytes.wrap(((RlpString) r).getBytes()))
