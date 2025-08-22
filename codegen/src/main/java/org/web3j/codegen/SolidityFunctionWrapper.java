@@ -2136,35 +2136,32 @@ public class SolidityFunctionWrapper extends Generator {
             String functionName,
             String inputParameters,
             List<TypeName> outputParameterTypes,
-            boolean useUpperCase)
-            throws ClassNotFoundException {
+            boolean useUpperCase) {
 
-        List<Object> objects = new ArrayList<>();
-        objects.add(Function.class);
-        objects.add(Function.class);
-        objects.add(funcNameToConst(functionName, useUpperCase));
+        Object funcConst = funcNameToConst(functionName, useUpperCase);
+        String asListParams = Collection.join(
+                outputParameterTypes,
+                ", ",
+                typeName -> "object : %T<%T>() {}"
+        );
 
-        objects.add(Arrays.class);
-        objects.add(Type.class);
-        objects.add(inputParameters);
-
-        objects.add(Arrays.class);
-        objects.add(TypeReference.class);
-        for (TypeName outputParameterType : outputParameterTypes) {
-            objects.add(TypeReference.class);
-            objects.add(outputParameterType);
-        }
-
-        String asListParams =
-                Collection.join(outputParameterTypes, ", ", typeName -> "new $T<$T>() {}");
-
-        methodBuilder.addStatement(
-                "final $T function = new $T($N, \n$T.<$T>asList($L), \n$T"
-                        + ".<$T<?>>asList("
-                        + asListParams
-                        + "))",
-                objects.toArray());
+        methodBuilder.addCode(
+                "val function = %T(\n" +
+                        "  %N,\n" +
+                        "  %T.listOf<%T>($N),\n" +
+                        "  %T.listOf(\n    " + asListParams + "\n  )\n" +
+                        ")\n",
+                org.web3j.abi.datatypes.Function.class,
+                funcConst,
+                java.util.Arrays.class,
+                org.web3j.abi.datatypes.Type.class,
+                inputParameters,
+                java.util.Arrays.class,
+                org.web3j.abi.TypeReference.class,
+                outputParameterTypes.toArray()
+        );
     }
+
 
     private void buildTupleResultContainer(
             FunSpec.Builder methodBuilder,
