@@ -38,10 +38,13 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import com.squareup.kotlinpoet.ClassNames;
 import com.squareup.kotlinpoet.FunSpec;
 //import com.squareup.javapoet.;
 
@@ -409,8 +412,7 @@ public class SolidityFunctionWrapper extends Generator {
 
     PropertySpec createBinaryDefinition(String binary) {
         if (binary.length() < 65534) {
-            return PropertySpec.builder( BINARY, String.class)
-                    .addModifiers(KModifier.PUBLIC, KModifier.FINAL, KModifier.FINAL)
+            return PropertySpec.builder( BINARY,  ClassName.bestGuess("kotlin.String"))
                     .initializer("$S", binary)
                     .build();
         }
@@ -1040,34 +1042,33 @@ public class SolidityFunctionWrapper extends Generator {
 
     private static FunSpec buildLoad(
             String className, Class authType, String authName, boolean withGasProvider) {
-        FunSpec.Builder toReturn =
-                FunSpec.builder("load")
-                        .addModifiers(KModifier.PUBLIC, KModifier.FINAL)
-                        .returns(TypeVariableName.get(className, Type.class))
-                        .addParameter( CONTRACT_ADDRESS, String.class)
-                        .addParameter( WEB3J, Web3j.class)
-                        .addParameter( authName, authType);
+        ClassName returnType = ClassName.bestGuess(className);
+
+        FunSpec.Builder toReturn = FunSpec.builder("load")
+                .returns(returnType)
+                .addParameter("contractAddress", ClassName.bestGuess("kotlin.String"))
+                .addParameter("web3j", ClassName.bestGuess("org.web3j.protocol.Web3j"))
+                .addParameter(authName, ClassName.bestGuess(Objects.requireNonNull(authType.getCanonicalName())));
 
         if (withGasProvider) {
-            toReturn.addParameter( CONTRACT_GAS_PROVIDER, ContractGasProvider.class)
-                    .addStatement(
-                            "return new $L($L, $L, $L, $L)",
-                            className,
-                            CONTRACT_ADDRESS,
-                            WEB3J,
+            toReturn.addParameter("contractGasProvider",
+                            ClassName.bestGuess("org.web3j.tx.gas.ContractGasProvider"))
+                    .addCode("return %T(%N, %N, %N, %N)\n",
+                            returnType,
+                            "contractAddress",
+                            "web3j",
                             authName,
-                            CONTRACT_GAS_PROVIDER);
+                            "contractGasProvider");
         } else {
-            toReturn.addParameter( GAS_PRICE, BigInteger.class)
-                    .addParameter( GAS_PRICE, BigInteger.class)
-                    .addStatement(
-                            "return new $L($L, $L, $L, $L, $L)",
-                            className,
-                            CONTRACT_ADDRESS,
-                            WEB3J,
+            toReturn.addParameter("gasPrice", ClassName.bestGuess("java.math.BigInteger"))
+                    .addParameter("gasLimit", ClassName.bestGuess("java.math.BigInteger"))
+                    .addCode("return %T(%N, %N, %N, %N, %N)\n",
+                            returnType,
+                            "contractAddress",
+                            "web3j",
                             authName,
-                            GAS_PRICE,
-                            GAS_LIMIT)
+                            "gasPrice",
+                            "gasLimit")
                     .addAnnotation(Deprecated.class);
         }
 
@@ -2134,35 +2135,32 @@ public class SolidityFunctionWrapper extends Generator {
             String functionName,
             String inputParameters,
             List<TypeName> outputParameterTypes,
-            boolean useUpperCase)
-            throws ClassNotFoundException {
+            boolean useUpperCase) {
 
-        List<Object> objects = new ArrayList<>();
-        objects.add(Function.class);
-        objects.add(Function.class);
-        objects.add(funcNameToConst(functionName, useUpperCase));
+        Object funcConst = funcNameToConst(functionName, useUpperCase);
+        String asListParams = Collection.join(
+                outputParameterTypes,
+                ", ",
+                typeName -> "object : %T<%T>() {}"
+        );
 
-        objects.add(Arrays.class);
-        objects.add(Type.class);
-        objects.add(inputParameters);
-
-        objects.add(Arrays.class);
-        objects.add(TypeReference.class);
-        for (TypeName outputParameterType : outputParameterTypes) {
-            objects.add(TypeReference.class);
-            objects.add(outputParameterType);
-        }
-
-        String asListParams =
-                Collection.join(outputParameterTypes, ", ", typeName -> "new $T<$T>() {}");
-
-        methodBuilder.addStatement(
-                "final $T function = new $T($N, \n$T.<$T>asList($L), \n$T"
-                        + ".<$T<?>>asList("
-                        + asListParams
-                        + "))",
-                objects.toArray());
+        methodBuilder.addCode(
+                "val function = %T(\n" +
+                        "  %N,\n" +
+                        "  %T.listOf<%T>($N),\n" +
+                        "  %T.listOf(\n    " + asListParams + "\n  )\n" +
+                        ")\n",
+                org.web3j.abi.datatypes.Function.class,
+                funcConst,
+                java.util.Arrays.class,
+                org.web3j.abi.datatypes.Type.class,
+                inputParameters,
+                java.util.Arrays.class,
+                org.web3j.abi.TypeReference.class,
+                outputParameterTypes.toArray()
+        );
     }
+
 
     private void buildTupleResultContainer(
             FunSpec.Builder methodBuilder,
