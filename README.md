@@ -33,7 +33,7 @@ Features
 --------
 
 -   Complete implementation of Ethereum's
-    [JSON-RPC](https://github.com/ethereum/wiki/wiki/JSON-RPC) client
+    [JSON-RPC](https://ethereum.org/en/developers/docs/apis/json-rpc/) client
     API over HTTP and IPC
 -   Ethereum wallet support
 -   Auto-generation of Java smart contract wrappers to create, deploy,
