@@ -363,6 +363,33 @@ public class TransactionDecoderTest {
         final Transaction4844 resultTransaction4844 = (Transaction4844) result.getTransaction();
 
         assertNotNull(result);
+        assertEquals(transaction4844.getChainId(), resultTransaction4844.getChainId());
+        assertEquals(transaction4844.getNonce(), resultTransaction4844.getNonce());
+        assertEquals(transaction4844.getMaxFeePerGas(), resultTransaction4844.getMaxFeePerGas());
+        assertEquals(
+                transaction4844.getMaxPriorityFeePerGas(),
+                resultTransaction4844.getMaxPriorityFeePerGas());
+        assertEquals(transaction4844.getGasLimit(), resultTransaction4844.getGasLimit());
+        assertEquals(transaction4844.getTo(), resultTransaction4844.getTo());
+        assertEquals(transaction4844.getValue(), resultTransaction4844.getValue());
+        assertEquals(transaction4844.getData(), resultTransaction4844.getData());
+    }
+
+    @Test
+    public void testDecoding4844WithBlobSidecar() {
+        final RawTransaction rawTransaction = createEip4844RawTransaction();
+        final Transaction4844 transaction4844 = (Transaction4844) rawTransaction.getTransaction();
+
+        final Sign.SignatureData fakeSignatureData =
+                new Sign.SignatureData(new byte[] {27}, new byte[] {0}, new byte[] {0});
+        final byte[] encodedMessage = TransactionEncoder.encode(rawTransaction, fakeSignatureData);
+        final String hexMessage = Numeric.toHexString(encodedMessage);
+
+        final RawTransaction result = TransactionDecoder.decode(hexMessage);
+        assertTrue(result.getTransaction() instanceof Transaction4844);
+        final Transaction4844 resultTransaction4844 = (Transaction4844) result.getTransaction();
+
+        assertNotNull(result);
         assertTrue(
                 range(0, transaction4844.getBlobs().get().size())
                         .allMatch(
