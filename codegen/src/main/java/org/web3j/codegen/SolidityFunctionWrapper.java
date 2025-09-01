@@ -1549,31 +1549,35 @@ public class SolidityFunctionWrapper extends Generator {
             FunSpec.Builder methodBuilder,
             List<TypeName> outputParameterTypes,
             String inputParams,
-            boolean useUpperCase)
-            throws ClassNotFoundException {
+            boolean useUpperCase) throws ClassNotFoundException {
 
         String functionName = functionDefinition.getName();
 
         if (outputParameterTypes.isEmpty()) {
-            methodBuilder.addStatement("throw RuntimeException(\"cannot call constant function with void return type\")");
-        } else if (outputParameterTypes.size() == 1) {
+            methodBuilder.addStatement("throw RuntimeException(%S)",
+                    "cannot call constant function with void return type");
+            return;
+        }
 
+        if (outputParameterTypes.size() == 1) {
             TypeName typeName = outputParameterTypes.get(0);
             TypeName nativeReturnTypeName;
+
             if (functionDefinition.getOutputs().get(0).getType().equals("tuple")) {
                 nativeReturnTypeName =
-                        structClassNameMap.get(
-                                functionDefinition.getOutputs().get(0).structIdentifier());
+                        structClassNameMap.get(functionDefinition.getOutputs().get(0).structIdentifier());
             } else if (functionDefinition.getOutputs().get(0).getType().startsWith("tuple")
                     && functionDefinition.getOutputs().get(0).getType().contains("[")) {
-                nativeReturnTypeName =LIST;
+                nativeReturnTypeName = LIST;
             } else if (useNativeJavaTypes) {
                 nativeReturnTypeName = getWrapperRawType(typeName);
             } else {
                 nativeReturnTypeName = getWrapperType(typeName);
             }
+
             methodBuilder.returns(buildRemoteFunctionCall(nativeReturnTypeName));
 
+            // build Function object
             methodBuilder.addStatement(
                     "val function = %T(%S, listOf<%T>($L), listOf(object : %T<%T>() {}))",
                     Function.class,
@@ -1584,11 +1588,9 @@ public class SolidityFunctionWrapper extends Generator {
                     typeName
             );
 
-
             if (useNativeJavaTypes) {
                 if (nativeReturnTypeName.equals(LIST)) {
-                    // We return list. So all the list elements should
-                    // also be converted to native types
+                    // we need to wrap in Callable
                     TypeName listType = ParameterizedTypeName.get(List.class, Type.class);
 
                     CodeBlock.Builder callCode = CodeBlock.builder();
@@ -1605,16 +1607,12 @@ public class SolidityFunctionWrapper extends Generator {
 
                     TypeSpec callableType =
                             TypeSpec.anonymousClassBuilder()
-                                    .addSuperinterface(callableInterface ,  CodeBlock.of(""))
+                                    .addSuperinterface(callableInterface, CodeBlock.of(""))
                                     .addFunction(
                                             FunSpec.builder("call")
                                                     .addAnnotation(
-                                                            AnnotationSpec.builder(
-                                                                            SuppressWarnings.class)
-                                                                    .addMember(
-                                                                            "value",
-                                                                            "$S",
-                                                                            "unchecked")
+                                                            AnnotationSpec.builder(SuppressWarnings.class)
+                                                                    .addMember("value", "$S", "unchecked")
                                                                     .build())
                                                     .addModifiers(KModifier.OVERRIDE)
                                                     .returns(nativeReturnTypeName)
@@ -1623,7 +1621,7 @@ public class SolidityFunctionWrapper extends Generator {
                                     .build();
 
                     methodBuilder.addStatement(
-                            "return $T(function,\n$L)",
+                            "return %T(function,\n%L)",
                             buildRemoteFunctionCall(nativeReturnTypeName),
                             callableType);
                 } else {
@@ -1634,26 +1632,27 @@ public class SolidityFunctionWrapper extends Generator {
             } else {
                 methodBuilder.addStatement("return executeRemoteCallSingleValueReturn(function)");
             }
+
         } else {
+            // Multiple return values -> Tuple
             final List<TypeName> returnTypes = new ArrayList<>();
             for (int i = 0; i < functionDefinition.getOutputs().size(); ++i) {
                 if (functionDefinition.getOutputs().get(i).getType().equals("tuple")) {
                     returnTypes.add(
-                            structClassNameMap.get(
-                                    functionDefinition.getOutputs().get(i).structIdentifier()));
+                            structClassNameMap.get(functionDefinition.getOutputs().get(i).structIdentifier()));
                 } else if (functionDefinition.getOutputs().get(i).getType().startsWith("tuple")
                         && functionDefinition.getOutputs().get(i).getType().contains("[")) {
-                    returnTypes.add(
-                            buildStructArrayTypeName(functionDefinition.getOutputs().get(i), true));
+                    returnTypes.add(buildStructArrayTypeName(functionDefinition.getOutputs().get(i), true));
                 } else {
                     returnTypes.add(getWrapperType(outputParameterTypes.get(i)));
                 }
             }
-
+            ClassName tupleClass = ClassName.Companion.bestGuess(
+                    "org.web3j.tuples.generated.Tuple" + returnTypes.size()
+            );
             ParameterizedTypeName parameterizedTupleType =
                     ParameterizedTypeName.get(
-                            new ClassName(
-                                    "org.web3j.tuples.generated", "Tuple" + returnTypes.size()),
+                            tupleClass,
                             returnTypes.toArray(new TypeName[0]));
 
             methodBuilder.returns(buildRemoteFunctionCall(parameterizedTupleType));
@@ -1664,6 +1663,7 @@ public class SolidityFunctionWrapper extends Generator {
             buildTupleResultContainer(methodBuilder, parameterizedTupleType, outputParameterTypes);
         }
     }
+
 
     private static ParameterizedTypeName buildRemoteCall(TypeName typeName) {
         return ParameterizedTypeName.get(ClassName.Companion.bestGuess("org.web3j.protocol.core.methods.response.RemoteCall"), typeName);
@@ -2227,31 +2227,26 @@ public class SolidityFunctionWrapper extends Generator {
             String eventName, List<NamedTypeName> parameterTypes) {
 
         List<Object> objects = new ArrayList<>();
-        objects.add(Event.class);
+        objects.add(ClassName.bestGuess("org.web3j.abi.datatypes.Event"));
         objects.add(eventName);
-
-        objects.add(Arrays.class);
-        objects.add(TypeReference.class);
-        for (NamedTypeName parameterType : parameterTypes) {
-            objects.add(TypeReference.class);
-            objects.add(parameterType.getTypeName());
-        }
+        objects.add(ClassName.bestGuess("kotlin.collections.listOf"));
+        objects.add(ClassName.bestGuess("org.web3j.abi.TypeReference"));
 
         String asListParams =
                 parameterTypes.stream()
                         .map(
                                 type -> {
                                     if (type.isIndexed()) {
-                                        return "new $T<$T>(true) {}";
+                                        return "object : %T<%T>(true) {}";
                                     } else {
-                                        return "new $T<$T>() {}";
+                                        return "object : %T<%T>() {}";
                                     }
                                 })
                         .collect(Collectors.joining(", "));
 
         return CodeBlock.builder()
                 .addStatement(
-                        "new $T($S, \n" + "$T.<$T<?>>asList(" + asListParams + "))",
+                        "%T(%S, %T<%T<*>>(" + asListParams + "))",
                         objects.toArray())
                 .build();
     }
