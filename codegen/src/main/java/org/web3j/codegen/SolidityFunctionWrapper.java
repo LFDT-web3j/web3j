@@ -1095,7 +1095,7 @@ public class SolidityFunctionWrapper extends Generator {
                     !isValidJavaIdentifier(inputParameterTypes.get(i).getName())
                             ? "_" + inputParameterTypes.get(i).getName()
                             : inputParameterTypes.get(i).getName();
-            nativeInputParameterTypes.add(ParameterSpec.builder(paramName,typeName).build());
+            nativeInputParameterTypes.add(ParameterSpec.builder(paramName, typeName).build());
         }
 
         methodBuilder.addParameters(nativeInputParameterTypes);
@@ -1104,12 +1104,17 @@ public class SolidityFunctionWrapper extends Generator {
             return Collection.join(
                     inputParameterTypes,
                     ", \n",
-                    // this results in fully qualified names being generated
-                    this::createMappedParameterTypes);
+                    p -> createMappedParameterTypes(p).toString()
+            );
         } else {
-            return Collection.join(inputParameterTypes, ", ", parameterSpec -> parameterSpec.getName());
+            return Collection.join(
+                    inputParameterTypes,
+                    ", ",
+                    ParameterSpec::getName
+            );
         }
     }
+
 
     private TypeName getTypenameForArray(
             AbiDefinition.NamedType namedType, boolean useJavaPrimitiveTypes)
@@ -1125,90 +1130,81 @@ public class SolidityFunctionWrapper extends Generator {
         return typeName;
     }
 
-    private String createMappedParameterTypes(ParameterSpec parameterSpec) {
-        if (parameterSpec.getType() instanceof ParameterizedTypeName) {
-            List<TypeName> typeNames = ((ParameterizedTypeName) parameterSpec.getType()).getTypeArguments();
-            if (typeNames.size() != 1) {
-                throw new UnsupportedOperationException(
-                        "Only a single parameterized type is supported");
-            } else if (structClassNameMap.values().stream()
-                    .map(ClassName::getSimpleName)
-                    .anyMatch(
-                            name ->
-                                    name.equals(
-                                            ((ClassName)
-                                                            ((ParameterizedTypeName)
-                                                                            parameterSpec.getType())
-                                                                    .getTypeArguments().get(0))
-                                                    .getSimpleName()))) {
-                String structName =
-                        structClassNameMap.values().stream()
-                                .map(ClassName::getSimpleName)
-                                .filter(
-                                        name ->
-                                                name.equals(
-                                                        ((ClassName)
-                                                                        ((ParameterizedTypeName)
-                                                                                        parameterSpec
-                                                                                                .getType())
-                                                                                .getTypeArguments().get(
-                                                                                        0))
-                                                                .getSimpleName()))
-                                .collect(Collectors.toList())
-                                .get(0);
-                return "new "
-                        + parameterSpec.getName()
-                        + "("
-                        + structName
-                        + ".class, "
-                        + parameterSpec.getName()
-                        + ")";
-            } else {
-                String parameterSpecType = parameterSpec.getType().toString();
-                TypeName typeName = typeNames.get(0);
-                String typeMapInput = typeName + ".class";
-                String componentType = typeName.toString();
-                if (typeName instanceof ParameterizedTypeName) {
-                    List<TypeName> typeArguments = ((ParameterizedTypeName) typeName).getTypeArguments();
-                    if (typeArguments.size() != 1) {
-                        throw new UnsupportedOperationException(
-                                "Only a single parameterized type is supported");
-                    }
-                    TypeName innerTypeName = typeArguments.get(0);
-                    componentType = ((ParameterizedTypeName) typeName).getRawType().toString();
-                    parameterSpecType =
-                            ((ParameterizedTypeName) parameterSpec.getType()).getRawType()
-                                    + "<"
-                                    + componentType
-                                    + ">";
-                    typeMapInput = componentType + ".class,\n" + innerTypeName + ".class";
-                }
-                return "new "
-                        + parameterSpecType
-                        + "(\n"
-                        + "        "
-                        + componentType
-                        + ".class,\n"
-                        + "        org.web3j.abi.Utils.typeMap("
-                        + parameterSpec.getName()
-                        + ", "
-                        + typeMapInput
-                        + "))";
-            }
-        } else if (structClassNameMap.values().stream()
-                .map(ClassName::getSimpleName)
-                .noneMatch(name -> name.equals(parameterSpec.getType().toString()))) {
-            String constructor = "new " + parameterSpec.getType() + "(";
-            if (Address.class.getCanonicalName().equals(parameterSpec.getType().toString())
-                    && addressLength != Address.DEFAULT_LENGTH) {
+    private CodeBlock createMappedParameterTypes(ParameterSpec parameterSpec) {
+        TypeName type = parameterSpec.getType();
 
-                constructor += (addressLength * java.lang.Byte.SIZE) + ", ";
+        if (type instanceof ParameterizedTypeName) {
+            List<TypeName> typeNames = ((ParameterizedTypeName) type).getTypeArguments();
+            if (typeNames.size() != 1) {
+                throw new UnsupportedOperationException("Only a single parameterized type is supported");
             }
-            return constructor + parameterSpec.getName() + ")";
-        } else {
-            return parameterSpec.getName();
+
+            TypeName innerType = typeNames.get(0);
+
+            boolean isStruct = structClassNameMap.values().stream()
+                    .map(ClassName::getSimpleName)
+                    .anyMatch(name -> name.equals(((ClassName) innerType).getSimpleName()));
+
+            if (isStruct) {
+                String structName = structClassNameMap.values().stream()
+                        .map(ClassName::getSimpleName)
+                        .filter(name -> name.equals(((ClassName) innerType).getSimpleName()))
+                        .findFirst()
+                        .orElseThrow();
+
+                return CodeBlock.of(
+                        "·%L(%L::class.java, %L)",
+                        parameterSpec.getName(),
+                        structName,
+                        parameterSpec.getName()
+                );
+            }
+
+            String parameterSpecType = type.toString();
+            String typeMapInput = innerType + ".class";
+            String componentType = innerType.toString();
+
+            if (innerType instanceof ParameterizedTypeName) {
+                List<TypeName> typeArguments = ((ParameterizedTypeName) innerType).getTypeArguments();
+                if (typeArguments.size() != 1) {
+                    throw new UnsupportedOperationException("Only a single parameterized type is supported");
+                }
+                TypeName nested = typeArguments.get(0);
+
+                componentType = ((ParameterizedTypeName) innerType).getRawType().toString();
+                parameterSpecType = ((ParameterizedTypeName) type).getRawType() + "<" + componentType + ">";
+                typeMapInput = componentType + ".class, " + nested + ".class";
+            }
+
+            return CodeBlock.of(
+                    "·%L(\n·  %L::class.java,\n·  org.web3j.abi.Utils.typeMap(%L, %L))",
+                    parameterSpecType,
+                    componentType,
+                    parameterSpec.getName(),
+                    typeMapInput
+            );
         }
+
+        boolean isStruct = structClassNameMap.values().stream()
+                .map(ClassName::getSimpleName)
+                .noneMatch(name -> name.equals(type.toString()));
+
+        if (isStruct) {
+            CodeBlock.Builder builder = CodeBlock.builder()
+                    .add("·%T(", type);
+
+            if (type.toString().equals(Address.class.getCanonicalName())
+                    && addressLength != Address.DEFAULT_LENGTH) {
+                builder.add("%L, ", (addressLength * java.lang.Byte.SIZE));
+            }
+
+            builder.add("%L)", parameterSpec.getName());
+            return builder.build();
+        }
+
+        return CodeBlock.of("%L", parameterSpec.getName());
     }
+
 
     private TypeName getWrapperType(TypeName typeName) {
         if (useNativeJavaTypes) {
@@ -1327,7 +1323,7 @@ public class SolidityFunctionWrapper extends Generator {
             if (type.equals("tuple")) {
                 result.add(
                         ParameterSpec.builder(
-                                         name, structClassNameMap.get(namedType.structIdentifier()))
+                                         name, Objects.requireNonNull(structClassNameMap.get(namedType.structIdentifier())))
                                 .build());
             } else if (type.startsWith("tuple") && type.contains("[")) {
                 result.add(
@@ -1349,7 +1345,7 @@ public class SolidityFunctionWrapper extends Generator {
      * @return non-empty parameter name
      */
     static String createValidParamName(String name, int idx) {
-        if (name == null || name.equals("")) {
+        if (name == null || name.isEmpty()) {
             return "param" + idx;
         } else {
             if (!isValidJavaIdentifier(name)) {
@@ -1411,13 +1407,13 @@ public class SolidityFunctionWrapper extends Generator {
         String structName;
         if (namedType.getInternalType().isEmpty()) {
             structName =
-                    structClassNameMap
-                            .get(
-                                    structsNamedTypeList.stream()
-                                            .filter(struct -> isSameStruct(namedType, struct))
-                                            .collect(Collectors.toList())
-                                            .get(0)
-                                            .structIdentifier())
+                    Objects.requireNonNull(structClassNameMap
+                                    .get(
+                                            structsNamedTypeList.stream()
+                                                    .filter(struct -> isSameStruct(namedType, struct))
+                                                    .toList()
+                                                    .get(0)
+                                                    .structIdentifier()))
                             .getSimpleName();
 
         } else {
