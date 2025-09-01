@@ -314,8 +314,8 @@ public class SolidityFunctionWrapper extends Generator {
      */
     private boolean isSameStruct(NamedType base, NamedType target) {
         for (NamedType baseField : base.getComponents()) {
-            if (!target.getComponents().stream()
-                    .anyMatch(
+            if (target.getComponents().stream()
+                    .noneMatch(
                             targetField ->
                                     baseField.getType().equals(targetField.getType())
                                             && baseField.getName().equals(targetField.getName())))
@@ -714,19 +714,17 @@ public class SolidityFunctionWrapper extends Generator {
     }
 
     private static FunSpec buildGetDeploymentBinaryMethod() {
-        FunSpec.Builder toReturn =
-                FunSpec.builder("getDeploymentBinary")
-                        .addModifiers(KModifier.PRIVATE, KModifier.FINAL)
-                        .returns(STRING);
+        FunSpec.Builder toReturn = FunSpec.builder("getDeploymentBinary")
+                .addModifiers(KModifier.PRIVATE, KModifier.FINAL)
+                .returns(STRING);
 
-        CodeBlock codeBlock =
-                CodeBlock.builder()
-                        .beginControlFlow("if ($L != null)", LIBRARIES_LINKED_BINARY)
-                        .addStatement("return $L", LIBRARIES_LINKED_BINARY)
-                        .nextControlFlow("else")
-                        .addStatement("return $L", BINARY)
-                        .endControlFlow()
-                        .build();
+        CodeBlock codeBlock = CodeBlock.builder()
+                .beginControlFlow("if (%L != null)", "LIBRARIES_LINKED_BINARY")
+                .addStatement("return %L", "LIBRARIES_LINKED_BINARY")
+                .nextControlFlow("else")
+                .addStatement("return %L", "BINARY")
+                .endControlFlow()
+                .build();
 
         toReturn.addCode(codeBlock);
 
