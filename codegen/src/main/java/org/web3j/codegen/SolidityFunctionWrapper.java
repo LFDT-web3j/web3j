@@ -971,44 +971,50 @@ public class SolidityFunctionWrapper extends Generator {
             String authName,
             boolean isPayable,
             boolean withGasProvider) {
+
         if (isPayable && !withGasProvider) {
             methodBuilder.addStatement(
-                    "return deployRemoteCall($L.class, $L, $L, $L, $L, getDeploymentBinary(), \"\", $L)",
-                    className,
+                    "return deployRemoteCall($T.class, $L, $L, $L, $L, getDeploymentBinary(), \"\", $L)",
+                    ClassName.bestGuess(className),
                     WEB3J,
                     authName,
                     GAS_PRICE,
                     GAS_LIMIT,
-                    INITIAL_VALUE);
+                    INITIAL_VALUE
+            );
             methodBuilder.addAnnotation(Deprecated.class);
         } else if (isPayable && withGasProvider) {
             methodBuilder.addStatement(
-                    "return deployRemoteCall($L.class, $L, $L, $L, getDeploymentBinary(), \"\", $L)",
-                    className,
+                    "return deployRemoteCall($T.class, $L, $L, $L, getDeploymentBinary(), \"\", $L)",
+                    ClassName.bestGuess(className),
                     WEB3J,
                     authName,
                     CONTRACT_GAS_PROVIDER,
-                    INITIAL_VALUE);
+                    INITIAL_VALUE
+            );
         } else if (!isPayable && !withGasProvider) {
             methodBuilder.addStatement(
-                    "return deployRemoteCall($L.class, $L, $L, $L, $L, getDeploymentBinary(), \"\")",
-                    className,
+                    "return deployRemoteCall($T.class, $L, $L, $L, $L, getDeploymentBinary(), \"\")",
+                    ClassName.bestGuess(className),
                     WEB3J,
                     authName,
                     GAS_PRICE,
-                    GAS_LIMIT);
+                    GAS_LIMIT
+            );
             methodBuilder.addAnnotation(Deprecated.class);
         } else {
             methodBuilder.addStatement(
-                    "return deployRemoteCall($L.class, $L, $L, $L, getDeploymentBinary(), \"\")",
-                    className,
+                    "return deployRemoteCall($T.class, $L, $L, $L, getDeploymentBinary(), \"\")",
+                    ClassName.bestGuess(className),
                     WEB3J,
                     authName,
-                    CONTRACT_GAS_PROVIDER);
+                    CONTRACT_GAS_PROVIDER
+            );
         }
 
         return methodBuilder.build();
     }
+
 
     private static FunSpec.Builder getDeployFunSpec(
             String className,
