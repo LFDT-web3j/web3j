@@ -18,6 +18,7 @@ import java.util.List;
 
 
 import com.squareup.kotlinpoet.ClassName;
+import com.squareup.kotlinpoet.CodeBlock;
 import com.squareup.kotlinpoet.KModifier;
 import com.squareup.kotlinpoet.PropertySpec;
 import com.squareup.kotlinpoet.FunSpec;
@@ -59,10 +60,10 @@ public class TupleGenerator extends Generator {
     private TypeSpec createTuple(int size) {
         String javadoc = "@deprecated use 'component$L' method instead \n @return returns a value";
         String className = CLASS_NAME + size;
-        TypeName tupleTypeName = new ClassName(String.valueOf(Tuple.class));
+        TypeName tupleTypeName = ClassName.Companion.bestGuess("org.web3j.tuples.Tuple");
         TypeSpec.Builder typeSpecBuilder =
                 TypeSpec.classBuilder(className)
-                        .addSuperinterface(tupleTypeName, String.valueOf(TypeVariableName.get("T")))
+                        .addSuperinterface(tupleTypeName, CodeBlock.of("%T", TypeVariableName.get("T")))
                         .addProperty(
                                 PropertySpec.builder( SIZE, int.class)
                                         .addModifiers(

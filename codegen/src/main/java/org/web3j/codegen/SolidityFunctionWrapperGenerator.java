@@ -151,6 +151,10 @@ public class SolidityFunctionWrapperGenerator extends FunctionWrapperGenerator {
     }
 
     public final void generate() throws IOException, ClassNotFoundException {
+        generate(false);
+    }
+
+    public final void generate(boolean generateKotlin) throws IOException, ClassNotFoundException {
         String binary = Contract.BIN_NOT_PROVIDED;
         if (binFile != null) {
             byte[] bytes = Files.readBytes(binFile);
@@ -163,20 +167,32 @@ public class SolidityFunctionWrapperGenerator extends FunctionWrapperGenerator {
             String className = Strings.capitaliseFirstLetter(contractName);
             System.out.print("Generating " + basePackageName + "." + className + " ... ");
 
-            new SolidityFunctionWrapper(
-                            useJavaNativeTypes,
-                            useJavaPrimitiveTypes,
-                            generateBothCallAndSend,
-                            abiFuncs,
-                            addressLength)
-                    .generateJavaFiles(
-                            contractClass,
-                            contractName,
-                            binary,
-                            functionDefinitions,
-                            destinationDirLocation.toString(),
-                            basePackageName,
-                            null);
+            SolidityFunctionWrapper wrapper = new SolidityFunctionWrapper(
+                    useJavaNativeTypes,
+                    useJavaPrimitiveTypes,
+                    generateBothCallAndSend,
+                    abiFuncs,
+                    addressLength);
+
+            if (generateKotlin) {
+                wrapper.generateKotlinFiles(
+                        contractClass,
+                        contractName,
+                        binary,
+                        functionDefinitions,
+                        destinationDirLocation.toString(),
+                        basePackageName,
+                        null);
+            } else {
+                wrapper.generateJavaFiles(
+                        contractClass,
+                        contractName,
+                        binary,
+                        functionDefinitions,
+                        destinationDirLocation.toString(),
+                        basePackageName,
+                        null);
+            }
 
             System.out.println("File written to " + destinationDirLocation.toString() + "\n");
         } else {
@@ -271,6 +287,12 @@ public class SolidityFunctionWrapperGenerator extends FunctionWrapperGenerator {
                 required = false)
         private boolean abiFuncs = false;
 
+        @Option(
+                names = {"-kt", "--kotlin"},
+                description = "generate Kotlin code instead of Java.",
+                required = false)
+        private boolean generateKotlin = false;
+
         @Override
         public void run() {
             try {
@@ -294,7 +316,7 @@ public class SolidityFunctionWrapperGenerator extends FunctionWrapperGenerator {
                                 Contract.class,
                                 addressLength,
                                 abiFuncs)
-                        .generate();
+                        .generate(generateKotlin);
             } catch (Exception e) {
                 exitError(e);
             }
