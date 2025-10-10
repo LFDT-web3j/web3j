@@ -180,7 +180,7 @@ public class SolidityFunctionWrapperGenerator extends FunctionWrapperGenerator {
 
             System.out.println("File written to " + destinationDirLocation.toString() + "\n");
         } else {
-            System.out.println("Ignoring empty ABI file: " + abiFile.getName() + ".abi" + "\n");
+            System.out.println("Ignoring empty ABI file: " + abiFile.getName() + "\n");
         }
     }
 
