@@ -41,7 +41,6 @@ description 'web3j project code generators'
 dependencies {
     implementation project(':core')
     implementation "com.squareup:kotlinpoet:$kotlinPoetVersion"
-    implementation "com.squareup:javapoet:$javaPoetVersion"
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'javax.annotation:javax.annotation-api:1.3.2'
     annotationProcessor "com.google.auto.service:auto-service:1.0-rc7"
