@@ -53,7 +53,7 @@ public class JavaClassGenerator implements UnitClassGenerator {
         AnnotationSpec.Builder annotationSpec = AnnotationSpec.builder(EVM_ANNOTATION);
         if (JavaVersion.getJavaVersionAsDouble() < 11) {
             ClassName GethContainer = ClassName.get("org.web3j", "NodeType");
-            annotationSpec.addMember("value", "type = $T.GETH", GethContainer);
+            annotationSpec.addMember("value", "type = %T.GETH", GethContainer);
         }
         TypeSpec testClass =
                 TypeSpec.classBuilder(theContract.getSimpleName() + "Test")
