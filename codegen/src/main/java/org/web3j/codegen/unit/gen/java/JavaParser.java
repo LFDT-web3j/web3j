@@ -25,7 +25,7 @@ import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import static org.web3j.codegen.unit.gen.utils.NameUtils.toCamelCase;
 
 /*
- * Class that provides parsing utility between Unit Generation and JavaPoet.
+ * Class that provides parsing utility between Unit Generation and poet generators.
  */
 public class JavaParser extends Parser {
 
@@ -33,17 +33,17 @@ public class JavaParser extends Parser {
         super(theContract, method, mappingHelper);
     }
 
-    public String generateAssertionJavaPoetStringTypes() {
+    public String generateAssertionPoetStringTypes() {
         Type returnType = getMethodReturnType();
         Object[] body = generatePlaceholderValues();
         StringBuilder symbolBuilder = new StringBuilder();
-        symbolBuilder.append("$T.");
+        symbolBuilder.append("%T.");
         if (returnType.equals(TransactionReceipt.class)) {
-            symbolBuilder.append("assertTrue($L.isStatusOK())");
+            symbolBuilder.append("assertTrue(%L.isStatusOK())");
         } else {
             symbolBuilder.append("assertEquals(");
             if (returnType.getTypeName().contains("Tuple")) {
-                symbolBuilder.append("new $T(");
+                symbolBuilder.append("new %T(");
                 for (Type t : getTypeArray(returnType)) {
                     symbolBuilder.append(mappingHelper.getPoetFormat().get(t)).append(", ");
                 }
@@ -53,7 +53,7 @@ public class JavaParser extends Parser {
                 symbolBuilder.append(mappingHelper.getPoetFormat().get(body[0]));
             }
             symbolBuilder.append(", ");
-            symbolBuilder.append("$L");
+            symbolBuilder.append("%L");
             symbolBuilder.append(")");
         }
 
@@ -64,9 +64,9 @@ public class JavaParser extends Parser {
     public String generatePoetStringTypes() {
         StringBuilder symbolBuilder = new StringBuilder();
         if (getMethodReturnType().equals(theContract)) {
-            symbolBuilder.append("$L = $T.");
+            symbolBuilder.append("%L = %T.");
         } else {
-            symbolBuilder.append("$T $L = $L.");
+            symbolBuilder.append("%T %L = %L.");
         }
         symbolBuilder
                 .append(method.getName())
@@ -89,11 +89,11 @@ public class JavaParser extends Parser {
     @Override
     protected String getPoetFormatSpecifier() {
         List<String> generated = new ArrayList<>();
-        Arrays.asList(method.getParameterTypes())
-                .forEach(
-                        type ->
-                                generated.add(
-                                        mappingHelper.getPoetFormat().getOrDefault(type, "$L")));
+    Arrays.asList(method.getParameterTypes())
+        .forEach(
+            type ->
+                generated.add(
+                    mappingHelper.getPoetFormat().getOrDefault(type, "%L")));
         return String.join(", ", generated);
     }
 }
