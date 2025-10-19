@@ -17,7 +17,6 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
-import com.squareup.javapoet.ArrayTypeName;
 import com.squareup.kotlinpoet.ClassName;
 import com.squareup.kotlinpoet.PropertySpec;
 import com.squareup.kotlinpoet.FunSpec;
@@ -74,7 +73,7 @@ public class AbiTypesGenerator extends Generator {
                     FunSpec.constructorBuilder()
                             .addModifiers(KModifier.PUBLIC)
                             .addParameter("value",BigInteger.class)
-                            .addStatement("super($L, $N)", bitSize, "value")
+                            .addStatement("super(%L, %N)", bitSize, "value")
                             .build();
 
             FunSpec overideConstructorSpec =
@@ -90,7 +89,7 @@ public class AbiTypesGenerator extends Generator {
                                     KModifier.PUBLIC,
                                     KModifier.FINAL,
                                     KModifier.FINAL)
-                            .initializer("new $T(BigInteger.ZERO)", className)
+                            .initializer("new %T(BigInteger.ZERO)", className)
                             .build();
 
             TypeSpec intType =
@@ -122,7 +121,7 @@ public class AbiTypesGenerator extends Generator {
                         FunSpec.constructorBuilder()
                                 .addModifiers(KModifier.PUBLIC)
                                 .addParameter("value", BigInteger.class)
-                                .addStatement("super($L, $L, $N)", mBitSize, nBitSize, "value")
+                                .addStatement("super(%L, %L, %N)", mBitSize, nBitSize, "value")
                                 .build();
 
                 FunSpec constructorSpec2 =
@@ -132,7 +131,7 @@ public class AbiTypesGenerator extends Generator {
                                 .addParameter("nBitSize", int.class)
                                 .addParameter("m", BigInteger.class)
                                 .addParameter("n", BigInteger.class)
-                                .addStatement("super($L, $L, $N, $N)", mBitSize, nBitSize, "m", "n")
+                                .addStatement("super(%L, %L, %N, %N)", mBitSize, nBitSize, "m", "n")
                                 .build();
 
                 className =
@@ -146,7 +145,7 @@ public class AbiTypesGenerator extends Generator {
                                         KModifier.PUBLIC,
                                         KModifier.FINAL,
                                         KModifier.FINAL)
-                                .initializer("new $T(BigInteger.ZERO)", className)
+                                .initializer("new %T(BigInteger.ZERO)", className)
                                 .build();
 
                 TypeSpec fixedType =
@@ -173,7 +172,7 @@ public class AbiTypesGenerator extends Generator {
                     FunSpec.constructorBuilder()
                             .addModifiers(KModifier.PUBLIC)
                             .addParameter("value",byte[].class)
-                            .addStatement("super($L, $N)", byteSize, "value")
+                            .addStatement("super(%L, %N)", byteSize, "value")
                             .build();
 
             className = new ClassName(packageName, Bytes.class.getSimpleName() + byteSize);
@@ -184,7 +183,7 @@ public class AbiTypesGenerator extends Generator {
                                     KModifier.PUBLIC,
                                     KModifier.FINAL,
                                     KModifier.FINAL)
-                            .initializer("new $T(new byte[$L])", className, byteSize)
+                            .initializer("new %T(new byte[%L])", className, byteSize)
                             .build();
 
             TypeSpec bytesType =
@@ -215,7 +214,7 @@ public class AbiTypesGenerator extends Generator {
                                     ParameterizedTypeName.get(
                                             new ClassName("java.util", "List"), typeVariableName).getClass()
                                     )
-                            .addStatement("super($L, $N)", length, "values")
+                            .addStatement("super(%L, %N)", length, "values")
                             .build();
 
             FunSpec oldArrayOverloadConstructorSpec =
@@ -223,8 +222,9 @@ public class AbiTypesGenerator extends Generator {
                             .addAnnotation(Deprecated.class)
                             .addAnnotation(SafeVarargs.class)
                             .addModifiers(KModifier.PUBLIC)
-                            .addParameter( "values", ArrayTypeName.of(typeVariableName.getClass()).getClass())
-                            .addStatement("super($L, $N)", length, "values")
+                            // Use Object[] as the runtime type for varargs; actual generic info is erased at runtime
+                            .addParameter("values", Object[].class)
+                                    .addStatement("super(%L, %N)", length, "values")
                             .build();
 
             FunSpec constructorSpec =
@@ -238,7 +238,7 @@ public class AbiTypesGenerator extends Generator {
                                     ParameterizedTypeName.get(
                                             new ClassName("java.util", "List"), typeVariableName)
                                     )
-                            .addStatement("super(type, $L, values)", length)
+                            .addStatement("super(type, %L, values)", length)
                             .build();
 
             FunSpec arrayOverloadConstructorSpec =
@@ -249,8 +249,9 @@ public class AbiTypesGenerator extends Generator {
                                     ParameterizedTypeName.get(
                                             new ClassName("java.lang", "Class"), typeVariableName)
                                     )
-                            .addParameter("values", ArrayTypeName.of(typeVariableName.getClass()).getClass())
-                            .addStatement("super(type, $L, values)", length)
+                            // Use Object[] for varargs parameter at runtime
+                            .addParameter("values", Object[].class)
+                            .addStatement("super(type, %L, values)", length)
                             .build();
 
             className = new ClassName(packageName, StaticArray.class.getSimpleName() + length);

@@ -17,12 +17,20 @@ import com.squareup.kotlinpoet.TypeSpec
 import java.io.File
 import java.io.IOException
 
-/** Common code generator methods. */
+/** Common code generator methods for Kotlin code generation. */
 open class Generator {
 
     @Throws(IOException::class)
     fun write(packageName: String, typeSpec: TypeSpec, destinationDir: String) {
-        val kotlinFile = FileSpec.builder(packageName, typeSpec.name!!)
+        val typeName = typeSpec.name
+            ?: throw IllegalArgumentException("TypeSpec provided to write() has no name. This is likely a bug in the generator - ensure all TypeSpec.classBuilder(...) calls supply a non-empty name.")
+
+        if (typeName.isEmpty()) {
+            throw IllegalArgumentException("TypeSpec provided to write() has an empty name. This is likely a bug in the generator.")
+        }
+
+        val kotlinFile = FileSpec.builder(packageName, typeName)
+            .addType(typeSpec)
             .indent("    ")
             .build()
 
@@ -39,4 +47,3 @@ open class Generator {
         }
     }
 }
-

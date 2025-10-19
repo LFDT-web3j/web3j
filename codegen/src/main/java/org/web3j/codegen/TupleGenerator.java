@@ -18,6 +18,7 @@ import java.util.List;
 
 
 import com.squareup.kotlinpoet.ClassName;
+import com.squareup.kotlinpoet.CodeBlock;
 import com.squareup.kotlinpoet.KModifier;
 import com.squareup.kotlinpoet.PropertySpec;
 import com.squareup.kotlinpoet.FunSpec;
@@ -57,17 +58,17 @@ public class TupleGenerator extends Generator {
     }
 
     private TypeSpec createTuple(int size) {
-        String javadoc = "@deprecated use 'component$L' method instead \n @return returns a value";
+        String javadoc = "@deprecated use 'component%L' method instead \n @return returns a value";
         String className = CLASS_NAME + size;
-        TypeName tupleTypeName = new ClassName(String.valueOf(Tuple.class));
+        TypeName tupleTypeName = ClassName.Companion.bestGuess("org.web3j.tuples.Tuple");
         TypeSpec.Builder typeSpecBuilder =
                 TypeSpec.classBuilder(className)
-                        .addSuperinterface(tupleTypeName, String.valueOf(TypeVariableName.get("T")))
+                        .addSuperinterface(tupleTypeName, CodeBlock.of("%T", TypeVariableName.get("T")))
                         .addProperty(
                                 PropertySpec.builder( SIZE, int.class)
                                         .addModifiers(
                                                 KModifier.PRIVATE, KModifier.FINAL, KModifier.FINAL)
-                                        .initializer("$L", size)
+                                        .initializer("%L", size)
                                         .build());
 
         FunSpec.Builder constructorBuilder =
@@ -83,16 +84,16 @@ public class TupleGenerator extends Generator {
                     .addTypeVariable(typeVariableName)
                     .addProperty( value, typeVariableName, KModifier.PRIVATE, KModifier.FINAL);
 
-            constructorBuilder
+                    constructorBuilder
                     .addParameter(value,typeVariableName)
-                    .addStatement("this.$N = $N", value, value);
+                            .addStatement("this.%N = %N", value, value);
 
             FunSpec getterSpec =
                     FunSpec.builder("get" + Strings.capitaliseFirstLetter(value))
                             .addAnnotation(Deprecated.class)
                             .addModifiers(KModifier.PUBLIC)
                             .returns(typeVariableName)
-                            .addStatement("return $N", value)
+                            .addStatement("return %N", value)
                             .build();
             methodSpecs.add(getterSpec);
 
@@ -100,7 +101,7 @@ public class TupleGenerator extends Generator {
                     FunSpec.builder("component" + i)
                             .addModifiers(KModifier.PUBLIC)
                             .returns(typeVariableName)
-                            .addStatement("return $N", value)
+                            .addStatement("return %N", value)
                             .build();
             methodSpecs.add(getterSpec2);
         }
@@ -127,7 +128,7 @@ public class TupleGenerator extends Generator {
                 .addAnnotation(Override.class)
                 .addModifiers(KModifier.PUBLIC)
                 .returns(int.class)
-                .addStatement("return $L", SIZE)
+                .addStatement("return %L", SIZE)
                 .build();
     }
 
@@ -151,14 +152,14 @@ public class TupleGenerator extends Generator {
 
         String name = "tuple" + size;
         equalsSpecBuilder.addStatement(
-                "$L $L = ($L) o", wildcardClassName, name, wildcardClassName);
+                "%L %L = (%L) o", wildcardClassName, name, wildcardClassName);
 
         for (int i = 1; i < size; i++) {
             String value = VALUE + i;
 
             equalsSpecBuilder
                     .beginControlFlow(
-                            "if ($L != null ? !$L.equals($L.$L) : $L.$L != null)",
+                            "if (%L != null ? !%L.equals(%L.%L) : %L.%L != null)",
                             value,
                             value,
                             name,
@@ -171,7 +172,7 @@ public class TupleGenerator extends Generator {
 
         String lastValue = VALUE + size;
         equalsSpecBuilder.addStatement(
-                "return $L != null ? $L.equals($L.$L) : $L.$L == null",
+                "return %L != null ? %L.equals(%L.%L) : %L.%L == null",
                 lastValue,
                 lastValue,
                 name,
@@ -188,19 +189,19 @@ public class TupleGenerator extends Generator {
                         .addAnnotation(Override.class)
                         .addModifiers(KModifier.PUBLIC)
                         .returns(int.class)
-                        .addStatement("int $L = $L.hashCode()", RESULT, VALUE + 1);
+                        .addStatement("int %L = %L.hashCode()", RESULT, VALUE + 1);
 
         for (int i = 2; i <= size; i++) {
             String value = "value" + i;
             hashCodeSpec.addStatement(
-                    "$L = 31 * $L + ($L != null ? $L.hashCode() : 0)",
+                    "%L = 31 * %L + (%L != null ? %L.hashCode() : 0)",
                     RESULT,
                     RESULT,
                     value,
                     value);
         }
 
-        hashCodeSpec.addStatement("return $L", RESULT);
+        hashCodeSpec.addStatement("return %L", RESULT);
 
         return hashCodeSpec.build();
     }
