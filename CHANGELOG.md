@@ -7,7 +7,8 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
-* 
+* fix NPE when encoding transaction with null data
+*
 
 ### Features
 
