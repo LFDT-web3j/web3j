@@ -14,6 +14,7 @@ package org.web3j.crypto;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -29,6 +30,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.web3j.crypto.exception.CipherException;
 import org.web3j.utils.Numeric;
 
+import static java.nio.file.Files.*;
 import static org.web3j.crypto.Hash.sha256;
 import static org.web3j.crypto.Keys.ADDRESS_LENGTH_IN_HEX;
 import static org.web3j.crypto.Keys.PRIVATE_KEY_LENGTH_IN_HEX;
@@ -159,6 +161,13 @@ public class WalletUtils {
     }
 
     public static Credentials loadCredentials(String password, File source)
+            throws IOException, CipherException {
+        try (InputStream inputStream = newInputStream(source.toPath())) {
+            return loadCredentials(password, inputStream);
+        }
+    }
+
+    public static Credentials loadCredentials(String password, InputStream source)
             throws IOException, CipherException {
         WalletFile walletFile = objectMapper.readValue(source, WalletFile.class);
         return Credentials.create(Wallet.decrypt(password, walletFile));

@@ -13,6 +13,7 @@
 package org.web3j.crypto;
 
 import java.io.File;
+import java.io.InputStream;
 import java.nio.file.Files;
 
 import org.junit.jupiter.api.AfterEach;
@@ -129,6 +130,20 @@ class WalletUtilsTest {
                                         .getFile()));
 
         assertEquals(credentials, (CREDENTIALS));
+    }
+
+    @Test
+    void testLoadCredentialsFromInputStream() throws Exception {
+        try (InputStream walletStream = WalletUtilsTest.class
+                .getResourceAsStream(
+                        "/keyfiles/"
+                                + "UTC--2016-11-03T05-55-06."
+                                + "340672473Z--ef678007d18427e6022059dbc264f27507cd1ffc")
+        ) {
+            Credentials credentials = WalletUtils.loadCredentials(PASSWORD, walletStream);
+            assertEquals(credentials, (CREDENTIALS));
+        }
+
     }
 
     @Test
