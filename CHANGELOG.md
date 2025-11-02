@@ -7,7 +7,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
-* 
+* Expose WalletUtils.loadCredentials(String, InputStream) method [#2241](
 
 ### Features
 
