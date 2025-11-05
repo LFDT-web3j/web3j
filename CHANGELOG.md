@@ -7,7 +7,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
-* fix NPE when encoding transaction with null data
+* fix NPE when encoding transaction with null data [#2237](https://github.com/LFDT-web3j/web3j/pull/2237)
 *
 
 ### Features
