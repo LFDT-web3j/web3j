@@ -29,6 +29,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 * add encoding/decoding for EIP-7702 transactions [#2178](https://github.com/LFDT-web3j/web3j/pull/2178)
 * add @javax.annotation.Generated to generated java classes [#2081](https://github.com/LFDT-web3j/web3j/issues/2081)
 * add support for Account Abstraction EIP-4337 transactions [#2187](https://github.com/LFDT-web3j/web3j/pull/2187)
+* fix missing weiValue in transaction when estimating gas for payable function [#1268](https://github.com/LFDT-web3j/web3j/issues/1268)
 
 
 ### BREAKING CHANGES
