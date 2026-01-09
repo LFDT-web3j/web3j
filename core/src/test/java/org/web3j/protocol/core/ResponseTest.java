@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.web3j.protocol.ResponseTester;
 import org.web3j.protocol.core.methods.response.AbiDefinition;
 import org.web3j.protocol.core.methods.response.AccessListObject;
+import org.web3j.protocol.core.methods.response.AuthorizationTuple;
 import org.web3j.protocol.core.methods.response.BooleanResponse;
 import org.web3j.protocol.core.methods.response.DbGetHex;
 import org.web3j.protocol.core.methods.response.DbGetString;
@@ -102,6 +103,7 @@ import org.web3j.protocol.core.methods.response.admin.AdminNodeInfo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -1217,7 +1219,8 @@ class ResponseTest extends ResponseTester {
                                         "0x7f110",
                                         List.of(
                                                 "0x013343644e9aaa7e8673ba3be38b56bb3dfaa57db923797247e5f2e504b721c3",
-                                                "0x01cad19a7fe88d9e14575394847a4a0026fccf292c4ca30ef047e6d03d3a74bb"))),
+                                                "0x01cad19a7fe88d9e14575394847a4a0026fccf292c4ca30ef047e6d03d3a74bb"),
+                                        null)),
                         Arrays.asList(
                                 "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
                                 "0xd5855eb08b3387c0af375e9cdb6acfc05eb8f519e419b874b6ff2ffda7ed1dff"),
@@ -1425,6 +1428,110 @@ class ResponseTest extends ResponseTester {
 
         EthTransaction ethTransaction = deserialiseResponse(EthTransaction.class);
         assertEquals(ethTransaction.getTransaction(), (Optional.empty()));
+    }
+
+    @Test
+    void testEthTransactionWithAuthorizationList() {
+        buildResponse(
+                "{\n"
+                        + "    \"id\":1,\n"
+                        + "    \"jsonrpc\":\"2.0\",\n"
+                        + "    \"result\": {\n"
+                        + "        \"hash\":\"0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b\",\n"
+                        + "        \"nonce\":\"0x1\",\n"
+                        + "        \"blockHash\": \"0xbeab0aa2411b7ab17f30a99d3cb9c6ef2fc5426d6ad6fd9e2a26a6aed1d1055b\",\n"
+                        + "        \"blockNumber\": \"0x15df\",\n"
+                        + "        \"chainId\": \"0x1\",\n"
+                        + "        \"transactionIndex\":  \"0x1\",\n"
+                        + "        \"from\":\"0x407d73d8a49eeb85d32cf465507dd71d507100c1\",\n"
+                        + "        \"to\":\"0x85h43d8a49eeb85d32cf465507dd71d507100c1\",\n"
+                        + "        \"value\":\"0x7f110\",\n"
+                        + "        \"gas\": \"0x7f110\",\n"
+                        + "        \"gasPrice\":\"0x09184e72a000\",\n"
+                        + "        \"input\":\"0x\",\n"
+                        + "        \"r\":\"0xf115cc4d7516dd430046504e1c888198e0323e8ded016d755f89c226ba3481dc\",\n"
+                        + "        \"s\":\"0x4a2ae8ee49f1100b5c0202b37ed8bacf4caeddebde6b7f77e12e7a55893e9f62\",\n"
+                        + "        \"v\":\"0x0\",\n"
+                        + "        \"yParity\":\"0x0\",\n"
+                        + "        \"type\":\"0x4\",\n"
+                        + "        \"authorizationList\": [{\n"
+                        + "            \"chainId\": \"0x1\",\n"
+                        + "            \"address\": \"0x7b73644935b8e68019ac6356c40661e1bc315860\",\n"
+                        + "            \"nonce\": \"0x0\",\n"
+                        + "            \"yParity\": \"0x1\",\n"
+                        + "            \"r\": \"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef\",\n"
+                        + "            \"s\": \"0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321\"\n"
+                        + "        },{\n"
+                        + "            \"chainId\": \"0x1\",\n"
+                        + "            \"address\": \"0x1234567890123456789012345678901234567890\",\n"
+                        + "            \"nonce\": \"0x5\",\n"
+                        + "            \"yParity\": \"0x0\",\n"
+                        + "            \"r\": \"0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890\",\n"
+                        + "            \"s\": \"0x0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba\"\n"
+                        + "        }]\n"
+                        + "  }\n"
+                        + "}");
+
+        EthTransaction ethTransaction = deserialiseResponse(EthTransaction.class);
+        Transaction tx = ethTransaction.getTransaction().get();
+
+        assertEquals(
+                "0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b", tx.getHash());
+        assertEquals("0x4", tx.getType());
+
+        assertNotNull(tx.getAuthorizationList());
+        assertEquals(2, tx.getAuthorizationList().size());
+
+        AuthorizationTuple auth1 = tx.getAuthorizationList().get(0);
+        assertEquals(BigInteger.ONE, auth1.getChainId());
+        assertEquals("0x7b73644935b8e68019ac6356c40661e1bc315860", auth1.getAddress());
+        assertEquals(BigInteger.ZERO, auth1.getNonce());
+        assertEquals(BigInteger.ONE, auth1.getYParity());
+        assertEquals(
+                "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+                auth1.getRRaw());
+        assertEquals(
+                "0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321",
+                auth1.getSRaw());
+
+        AuthorizationTuple auth2 = tx.getAuthorizationList().get(1);
+        assertEquals(BigInteger.ONE, auth2.getChainId());
+        assertEquals("0x1234567890123456789012345678901234567890", auth2.getAddress());
+        assertEquals(BigInteger.valueOf(5), auth2.getNonce());
+        assertEquals(BigInteger.ZERO, auth2.getYParity());
+    }
+
+    @Test
+    void testEthTransactionWithEmptyAuthorizationList() {
+        buildResponse(
+                "{\n"
+                        + "    \"id\":1,\n"
+                        + "    \"jsonrpc\":\"2.0\",\n"
+                        + "    \"result\": {\n"
+                        + "        \"hash\":\"0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b\",\n"
+                        + "        \"nonce\":\"0x1\",\n"
+                        + "        \"blockHash\": \"0xbeab0aa2411b7ab17f30a99d3cb9c6ef2fc5426d6ad6fd9e2a26a6aed1d1055b\",\n"
+                        + "        \"blockNumber\": \"0x15df\",\n"
+                        + "        \"transactionIndex\":  \"0x1\",\n"
+                        + "        \"from\":\"0x407d73d8a49eeb85d32cf465507dd71d507100c1\",\n"
+                        + "        \"to\":\"0x85h43d8a49eeb85d32cf465507dd71d507100c1\",\n"
+                        + "        \"value\":\"0x7f110\",\n"
+                        + "        \"gas\": \"0x7f110\",\n"
+                        + "        \"gasPrice\":\"0x09184e72a000\",\n"
+                        + "        \"input\":\"0x\",\n"
+                        + "        \"r\":\"0xf115cc4d7516dd430046504e1c888198e0323e8ded016d755f89c226ba3481dc\",\n"
+                        + "        \"s\":\"0x4a2ae8ee49f1100b5c0202b37ed8bacf4caeddebde6b7f77e12e7a55893e9f62\",\n"
+                        + "        \"v\":\"0x0\",\n"
+                        + "        \"type\":\"0x4\",\n"
+                        + "        \"authorizationList\": []\n"
+                        + "  }\n"
+                        + "}");
+
+        EthTransaction ethTransaction = deserialiseResponse(EthTransaction.class);
+        Transaction tx = ethTransaction.getTransaction().get();
+
+        assertNotNull(tx.getAuthorizationList());
+        assertEquals(0, tx.getAuthorizationList().size());
     }
 
     @Test

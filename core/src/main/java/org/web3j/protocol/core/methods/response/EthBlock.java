@@ -763,6 +763,7 @@ public class EthBlock extends Response<EthBlock.Block> {
                     nonce,
                     blockHash,
                     blockNumber,
+                    null,
                     transactionIndex,
                     from,
                     to,
@@ -776,10 +777,66 @@ public class EthBlock extends Response<EthBlock.Block> {
                     r,
                     s,
                     v,
+                    null,
                     type,
                     maxFeePerGas,
                     maxPriorityFeePerGas,
-                    accessList);
+                    accessList,
+                    null,
+                    null,
+                    null);
+        }
+
+        public TransactionObject(
+                String hash,
+                String nonce,
+                String blockHash,
+                String blockNumber,
+                String transactionIndex,
+                String from,
+                String to,
+                String value,
+                String gas,
+                String gasPrice,
+                String input,
+                String creates,
+                String publicKey,
+                String raw,
+                String r,
+                String s,
+                long v,
+                String type,
+                String maxFeePerGas,
+                String maxPriorityFeePerGas,
+                List<AccessListObject> accessList,
+                List<AuthorizationTuple> authorizationList) {
+            super(
+                    hash,
+                    nonce,
+                    blockHash,
+                    blockNumber,
+                    null,
+                    transactionIndex,
+                    from,
+                    to,
+                    value,
+                    gas,
+                    gasPrice,
+                    input,
+                    creates,
+                    publicKey,
+                    raw,
+                    r,
+                    s,
+                    v,
+                    null,
+                    type,
+                    maxFeePerGas,
+                    maxPriorityFeePerGas,
+                    accessList,
+                    null,
+                    null,
+                    authorizationList);
         }
 
         public TransactionObject(
@@ -829,7 +886,10 @@ public class EthBlock extends Response<EthBlock.Block> {
                     type,
                     maxFeePerGas,
                     maxPriorityFeePerGas,
-                    accessList);
+                    accessList,
+                    null,
+                    null,
+                    null);
         }
 
         public TransactionObject(
@@ -857,7 +917,8 @@ public class EthBlock extends Response<EthBlock.Block> {
                 String maxPriorityFeePerGas,
                 List<AccessListObject> accessList,
                 String maxFeePerBlobGas,
-                List<String> blobVersionedHashes) {
+                List<String> blobVersionedHashes,
+                List<AuthorizationTuple> authorizationList) {
             super(
                     hash,
                     nonce,
@@ -883,7 +944,8 @@ public class EthBlock extends Response<EthBlock.Block> {
                     maxPriorityFeePerGas,
                     accessList,
                     maxFeePerBlobGas,
-                    blobVersionedHashes);
+                    blobVersionedHashes,
+                    authorizationList);
         }
 
         @Override
