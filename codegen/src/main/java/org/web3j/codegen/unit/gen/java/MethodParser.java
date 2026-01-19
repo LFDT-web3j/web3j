@@ -32,7 +32,7 @@ import org.web3j.tx.gas.ContractGasProvider;
 
 import static org.web3j.codegen.unit.gen.utils.NameUtils.toCamelCase;
 
-/*Class that when given a method provides a JavaPoet method spec. */
+/*Class that when given a method provides a poet method spec. */
 public class MethodParser {
     private final Method method;
     private final Class theContract;
@@ -79,14 +79,14 @@ public class MethodParser {
 
     private Map<String, Object[]> generateStatementBody() {
         Map<String, Object[]> methodBodySpecification = new LinkedHashMap<>();
-        JavaParser parser = new JavaParser(theContract, method, new JavaMappingHelper());
-        String javaPoetStringTypes = parser.generatePoetStringTypes();
-        Object[] genericParameters = parser.generatePlaceholderValues();
-        methodBodySpecification.put(javaPoetStringTypes, genericParameters);
+    JavaParser parser = new JavaParser(theContract, method, new JavaMappingHelper());
+    String poetStringTypes = parser.generatePoetStringTypes();
+    Object[] genericParameters = parser.generatePlaceholderValues();
+    methodBodySpecification.put(poetStringTypes, genericParameters);
         if (methodNeedsAssertion()) {
-            String assertionJavaPoet = parser.generateAssertionJavaPoetStringTypes();
+            String assertionPoet = parser.generateAssertionPoetStringTypes();
             Object[] assertionParams = parser.generateAssertionPlaceholderValues();
-            methodBodySpecification.put(assertionJavaPoet, assertionParams);
+            methodBodySpecification.put(assertionPoet, assertionParams);
         }
         return methodBodySpecification;
     }
