@@ -21,7 +21,7 @@ file("src/test/resources/solidity").listFiles().each { File file ->
         def contractName = contractFile.name.substring(0, contractFile.name.length() - 4)
         def generateTask = tasks.register("generate${contractName}Wrapper", JavaExec) {
             classpath = sourceSets.test.runtimeClasspath
-            main = 'org.web3j.codegen.SolidityFunctionWrapperGenerator'
+            mainClass.set('org.web3j.codegen.SolidityFunctionWrapperGenerator')
             args = [
                 'generate',
                 '--abiFile',

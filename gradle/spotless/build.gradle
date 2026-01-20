@@ -37,7 +37,7 @@ spotless {
         target fileTree('.') {
             include '**/*.kt'
             exclude '**/.gradle/**'
-            exclude '**/build/install/**'
+            exclude '**/build/**'
         }
         ktlint('0.49.1')
         trimTrailingWhitespace()
@@ -48,8 +48,26 @@ spotless {
         target '*.gradle'
         greclipse().configFile("$rootDir/gradle/spotless/formatter.properties")
         endWithNewline()
-        indentWithSpaces(4)
+        leadingTabsToSpaces(4)
     }
 }
 
-spotlessCheck.dependsOn('downloadJavaLicense', 'downloadFormatterProperties')
+tasks.named('spotlessJava') {
+    dependsOn downloadJavaLicense, downloadFormatterProperties
+    mustRunAfter tasks.named('compileJava')
+    mustRunAfter tasks.named('spotlessGroovyGradle')
+}
+
+tasks.named('spotlessKotlin') {
+    dependsOn downloadJavaLicense, downloadFormatterProperties
+    mustRunAfter tasks.named('compileJava')
+    mustRunAfter tasks.named('spotlessGroovyGradle')
+    dependsOn tasks.named('spotlessJava')
+}
+
+tasks.named('spotlessCheck') {
+    dependsOn downloadJavaLicense, downloadFormatterProperties
+    dependsOn tasks.named('spotlessJava')
+    dependsOn tasks.named('spotlessKotlin')
+    dependsOn tasks.named('spotlessGroovyGradle')
+}
