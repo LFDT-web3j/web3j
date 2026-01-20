@@ -32,7 +32,7 @@ ext {
     // test dependencies
     equalsverifierVersion = '3.16.1'
     junitVersion = '6.0.2'
-    web3jUnitVersion = '4.14.0'
+    web3jUnitVersion = '5.0.1-hf'
     junitBenchmarkVersion = '0.7.2'
     logbackVersion = '1.5.6'
     mockitoJunitVersion = '3.1.0'
