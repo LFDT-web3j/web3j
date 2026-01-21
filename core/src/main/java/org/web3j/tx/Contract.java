@@ -414,7 +414,8 @@ public abstract class Contract extends ManagedTransaction {
                                 data,
                                 weiValue,
                                 gasProvider.getGasPrice(),
-                                gasProvider.getGasLimit(getGenericTransaction(data, constructor, weiValue)),
+                                gasProvider.getGasLimit(
+                                        getGenericTransaction(data, constructor, weiValue)),
                                 constructor);
             }
         } catch (JsonRpcError error) {
@@ -449,7 +450,8 @@ public abstract class Contract extends ManagedTransaction {
         return receipt;
     }
 
-    protected Transaction getGenericTransaction(String data, boolean constructor, BigInteger weiValue) {
+    protected Transaction getGenericTransaction(
+            String data, boolean constructor, BigInteger weiValue) {
         if (constructor) {
             return Transaction.createContractTransaction(
                     this.transactionManager.getFromAddress(),

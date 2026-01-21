@@ -16,6 +16,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### BREAKING CHANGES
 
 * bump to snapshot version 5.0.2 [#2231](https://github.com/LFDT-web3j/web3j/pull/2231)
+* Update to gradle 9 [#2249](https://github.com/LFDT-web3j/web3j/pull/2249)
 
 # [5.0.1](https://github.com/LFDT-web3j/web3j/releases/tag/v5.0.1) (2025-09-23)
 
