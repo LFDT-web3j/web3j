@@ -1220,6 +1220,25 @@ public class TypeEncoderTest {
     }
 
     @Test
+    public void testDynamicUtf8StringsArray() {
+        // Test for issue #1741: non-ASCII characters (Chinese, Korean, etc.) encoding
+        DynamicArray<Utf8String> array =
+                new DynamicArray<>(Utf8String.class, new Utf8String("你好"), new Utf8String("世界"));
+
+        // "你好" UTF-8 = E4BDA0E5A5BD (6 bytes)
+        // "世界" UTF-8 = E4B896E7958C (6 bytes)
+        assertEquals(
+                ("0000000000000000000000000000000000000000000000000000000000000002"
+                        + "0000000000000000000000000000000000000000000000000000000000000040"
+                        + "0000000000000000000000000000000000000000000000000000000000000080"
+                        + "0000000000000000000000000000000000000000000000000000000000000006"
+                        + "e4bda0e5a5bd0000000000000000000000000000000000000000000000000000"
+                        + "0000000000000000000000000000000000000000000000000000000000000006"
+                        + "e4b896e7958c0000000000000000000000000000000000000000000000000000"),
+                TypeEncoder.encodeDynamicArray(array));
+    }
+
+    @Test
     public void testDynamicArrayOfDynamicArraysOfStaticStructs() {
         DynamicArray<DynamicArray<Bar>> array =
                 new DynamicArray(

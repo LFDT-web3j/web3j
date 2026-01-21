@@ -7,7 +7,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
-* 
+* fix encoding for non-ASCII chars. [#1741](https://github.com/LFDT-web3j/web3j/issues/1741) 
 
 ### Features
 
