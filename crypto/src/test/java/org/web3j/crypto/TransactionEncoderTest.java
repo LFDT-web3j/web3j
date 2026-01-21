@@ -127,6 +127,13 @@ public class TransactionEncoderTest {
                         loadResourceAsString("blob_data/blob_tx_signed.txt"))));
     }
 
+    @Test
+    public void testTransactionEncodeWithNullData() {
+        assertArrayEquals(
+                TransactionEncoder.encode(createTransactionWithNullData()),
+                (Numeric.hexStringToByteArray("0xd280010a840add5355887fffffffffffffff80")));
+    }
+
     private static RawTransaction createEtherTransaction() {
         return RawTransaction.createEtherTransaction(
                 BigInteger.ZERO,
@@ -163,5 +170,15 @@ public class TransactionEncoderTest {
                 BigInteger.valueOf(123),
                 BigInteger.valueOf(5678),
                 BigInteger.valueOf(1100000));
+    }
+
+    private static RawTransaction createTransactionWithNullData() {
+        return RawTransaction.createTransaction(
+                BigInteger.ZERO,
+                BigInteger.ONE,
+                BigInteger.TEN,
+                "0xadd5355",
+                BigInteger.valueOf(Long.MAX_VALUE),
+                null);
     }
 }

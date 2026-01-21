@@ -15,9 +15,10 @@ jacocoTestReport {
     dependsOn test
     reports {
         xml.required.set(true)
-        html.required.set(false)
-        csv.required.set(false)
-        xml.destination file("${buildDir}/reports/jacoco.xml")
+        xml.outputLocation.set(layout.buildDirectory.file("reports/jacoco.xml"))
+
+        html.required.set(true)
+        html.outputLocation.set(layout.buildDirectory.dir("reports/jacoco"))
     }
 }
 

@@ -22,7 +22,7 @@ import org.web3j.exceptions.MessageEncodingException;
 /**
  * Message codec functions.
  *
- * <p>Implementation as per https://github.com/ethereum/wiki/wiki/JSON-RPC#hex-value-encoding
+ * <p>Implementation as per https://ethereum.org/developers/docs/apis/json-rpc/#hex-encoding
  */
 public final class Numeric {
 

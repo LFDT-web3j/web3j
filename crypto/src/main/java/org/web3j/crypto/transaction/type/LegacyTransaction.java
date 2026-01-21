@@ -65,7 +65,7 @@ public class LegacyTransaction implements ITransaction {
         this.gasLimit = gasLimit;
         this.to = to;
         this.value = value;
-        this.data = data != null ? Numeric.cleanHexPrefix(data) : null;
+        this.data = data != null ? Numeric.cleanHexPrefix(data) : "";
     }
 
     @Override
