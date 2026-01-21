@@ -8,6 +8,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * Fix failing integration tests [#2248](https://github.com/LFDT-web3j/web3j/pull/2248)
+* Fix 4844 transaction serialized with access list [#2205](https://github.com/LFDT-web3j/web3j/pull/2205)
 * fix encoding for non-ASCII chars. [#1741](https://github.com/LFDT-web3j/web3j/issues/1741)
 
 ### Features
