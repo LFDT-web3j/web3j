@@ -7,7 +7,7 @@ plugins {
     id 'com.diffplug.spotless' version '8.1.0'
     id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
     id 'de.undercouch.download' version '5.6.0'
-    id 'org.ajoberstar.git-publish' version '5.1.2'
+    id 'org.ajoberstar.git-publish' version '3.0.1'
     id 'org.jreleaser' version '1.22.0'
 }
 
