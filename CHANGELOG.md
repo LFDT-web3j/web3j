@@ -7,8 +7,8 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
+* Fix failing integration tests [#2248](https://github.com/LFDT-web3j/web3j/pull/2248)
 * fix NPE when encoding transaction with null data [#2237](https://github.com/LFDT-web3j/web3j/pull/2237)
-*
 
 ### Features
 
@@ -17,6 +17,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### BREAKING CHANGES
 
 * bump to snapshot version 5.0.2 [#2231](https://github.com/LFDT-web3j/web3j/pull/2231)
+* Update to gradle 9 [#2249](https://github.com/LFDT-web3j/web3j/pull/2249)
 
 # [5.0.1](https://github.com/LFDT-web3j/web3j/releases/tag/v5.0.1) (2025-09-23)
 
@@ -30,6 +31,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 * add encoding/decoding for EIP-7702 transactions [#2178](https://github.com/LFDT-web3j/web3j/pull/2178)
 * add @javax.annotation.Generated to generated java classes [#2081](https://github.com/LFDT-web3j/web3j/issues/2081)
 * add support for Account Abstraction EIP-4337 transactions [#2187](https://github.com/LFDT-web3j/web3j/pull/2187)
+* fix missing weiValue in transaction when estimating gas for payable function [#1268](https://github.com/LFDT-web3j/web3j/issues/1268)
 
 
 ### BREAKING CHANGES

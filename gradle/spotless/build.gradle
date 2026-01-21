@@ -23,7 +23,8 @@ spotless {
             include '**/src/*/java/**/*.java'
             exclude '**/.gradle/**'
             exclude '**/generated/**'
-            exclude '**/build/install/**'
+            exclude '**/build/**'
+            exclude '**/buildSrc/**'
         }
         removeUnusedImports()
         googleJavaFormat("1.17.0").aosp()
@@ -37,7 +38,7 @@ spotless {
         target fileTree('.') {
             include '**/*.kt'
             exclude '**/.gradle/**'
-            exclude '**/build/install/**'
+            exclude '**/build/**'
         }
         ktlint('0.49.1')
         trimTrailingWhitespace()
@@ -48,8 +49,22 @@ spotless {
         target '*.gradle'
         greclipse().configFile("$rootDir/gradle/spotless/formatter.properties")
         endWithNewline()
-        indentWithSpaces(4)
+        leadingTabsToSpaces(4)
+    }
+
+    tasks.named('spotlessJava') {
+        dependsOn downloadJavaLicense, downloadFormatterProperties
+    }
+
+    tasks.named('spotlessKotlin') {
+        dependsOn downloadJavaLicense, downloadFormatterProperties
+    }
+
+    tasks.named('spotlessGroovyGradle') {
+        dependsOn downloadJavaLicense, downloadFormatterProperties
+    }
+
+    tasks.named('spotlessCheck') {
+        dependsOn downloadJavaLicense, downloadFormatterProperties
     }
 }
-
-spotlessCheck.dependsOn('downloadJavaLicense', 'downloadFormatterProperties')
