@@ -13,7 +13,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Features
 
-* 
+* Add EIP-7702 authorization list support to Transaction [#2246](https://github.com/LFDT-web3j/web3j/pull/2246)
 
 ### BREAKING CHANGES
 
