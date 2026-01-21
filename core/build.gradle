@@ -90,11 +90,3 @@ classes { dependsOn("createProperties") }
 configurations { testArtifacts.extendsFrom testRuntime }
 
 artifacts { testArtifacts testsJar }
-
-tasks.named("spotlessJava").configure {
-    dependsOn("spotlessGroovyGradle", "compileJava", "compileTestJava", "javadoc", "test", "jacocoTestReport")
-}
-
-tasks.named("spotlessKotlin").configure {
-    dependsOn("compileJava", "spotlessJava", "spotlessGroovyGradle", "compileTestJava", "processTestResources", "javadoc", "test", "jacocoTestReport")
-}
