@@ -45,6 +45,7 @@ public class Transaction {
     private List<AccessListObject> accessList;
     private String maxFeePerBlobGas;
     private List<String> blobVersionedHashes;
+    private List<AuthorizationTuple> authorizationList;
 
     public Transaction() {}
 
@@ -72,27 +73,33 @@ public class Transaction {
             String maxFeePerGas,
             String maxPriorityFeePerGas,
             List accessList) {
-        this.hash = hash;
-        this.nonce = nonce;
-        this.blockHash = blockHash;
-        this.blockNumber = blockNumber;
-        this.transactionIndex = transactionIndex;
-        this.from = from;
-        this.to = to;
-        this.value = value;
-        this.gasPrice = gasPrice;
-        this.gas = gas;
-        this.input = input;
-        this.creates = creates;
-        this.publicKey = publicKey;
-        this.raw = raw;
-        this.r = r;
-        this.s = s;
-        this.v = v;
-        this.type = type;
-        this.maxFeePerGas = maxFeePerGas;
-        this.maxPriorityFeePerGas = maxPriorityFeePerGas;
-        this.accessList = accessList;
+        this(
+                hash,
+                nonce,
+                blockHash,
+                blockNumber,
+                null,
+                transactionIndex,
+                from,
+                to,
+                value,
+                gas,
+                gasPrice,
+                input,
+                creates,
+                publicKey,
+                raw,
+                r,
+                s,
+                v,
+                null,
+                type,
+                maxFeePerGas,
+                maxPriorityFeePerGas,
+                accessList,
+                null,
+                null,
+                null);
     }
 
     public Transaction(
@@ -119,29 +126,33 @@ public class Transaction {
             String maxFeePerGas,
             String maxPriorityFeePerGas,
             List accessList) {
-        this.hash = hash;
-        this.nonce = nonce;
-        this.blockHash = blockHash;
-        this.blockNumber = blockNumber;
-        this.chainId = chainId;
-        this.transactionIndex = transactionIndex;
-        this.from = from;
-        this.to = to;
-        this.value = value;
-        this.gasPrice = gasPrice;
-        this.gas = gas;
-        this.input = input;
-        this.creates = creates;
-        this.publicKey = publicKey;
-        this.raw = raw;
-        this.r = r;
-        this.s = s;
-        this.v = v;
-        this.yParity = yParity;
-        this.type = type;
-        this.maxFeePerGas = maxFeePerGas;
-        this.maxPriorityFeePerGas = maxPriorityFeePerGas;
-        this.accessList = accessList;
+        this(
+                hash,
+                nonce,
+                blockHash,
+                blockNumber,
+                chainId,
+                transactionIndex,
+                from,
+                to,
+                value,
+                gas,
+                gasPrice,
+                input,
+                creates,
+                publicKey,
+                raw,
+                r,
+                s,
+                v,
+                yParity,
+                type,
+                maxFeePerGas,
+                maxPriorityFeePerGas,
+                accessList,
+                null,
+                null,
+                null);
     }
 
     public Transaction(
@@ -170,6 +181,62 @@ public class Transaction {
             List accessList,
             String maxFeePerBlobGas,
             List versionedHashes) {
+        this(
+                hash,
+                nonce,
+                blockHash,
+                blockNumber,
+                chainId,
+                transactionIndex,
+                from,
+                to,
+                value,
+                gas,
+                gasPrice,
+                input,
+                creates,
+                publicKey,
+                raw,
+                r,
+                s,
+                v,
+                yParity,
+                type,
+                maxFeePerGas,
+                maxPriorityFeePerGas,
+                accessList,
+                maxFeePerBlobGas,
+                versionedHashes,
+                null);
+    }
+
+    public Transaction(
+            String hash,
+            String nonce,
+            String blockHash,
+            String blockNumber,
+            String chainId,
+            String transactionIndex,
+            String from,
+            String to,
+            String value,
+            String gas,
+            String gasPrice,
+            String input,
+            String creates,
+            String publicKey,
+            String raw,
+            String r,
+            String s,
+            long v,
+            String yParity,
+            String type,
+            String maxFeePerGas,
+            String maxPriorityFeePerGas,
+            List accessList,
+            String maxFeePerBlobGas,
+            List versionedHashes,
+            List<AuthorizationTuple> authorizationList) {
         this.hash = hash;
         this.nonce = nonce;
         this.blockHash = blockHash;
@@ -195,6 +262,7 @@ public class Transaction {
         this.accessList = accessList;
         this.maxFeePerBlobGas = maxFeePerBlobGas;
         this.blobVersionedHashes = versionedHashes;
+        this.authorizationList = authorizationList;
     }
 
     public void setChainId(String chainId) {
@@ -457,6 +525,14 @@ public class Transaction {
         this.blobVersionedHashes = blobVersionedHashes;
     }
 
+    public List<AuthorizationTuple> getAuthorizationList() {
+        return authorizationList;
+    }
+
+    public void setAuthorizationList(List<AuthorizationTuple> authorizationList) {
+        this.authorizationList = authorizationList;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -575,6 +651,11 @@ public class Transaction {
                 : that.getAccessList() != null) {
             return false;
         }
+        if (getAuthorizationList() != null
+                ? !getAuthorizationList().equals(that.getAuthorizationList())
+                : that.getAuthorizationList() != null) {
+            return false;
+        }
         return getS() != null ? getS().equals(that.getS()) : that.getS() == null;
     }
 
@@ -621,6 +702,9 @@ public class Transaction {
                                 ? getBlobVersionedHashes().hashCode()
                                 : 0);
         result = 31 * result + (getAccessList() != null ? getAccessList().hashCode() : 0);
+        result =
+                31 * result
+                        + (getAuthorizationList() != null ? getAuthorizationList().hashCode() : 0);
         return result;
     }
 }
