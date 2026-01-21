@@ -11,11 +11,12 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     env:
-      OSSRH_USERNAME: ${{ secrets.OSSRH_WEB3J_USERNAME }}
-      OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
-      OSSRH_GPG_SECRET_KEY_PASSWORD: ${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }}
-      OSSRH_GPG_SECRET_KEY: ${{ secrets.OSSRH_GPG_SECRET_KEY }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      JRELEASER_MAVENCENTRAL_CENTRAL_USERNAME: ${{ secrets.JRELEASER_MAVENCENTRAL_CENTRAL_USERNAME }}
+      JRELEASER_GPG_PASSPHRASE: ${{ secrets.JRELEASER_GPG_PASSPHRASE }}
+      JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.JRELEASER_GPG_PUBLIC_KEY }}
+      JRELEASER_GPG_SECRET_KEY: ${{ secrets.JRELEASER_GPG_SECRET_KEY }}
+      JRELEASER_MAVENCENTRAL_CENTRAL_PASSWORD: ${{ secrets.JRELEASER_MAVENCENTRAL_CENTRAL_PASSWORD }}
+      JRELEASER_GITHUB_TOKEN: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 21
@@ -32,5 +33,6 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Publish snapshot
-        run: ./gradlew publish
+        run: ./gradlew publishSnapshot
+
 

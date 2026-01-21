@@ -153,17 +153,20 @@ public class Transaction4844 extends Transaction1559 implements ITransaction {
             resultTx.add(
                     RlpString.create(
                             org.web3j.utils.Bytes.trimLeadingZeroes(signatureData.getS())));
+
+            List<RlpType> result = new ArrayList<>();
+            result.add(new RlpList(resultTx));
+
+            // Adding blobs, commitments, and proofs
+            result.add(new RlpList(getRlpBlobs()));
+            result.add(new RlpList(getRlpKzgCommitments()));
+            result.add(new RlpList(getRlpKzgProofs()));
+
+            return result;
+        } else {
+            // encoding for signature, blob sidecar cannot be added
+            return resultTx;
         }
-
-        List<RlpType> result = new ArrayList<>();
-        result.add(new RlpList(resultTx));
-
-        // Adding blobs, commitments, and proofs
-        result.add(new RlpList(getRlpBlobs()));
-        result.add(new RlpList(getRlpKzgCommitments()));
-        result.add(new RlpList(getRlpKzgProofs()));
-
-        return result;
     }
 
     public static Transaction4844 createTransaction(

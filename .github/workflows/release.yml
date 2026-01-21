@@ -7,11 +7,12 @@ jobs:
   release:
     runs-on: ubuntu-latest
     env:
-      OSSRH_USERNAME: ${{ secrets.OSSRH_WEB3J_USERNAME }}
-      OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
-      OSSRH_GPG_SECRET_KEY_PASSWORD: ${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }}
-      OSSRH_GPG_SECRET_KEY: ${{ secrets.OSSRH_GPG_SECRET_KEY }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      JRELEASER_MAVENCENTRAL_CENTRAL_USERNAME: ${{ secrets.JRELEASER_MAVENCENTRAL_CENTRAL_USERNAME }}
+      JRELEASER_GPG_PASSPHRASE: ${{ secrets.JRELEASER_GPG_PASSPHRASE }}
+      JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.JRELEASER_GPG_PUBLIC_KEY }}
+      JRELEASER_GPG_SECRET_KEY: ${{ secrets.JRELEASER_GPG_SECRET_KEY }}
+      JRELEASER_MAVENCENTRAL_CENTRAL_PASSWORD: ${{ secrets.JRELEASER_MAVENCENTRAL_CENTRAL_PASSWORD }}
+      JRELEASER_GITHUB_TOKEN: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - name: Build Workflow Dispatch
@@ -19,7 +20,7 @@ jobs:
         with:
           owner: LFDT-web3j
           repo: web3j
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
           workflow_file_name: build.yml
           wait_interval: 10
           propagate_failure: true
@@ -38,36 +39,37 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
-      - name: Release name
+      - name: Extract release version from branch
         id: release_name
-        uses: actions/github-script@v4
-        with:
-          result-encoding: string
-          script: |
-            const branch_name = process.env.GITHUB_REF
-            const web3j_release_version = branch_name.substring(branch_name.lastIndexOf('/') +1 ,branch_name.length  )
-            process.env.VERSION = web3j_release_version
-            return web3j_release_version
-      - name: Build and stage release
-        run: ./gradlew publish -Pversion=${{ steps.release_name.outputs.result }}
-      - name: Release
-        run: ./gradlew closeAndReleaseRepository
-    outputs:
-      stripped_version: ${{ steps.release_name.outputs.result }}
-  git-release:
+        run: |
+          BRANCH="${GITHUB_REF##*/}"
+          echo "version=$BRANCH" >> "$GITHUB_OUTPUT"
+      - name: Fail if version is a SNAPSHOT
+        if: endsWith(steps.release_name.outputs.version, '-SNAPSHOT')
+        run: |
+          echo "This workflow is for releases only. Version '${{ steps.release_name.outputs.version }}' ends with -SNAPSHOT." >&2
+          exit 1
+
+      # Publish artifacts to local staging repo (your Gradle config already defines it)
+      - name: Stage artifacts locally
+        run: ./gradlew -Pversion=${{ steps.release_name.outputs.version }} publishMavenPublicationToLocalStagingRepository --stacktrace
+
+      # Deploy to Central Portal via JReleaser (Publisher API)
+      - name: Deploy to Maven Central (Portal)
+        run: ./gradlew -Pversion=${{ steps.release_name.outputs.version }} jreleaserDeploy --stacktrace
+
+  javadocs-release:
     needs: release
     runs-on: ubuntu-latest
     steps:
-      - name: Github Release
-        uses: marvinpinto/action-automatic-releases@latest
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          automatic_release_tag: 'v${{ needs.release.outputs.stripped_version }}'
-          prerelease: false
-          files: |
-            "web3j-"+${{ steps.release_name.outputs.result }}.*
-  javadocs-release:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Javadoc release
-        run: ./gradlew -Dorg.ajoberstar.grgit.auth.username=${{ secrets.GITHUB_TOKEN }} core:gitPublishPush
+          distribution: zulu
+          java-version: 21
+      - name: Publish Javadocs (gh-pages)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew core:gitPublishPush
+

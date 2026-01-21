@@ -136,7 +136,7 @@ public class TransactionEncoder {
 
     public static byte[] encode4844(RawTransaction rawTransaction) {
         List<RlpType> values = asRlpValues(rawTransaction, null);
-        RlpList rlpList = (RlpList) values.get(0);
+        RlpList rlpList = new RlpList(values);
 
         byte[] encoded = RlpEncoder.encode(rlpList);
 

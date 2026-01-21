@@ -1,13 +1,14 @@
 plugins {
     id 'java'
     id 'idea'
+    id 'maven-publish'
     id 'org.sonarqube' version '5.0.0.4638'
     id 'jacoco'
-    id 'com.diffplug.spotless' version '6.25.0'
-    id 'io.codearte.nexus-staging' version '0.30.0'
-    id 'de.marcphilipp.nexus-publish' version '0.4.0'
-    id 'de.undercouch.download' version '4.1.2'
-    id 'org.ajoberstar.git-publish' version '3.0.1'
+    id 'com.diffplug.spotless' version '8.1.0'
+    id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
+    id 'de.undercouch.download' version '5.6.0'
+    id 'org.ajoberstar.git-publish' version '5.1.2'
+    id 'org.jreleaser' version '1.22.0'
 }
 
 
@@ -30,8 +31,8 @@ ext {
     tuweniVersion = '2.7.0'
     // test dependencies
     equalsverifierVersion = '3.16.1'
-    junitVersion = '5.5.2'
-    web3jUnitVersion = '4.12.3'
+    junitVersion = '6.0.2'
+    web3jUnitVersion = '5.0.1-hf'
     junitBenchmarkVersion = '0.7.2'
     logbackVersion = '1.5.6'
     mockitoJunitVersion = '3.1.0'
@@ -45,11 +46,10 @@ description 'Web3j base project.'
     'jacoco',
     'java',
     'javadoc',
-    'publish',
     'repositories',
     'spotless'
 ].each { buildScript ->
-    download {
+    download.run {
         src "https://raw.githubusercontent.com/LFDT-web3j/web3j-build-tools/main/gradle/$buildScript/build.gradle"
         dest "$rootDir/gradle/$buildScript/build.gradle"
         overwrite false
@@ -70,14 +70,15 @@ allprojects {
         }
     }
 
-    tasks.withType(Test) {
-        reports.html.destination = file("${reporting.baseDir}/${name}")
+    tasks.withType(Test).configureEach {
         useJUnitPlatform()
+        reports.html.outputLocation.set(layout.buildDirectory.dir("reports/${name}"))
     }
 
     dependencies {
         testImplementation "org.junit.jupiter:junit-jupiter:$junitVersion"
         testImplementation "org.mockito:mockito-junit-jupiter:$mockitoJunitVersion"
+        testImplementation "org.junit.platform:junit-platform-launcher"
 
         configurations.all {
             resolutionStrategy {
@@ -101,7 +102,3 @@ allprojects {
 configure(subprojects.findAll { it.name != 'integration-tests' }) {
     apply from: "$rootDir/gradle/jacoco/build.gradle"
 }
-
-
-tasks.named("spotlessJava").configure { dependsOn("spotlessGroovyGradle") }
-tasks.named("spotlessKotlin").configure { dependsOn("spotlessJava", "spotlessGroovyGradle") }

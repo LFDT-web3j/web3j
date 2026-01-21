@@ -3,7 +3,7 @@ Web3j: Web3 Java Ethereum Dapp API
 
 [![Documentation Status](https://readthedocs.org/projects/web3j-docs/badge/?version=latest)](https://docs.web3j.io)
 [![build status](https://github.com/web3j/web3j/actions/workflows/build.yml/badge.svg)](https://github.com/web3j/web3j/actions/workflows/build.yml)
-[![codecov](https://codecov.io/gh/web3j/web3j/branch/main/graph/badge.svg?token=a4G9ITI6CU)](https://codecov.io/gh/web3j/web3j)
+[![codecov](https://codecov.io/gh/LFDT-web3j/web3j/branch/main/graph/badge.svg?token=a4G9ITI6CU)](https://codecov.io/gh/web3j/web3j)
 [![Discord](https://img.shields.io/discord/779382027614158919?label=discord)](https://discord.gg/A9UXfPF2tS)
 [![Gurubase](https://img.shields.io/badge/Gurubase-Ask%20Web3j%20Guru-006BFF)](https://gurubase.io/g/web3j)
 
@@ -33,7 +33,7 @@ Features
 --------
 
 -   Complete implementation of Ethereum's
-    [JSON-RPC](https://github.com/ethereum/wiki/wiki/JSON-RPC) client
+    [JSON-RPC](https://ethereum.org/en/developers/docs/apis/json-rpc/) client
     API over HTTP and IPC
 -   Ethereum wallet support
 -   Auto-generation of Java smart contract wrappers to create, deploy,
@@ -60,7 +60,7 @@ Features
 -   Support for [EEA Privacy features as described in EEA
     documentation](https://entethalliance.org/technical-documents/) and
     implemented in [Hyperledger
-    Besu](https://besu.hyperledger.org/en/latest/Reference/API-Methods/#eea-methods).
+    Besu](https://besu.hyperledger.org/private-networks/reference/api#eea-methods).
 
 It has five runtime dependencies:
 
@@ -141,7 +141,7 @@ Gradle
 Java:
 
 ```groovy
-implementation ('org.web3j:core:4.14.0')
+implementation ('org.web3j:core:5.0.1')
 ```
 
 Android:

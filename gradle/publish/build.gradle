@@ -1,34 +1,32 @@
-apply plugin: 'maven-publish'
+apply plugin: 'java-library'
 apply plugin: 'signing'
-apply plugin: "de.marcphilipp.nexus-publish"
+apply plugin: 'org.jreleaser'
+apply plugin: 'maven-publish'
 
-task javadocsJar(type: Jar) {
+tasks.register('javadocsJar', Jar) {
     archiveClassifier = 'javadoc'
     from javadoc
 }
 
-task sourcesJar(type: Jar) {
+tasks.register('sourcesJar', Jar) {
     archiveClassifier = 'sources'
     from sourceSets.main.allSource
 }
 
-task testsJar(type: Jar) {
+tasks.register('testsJar', Jar) {
     archiveClassifier = 'tests'
     from sourceSets.test.output
 }
 
-javadoc { options.encoding = 'UTF-8' }
-
-artifacts { archives sourcesJar, javadocsJar, testsJar }
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
 
 publishing {
     publications {
         maven(MavenPublication) {
             from components.java
-
-            artifact sourcesJar
-            artifact javadocsJar
-            artifact testsJar
 
             pom {
                 name = project.name
@@ -48,9 +46,9 @@ publishing {
                         slug = project.rootProjectOverride
                     }
 
-                    url = "https://github.com/hyperledger/$slug"
-                    connection = "scm:https://github.com/hyperledger/${slug}.git"
-                    developerConnection = "scm:git://github.com/hyperledger/${slug}.git"
+                    url = "https://github.com/LFDT-web3j/$slug"
+                    connection = "scm:https://github.com/LFDT-web3j/${slug}.git"
+                    developerConnection = "scm:git://github.com/LFDT-web3j/${slug}.git"
                 }
 
                 developers {
@@ -63,27 +61,47 @@ publishing {
             }
         }
     }
+
+    repositories {
+        maven {
+            name = "localStaging"
+            url = uri(layout.buildDirectory.dir("staging-deploy"))
+        }
+        maven {
+            name = "sonatypeSnapshots"
+            url = uri("https://central.sonatype.com/repository/maven-snapshots/")
+            credentials {
+                username = findProperty("JRELEASER_MAVENCENTRAL_CENTRAL_USERNAME") ?: System.getenv("JRELEASER_MAVENCENTRAL_CENTRAL_USERNAME")
+                password = findProperty("JRELEASER_MAVENCENTRAL_CENTRAL_PASSWORD") ?: System.getenv("JRELEASER_MAVENCENTRAL_CENTRAL_PASSWORD")
+        }
+    }
+    }
 }
 
-nexusPublishing {
-    repositories {
-        sonatype {
-            username = System.getenv('OSSRH_USERNAME')
-            password = System.getenv('OSSRH_PASSWORD')
+jreleaser {
+    signing {
+        active = 'ALWAYS'
+        armored = true
+    }
+    deploy {
+        maven {
+            mavenCentral {
+                'central' {
+                    active = 'RELEASE'
+                    url = 'https://central.sonatype.com/api/v1/publisher'
+                    applyMavenCentralRules = true
+                    stagingRepository("${buildDir}/staging-deploy")
+                }
+            }
         }
     }
 }
 
-
-nexusStaging {
-    username System.getenv('OSSRH_USERNAME')
-    password System.getenv('OSSRH_PASSWORD')
-    packageGroup = rootProject.group
+tasks.register("publishSnapshot") {
+    dependsOn("publishMavenPublicationToSonatypeSnapshotsRepository")
+    onlyIf { version.endsWith("-SNAPSHOT") }
 }
 
-signing {
-    sign publishing.publications.maven
-    def gpgSecretKey = System.getenv('OSSRH_GPG_SECRET_KEY')
-    def password = System.getenv('OSSRH_GPG_SECRET_KEY_PASSWORD')
-    useInMemoryPgpKeys(gpgSecretKey, password)
+tasks.named("jreleaserDeploy").configure {
+    dependsOn("publishMavenPublicationToLocalStagingRepository")
 }
