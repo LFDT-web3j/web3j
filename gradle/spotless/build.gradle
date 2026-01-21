@@ -23,7 +23,8 @@ spotless {
             include '**/src/*/java/**/*.java'
             exclude '**/.gradle/**'
             exclude '**/generated/**'
-            exclude '**/build/install/**'
+            exclude '**/build/**'
+            exclude '**/buildSrc/**'
         }
         removeUnusedImports()
         googleJavaFormat("1.17.0").aosp()
@@ -50,24 +51,20 @@ spotless {
         endWithNewline()
         leadingTabsToSpaces(4)
     }
-}
 
-tasks.named('spotlessJava') {
-    dependsOn downloadJavaLicense, downloadFormatterProperties
-    mustRunAfter tasks.named('compileJava')
-    mustRunAfter tasks.named('spotlessGroovyGradle')
-}
+    tasks.named('spotlessJava') {
+        dependsOn downloadJavaLicense, downloadFormatterProperties
+    }
 
-tasks.named('spotlessKotlin') {
-    dependsOn downloadJavaLicense, downloadFormatterProperties
-    mustRunAfter tasks.named('compileJava')
-    mustRunAfter tasks.named('spotlessGroovyGradle')
-    dependsOn tasks.named('spotlessJava')
-}
+    tasks.named('spotlessKotlin') {
+        dependsOn downloadJavaLicense, downloadFormatterProperties
+    }
 
-tasks.named('spotlessCheck') {
-    dependsOn downloadJavaLicense, downloadFormatterProperties
-    dependsOn tasks.named('spotlessJava')
-    dependsOn tasks.named('spotlessKotlin')
-    dependsOn tasks.named('spotlessGroovyGradle')
+    tasks.named('spotlessGroovyGradle') {
+        dependsOn downloadJavaLicense, downloadFormatterProperties
+    }
+
+    tasks.named('spotlessCheck') {
+        dependsOn downloadJavaLicense, downloadFormatterProperties
+    }
 }

@@ -102,7 +102,3 @@ allprojects {
 configure(subprojects.findAll { it.name != 'integration-tests' }) {
     apply from: "$rootDir/gradle/jacoco/build.gradle"
 }
-
-
-tasks.named("spotlessJava").configure { dependsOn("spotlessGroovyGradle") }
-tasks.named("spotlessKotlin").configure { dependsOn("spotlessJava", "spotlessGroovyGradle") }

@@ -6,11 +6,3 @@ dependencies {
     testImplementation project(path: ':core', configuration: 'testArtifacts'),
     "nl.jqno.equalsverifier:equalsverifier:$equalsverifierVersion"
 }
-
-tasks.named("spotlessJava").configure {
-    dependsOn("spotlessGroovyGradle", "compileJava", "compileTestJava", "javadoc", "test", "jacocoTestReport")
-}
-
-tasks.named("spotlessKotlin").configure {
-    dependsOn("compileJava", "spotlessJava", "spotlessGroovyGradle", "compileTestJava", "processTestResources", "javadoc", "test", "jacocoTestReport")
-}

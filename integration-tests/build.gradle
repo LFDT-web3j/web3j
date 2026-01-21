@@ -69,6 +69,3 @@ test {
 compileTestJava {
     dependsOn project(':codegen').getTasksByName("testClasses", false)
 }
-
-tasks.named("spotlessJava").configure { dependsOn("compileTestJava","spotlessGroovyGradle","processTestResources") }
-tasks.named("spotlessKotlin").configure { dependsOn("compileTestJava","spotlessJava", "spotlessGroovyGradle","processTestResources") }
