@@ -118,7 +118,7 @@ Java:
 <dependency>
   <groupId>org.web3j</groupId>
   <artifactId>core</artifactId>
-  <version>4.14.0</version>
+  <version>5.0.2</version>
 </dependency>
 ```
 
@@ -141,7 +141,7 @@ Gradle
 Java:
 
 ```groovy
-implementation ('org.web3j:core:5.0.1')
+implementation ('org.web3j:core:5.0.2')
 ```
 
 Android:
