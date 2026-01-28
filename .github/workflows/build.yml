@@ -14,7 +14,7 @@ jobs:
       registry.username: ${{ secrets.REGISTRY_USERNAME }}
       registry.password: ${{ secrets.REGISTRY_PASSWORD }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -33,7 +33,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -50,4 +50,4 @@ jobs:
       - name: Build
         run: ./gradlew test
       - name: Upload coverage reports to Codecov with GitHub Action
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
