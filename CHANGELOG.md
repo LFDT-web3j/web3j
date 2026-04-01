@@ -7,7 +7,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
-*
+* Fix codegen for struct array parameters defined in interfaces [#1995](https://github.com/LFDT-web3j/web3j/issues/1995)
 
 ### Features
 
