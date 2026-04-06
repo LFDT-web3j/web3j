@@ -112,7 +112,7 @@ public abstract class FilterTester {
     }
 
     List createExpected(EthLog ethLog) {
-        List<EthLog.LogResult> logResults = ethLog.getLogs();
+                List<EthLog.LogResult<?>> logResults = ethLog.getLogs();
         if (logResults.isEmpty()) {
             fail("Results cannot be empty");
         }

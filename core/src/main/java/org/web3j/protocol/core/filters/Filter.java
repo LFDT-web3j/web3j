@@ -157,7 +157,7 @@ public abstract class Filter<T> {
 
     protected abstract EthFilter sendRequest() throws IOException;
 
-    protected abstract void process(List<EthLog.LogResult> logResults);
+    protected abstract void process(List<EthLog.LogResult<?>> logResults);
 
     private void reinstallFilter() {
         log.warn(

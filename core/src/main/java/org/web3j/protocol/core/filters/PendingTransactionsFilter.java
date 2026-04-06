@@ -36,10 +36,10 @@ public class PendingTransactionsFilter extends Filter<List<String>> {
     }
 
     @Override
-    protected void process(List<EthLog.LogResult> logResults) {
+    protected void process(List<EthLog.LogResult<?>> logResults) {
         List<String> logs = new ArrayList<>(logResults.size());
 
-        for (EthLog.LogResult logResult : logResults) {
+        for (EthLog.LogResult<?> logResult : logResults) {
             if (!(logResult instanceof EthLog.Hash)) {
                 throw new FilterException(
                         "Unexpected result type: " + logResult.get() + ", required Hash");

@@ -441,7 +441,7 @@ public class CoreIT {
 
         // eth_getFilterLogs
         EthLog ethFilterLogs = web3j.ethGetFilterLogs(filterId).send();
-        List<EthLog.LogResult> filterLogs = ethFilterLogs.getLogs();
+        List<EthLog.LogResult<?>> filterLogs = ethFilterLogs.getLogs();
         assertFalse(filterLogs.isEmpty());
 
         // eth_getFilterChanges - nothing will have changed in this interval
@@ -480,7 +480,7 @@ public class CoreIT {
         ethFilter.addSingleTopic(config.encodedEvent());
 
         EthLog ethLog = web3j.ethGetLogs(ethFilter).send();
-        List<EthLog.LogResult> logs = ethLog.getLogs();
+        List<EthLog.LogResult<?>> logs = ethLog.getLogs();
         assertFalse(logs.isEmpty());
     }
 
