@@ -36,6 +36,8 @@ import static org.web3j.crypto.Sign.REPLAY_PROTECTED_V_MIN;
 public class SignTest {
 
     private static final byte[] TEST_MESSAGE = "A test message".getBytes();
+    private static final String TEST_JSON_TYPED_DATA =
+            "{\"types\": {    \"EIP712Domain\": [      {\"name\": \"name\", \"type\": \"string\"},      {\"name\": \"version\", \"type\": \"string\"},      {\"name\": \"chainId\", \"type\": \"uint256\"},      {\"name\": \"verifyingContract\", \"type\": \"address\"}    ],    \"Person\": [      {\"name\": \"name\", \"type\": \"string\"},      {\"name\": \"wallet\", \"type\": \"address\"}    ]  },  \"domain\": {    \"name\": \"My Dapp\",    \"version\": \"1.0\",    \"chainId\": 1,    \"verifyingContract\": \"0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC\"  },  \"primaryType\": \"Person\",  \"message\": {    \"name\": \"John Doe\",    \"wallet\": \"0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B\"  }}";
 
     @Test
     public void testSignMessage() {
@@ -85,8 +87,6 @@ public class SignTest {
 
     @Test
     public void testSignTypedData() throws IOException {
-        String TEST_JSON_TYPED_DATA =
-                "{\"types\": {    \"EIP712Domain\": [      {\"name\": \"name\", \"type\": \"string\"},      {\"name\": \"version\", \"type\": \"string\"},      {\"name\": \"chainId\", \"type\": \"uint256\"},      {\"name\": \"verifyingContract\", \"type\": \"address\"}    ],    \"Person\": [      {\"name\": \"name\", \"type\": \"string\"},      {\"name\": \"wallet\", \"type\": \"address\"}    ]  },  \"domain\": {    \"name\": \"My Dapp\",    \"version\": \"1.0\",    \"chainId\": 1,    \"verifyingContract\": \"0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC\"  },  \"primaryType\": \"Person\",  \"message\": {    \"name\": \"John Doe\",    \"wallet\": \"0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B\"  }}";
         Sign.SignatureData signature =
                 Sign.signTypedData(TEST_JSON_TYPED_DATA, SampleKeys.KEY_PAIR);
         byte[] retval = new byte[65];
@@ -97,6 +97,19 @@ public class SignTest {
         assertEquals(
                 signedMessage,
                 "0x80361fd6c275c7492d00d976a48d0db4a663fb76da49a3c7d69c252f1c8cbea61438264a755d464e19bcd7c976b06640b40bd34de5f5c1456c0efe3b6626143a1c");
+    }
+
+    @Test
+    public void testRecoverAddressFromSignTypedData() throws IOException, SignatureException {
+        Sign.SignatureData signature =
+                Sign.signTypedData(TEST_JSON_TYPED_DATA, SampleKeys.KEY_PAIR);
+        StructuredDataEncoder dataEncoder = new StructuredDataEncoder(TEST_JSON_TYPED_DATA);
+        byte[] hashStructuredData = dataEncoder.hashStructuredData();
+
+        BigInteger recoveredPublicKey = Sign.signedMessageHashToKey(hashStructuredData, signature);
+        String recoveredAddress = "0x" + Keys.getAddress(recoveredPublicKey);
+
+        assertEquals(SampleKeys.ADDRESS, recoveredAddress);
     }
 
     @Test
