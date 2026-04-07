@@ -24,6 +24,7 @@ import org.web3j.protocol.admin.methods.response.TxPoolContent;
 import org.web3j.protocol.core.Request;
 import org.web3j.protocol.core.methods.request.Transaction;
 import org.web3j.protocol.core.methods.response.EthSendTransaction;
+import org.web3j.protocol.core.methods.response.TxPoolContentFrom;
 
 /**
  * JSON-RPC Request object building factory for common Parity and Geth. Personal namespace has now
@@ -58,4 +59,6 @@ public interface Admin extends Web3j {
             Transaction transaction, String password);
 
     public Request<?, TxPoolContent> txPoolContent();
+
+    Request<?, TxPoolContentFrom> txPoolContentFrom(String address);
 }
