@@ -24,7 +24,7 @@ import org.web3j.protocol.core.Response;
 import org.web3j.protocol.websocket.events.Notification;
 
 /** Services API. */
-public interface Web3jService {
+public interface Web3jService extends AutoCloseable {
 
     /**
      * Perform a synchronous JSON-RPC request.

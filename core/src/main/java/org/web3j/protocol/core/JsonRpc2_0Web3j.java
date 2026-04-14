@@ -991,9 +991,4 @@ public class JsonRpc2_0Web3j implements Web3j {
         }
         return output.divide(BLOB_BASE_FEE_UPDATE_FRACTION);
     }
-
-    @Override
-    public void close() throws Exception {
-        this.shutdown();
-    }
 }
