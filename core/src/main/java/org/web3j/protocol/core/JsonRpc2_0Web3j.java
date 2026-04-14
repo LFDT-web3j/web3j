@@ -952,11 +952,7 @@ public class JsonRpc2_0Web3j implements Web3j {
     @Override
     public void shutdown() {
         scheduledExecutorService.shutdown();
-        try {
-            web3jService.close();
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to close web3j service", e);
-        }
+        web3jService.close();
     }
 
     @Override

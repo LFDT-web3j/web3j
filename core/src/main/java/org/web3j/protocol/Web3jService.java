@@ -90,5 +90,6 @@ public interface Web3jService extends AutoCloseable {
      *
      * @throws IOException thrown if a service failed to close all resources
      */
-    void close() throws IOException;
+    @Override
+    void close();
 }
