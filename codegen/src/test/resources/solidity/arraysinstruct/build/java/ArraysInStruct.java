@@ -101,6 +101,17 @@ public class ArraysInStruct extends Contract {
         return new ArraysInStruct(contractAddress, web3j, transactionManager, contractGasProvider);
     }
 
+    /**
+     * Returns the contract name used during code generation.
+     * <p>
+     * This method is strictly for identifying the generated contract name and does not perform runtime detection.
+     *
+     * @return the generated contract name
+     */
+    public String getImplementationName() {
+        return "ArraysInStruct";
+    }
+
     public static class Entity extends DynamicStruct {
         public byte[] bytesField;
 

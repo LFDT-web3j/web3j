@@ -124,6 +124,17 @@ public class SameInnerStructName extends Contract {
         }
     }
 
+    /**
+     * Returns the contract name used during code generation.
+     * <p>
+     * This method is strictly for identifying the generated contract name and does not perform runtime detection.
+     *
+     * @return the generated contract name
+     */
+    public String getImplementationName() {
+        return "SameInnerStructName";
+    }
+
     public static class Foo_Info extends StaticStruct {
         public Boolean dummy;
 

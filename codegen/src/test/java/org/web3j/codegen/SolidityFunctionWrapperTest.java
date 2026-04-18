@@ -1161,6 +1161,26 @@ public class SolidityFunctionWrapperTest extends TempFileProvider {
     }
 
     @Test
+    public void testBuildGetImplementationNameMethod() throws Exception {
+        MethodSpec methodSpec =
+                solidityFunctionWrapperBoth.buildGetImplementationNameMethod("MyContractName");
+
+        String expected =
+                "/**\n"
+                        + " * Returns the contract name used during code generation.\n"
+                        + " * <p>\n"
+                        + " * This method is strictly for identifying the generated contract name and does not perform runtime detection.\n"
+                        + " *\n"
+                        + " * @return the generated contract name\n"
+                        + " */\n"
+                        + "public java.lang.String getImplementationName() {\n"
+                        + "  return \"MyContractName\";\n"
+                        + "}\n";
+
+        assertEquals(expected, methodSpec.toString());
+    }
+
+    @Test
     public void testBinaryWithUnlinkedLibraryLengthOver65534() throws Exception {
         solidityFunctionWrapper.createBinaryDefinition(
                 "0x"

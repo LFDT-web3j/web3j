@@ -11,7 +11,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Features
 
-*
+* Add getImplementationName() to generated contract wrappers for better visibility (#2078)
 
 ### BREAKING CHANGES
 
