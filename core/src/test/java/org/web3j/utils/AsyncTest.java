@@ -39,4 +39,13 @@ class AsyncTest {
                             .get();
                 });
     }
+
+    @Test
+    void testShutdownAllowsManualCleanup() throws Exception {
+        assertEquals("", Async.run(() -> "").get());
+
+        Async.shutdown();
+
+        assertEquals("restarted", Async.run(() -> "restarted").get());
+    }
 }

@@ -16,6 +16,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -24,26 +25,74 @@ public class Async {
 
     private Async() {}
 
-    private static final ExecutorService executor = Executors.newCachedThreadPool();
+    private static ExecutorService executor;
+    private static Thread shutdownHook;
 
     static {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdown(executor)));
+        initialiseExecutor();
     }
 
     public static <T> CompletableFuture<T> run(Callable<T> callable) {
         CompletableFuture<T> result = new CompletableFuture<>();
-        CompletableFuture.runAsync(
-                () -> {
-                    // we need to explicitly catch any exceptions,
-                    // otherwise they will be silently discarded
-                    try {
-                        result.complete(callable.call());
-                    } catch (Throwable e) {
-                        result.completeExceptionally(e);
-                    }
-                },
-                executor);
+        try {
+            CompletableFuture.runAsync(
+                    () -> {
+                        // we need to explicitly catch any exceptions,
+                        // otherwise they will be silently discarded
+                        try {
+                            result.complete(callable.call());
+                        } catch (Throwable e) {
+                            result.completeExceptionally(e);
+                        }
+                    },
+                    executor());
+        } catch (RejectedExecutionException e) {
+            result.completeExceptionally(e);
+        }
         return result;
+    }
+
+    /**
+     * Shutdown the shared executor used by {@link #run(Callable)}.
+     *
+     * <p>This is useful for container-managed applications that need to release Web3j resources
+     * during undeploy or redeploy without waiting for JVM shutdown. Future calls to {@link
+     * #run(Callable)} will create a new shared executor.
+     */
+    public static synchronized void shutdown() {
+        ExecutorService executorService = executor;
+        executor = null;
+        removeShutdownHook();
+
+        if (executorService != null) {
+            shutdown(executorService);
+        }
+    }
+
+    private static synchronized ExecutorService executor() {
+        if (executor == null || executor.isShutdown() || executor.isTerminated()) {
+            initialiseExecutor();
+        }
+        return executor;
+    }
+
+    private static void initialiseExecutor() {
+        executor = Executors.newCachedThreadPool();
+        shutdownHook = new Thread(Async::shutdown);
+        Runtime.getRuntime().addShutdownHook(shutdownHook);
+    }
+
+    private static void removeShutdownHook() {
+        if (shutdownHook == null) {
+            return;
+        }
+
+        try {
+            Runtime.getRuntime().removeShutdownHook(shutdownHook);
+        } catch (IllegalStateException ignored) {
+            // The JVM is already shutting down and is running registered hooks.
+        }
+        shutdownHook = null;
     }
 
     private static int getCpuCount() {
