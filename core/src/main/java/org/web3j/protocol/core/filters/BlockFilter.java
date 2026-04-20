@@ -35,8 +35,8 @@ public class BlockFilter extends Filter<String> {
     }
 
     @Override
-    protected void process(List<EthLog.LogResult> logResults) {
-        for (EthLog.LogResult logResult : logResults) {
+    protected void process(List<EthLog.LogResult<?>> logResults) {
+        for (EthLog.LogResult<?> logResult : logResults) {
             if (logResult instanceof EthLog.Hash) {
                 String blockHash = ((EthLog.Hash) logResult).get();
                 callback.onEvent(blockHash);

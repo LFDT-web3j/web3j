@@ -111,12 +111,13 @@ public abstract class FilterTester {
         assertTrue(subscription.isDisposed());
     }
 
-    List createExpected(EthLog ethLog) {
-        List<EthLog.LogResult> logResults = ethLog.getLogs();
+    @SuppressWarnings("unchecked")
+    <T> List<T> createExpected(EthLog ethLog) {
+        List<EthLog.LogResult<?>> logResults = ethLog.getLogs();
         if (logResults.isEmpty()) {
             fail("Results cannot be empty");
         }
 
-        return ethLog.getLogs().stream().map(EthLog.LogResult::get).toList();
+        return (List<T>) ethLog.getLogs().stream().map(EthLog.LogResult::get).toList();
     }
 }

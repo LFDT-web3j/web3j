@@ -81,11 +81,11 @@ public class EventFilterIT extends Scenario {
                         new Uint256(BigInteger.valueOf(1)), new Uint256(BigInteger.valueOf(1)))));
 
         // finally check it shows up in the event filter
-        List<EthLog.LogResult> filterLogs = createFilterForEvent(encodedEventSignature);
+        List<EthLog.LogResult<?>> filterLogs = createFilterForEvent(encodedEventSignature);
         assertFalse(filterLogs.isEmpty());
     }
 
-    private List<EthLog.LogResult> createFilterForEvent(String encodedEventSignature)
+    private List<EthLog.LogResult<?>> createFilterForEvent(String encodedEventSignature)
             throws Exception {
         EthFilter ethFilter =
                 new EthFilter(

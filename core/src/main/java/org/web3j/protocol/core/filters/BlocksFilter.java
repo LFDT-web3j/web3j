@@ -37,10 +37,10 @@ public class BlocksFilter extends Filter<List<String>> {
     }
 
     @Override
-    protected void process(List<LogResult> logResults) {
+    protected void process(List<LogResult<?>> logResults) {
         List<String> blockHashes = new ArrayList<>(logResults.size());
 
-        for (EthLog.LogResult logResult : logResults) {
+        for (EthLog.LogResult<?> logResult : logResults) {
             if (!(logResult instanceof EthLog.Hash)) {
                 throw new FilterException(
                         "Unexpected result type: " + logResult.get() + ", required Hash");

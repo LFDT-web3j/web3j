@@ -39,15 +39,15 @@ import org.web3j.protocol.core.Response;
  * <p>See <a href="https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_getfilterchanges">docs</a> for
  * further details.
  */
-public class EthLog extends Response<List<EthLog.LogResult>> {
+public class EthLog extends Response<List<EthLog.LogResult<?>>> {
 
     @Override
     @JsonDeserialize(using = LogResultDeserialiser.class)
-    public void setResult(List<LogResult> result) {
+    public void setResult(List<LogResult<?>> result) {
         super.setResult(result);
     }
 
-    public List<LogResult> getLogs() {
+    public List<LogResult<?>> getLogs() {
         return getResult();
     }
 
@@ -127,16 +127,16 @@ public class EthLog extends Response<List<EthLog.LogResult>> {
         }
     }
 
-    public static class LogResultDeserialiser extends JsonDeserializer<List<LogResult>> {
+    public static class LogResultDeserialiser extends JsonDeserializer<List<LogResult<?>>> {
 
         private ObjectReader objectReader = ObjectMapperFactory.getObjectReader();
 
         @Override
-        public List<LogResult> deserialize(
+        public List<LogResult<?>> deserialize(
                 JsonParser jsonParser, DeserializationContext deserializationContext)
                 throws IOException {
 
-            List<LogResult> logResults = new ArrayList<>();
+            List<LogResult<?>> logResults = new ArrayList<>();
             JsonToken nextToken = jsonParser.nextToken();
 
             if (nextToken == JsonToken.START_OBJECT) {
