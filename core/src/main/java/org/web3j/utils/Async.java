@@ -24,10 +24,44 @@ public class Async {
 
     private Async() {}
 
-    private static final ExecutorService executor = Executors.newCachedThreadPool();
+    /**
+     * Shared executor used for async operations. Use {@link #shutdown()} to stop it and prevent
+     * ClassLoader leaks during web app undeployment.
+     */
+    private static volatile ExecutorService executor;
 
-    static {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdown(executor)));
+    private static ExecutorService getExecutor() {
+        ExecutorService result = executor;
+        if (result == null || result.isShutdown()) {
+            synchronized (Async.class) {
+                result = executor;
+                if (result == null || result.isShutdown()) {
+                    executor =
+                            result =
+                                    Executors.newCachedThreadPool(
+                                            r -> {
+                                                Thread t = new Thread(r);
+                                                t.setName("web3j-async");
+                                                t.setDaemon(true);
+                                                return t;
+                                            });
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Stops the shared executor service. Useful in web containers to release threads and prevent
+     * ClassLoader leaks.
+     */
+    public static void shutdown() {
+        synchronized (Async.class) {
+            if (executor != null && !executor.isShutdown()) {
+                shutdown(executor);
+                executor = null;
+            }
+        }
     }
 
     public static <T> CompletableFuture<T> run(Callable<T> callable) {
@@ -42,7 +76,7 @@ public class Async {
                         result.completeExceptionally(e);
                     }
                 },
-                executor);
+                getExecutor());
         return result;
     }
 
