@@ -120,10 +120,10 @@ public abstract class Filter<T> {
             }
 
             if (ethLog.hasError()) {
-                throwException(ethLog.getError());
+                handleError(ethLog.getError());
+            } else {
+                process(ethLog.getLogs());
             }
-
-            process(ethLog.getLogs());
 
         } catch (IOException e) {
             throwException(e);
@@ -138,20 +138,20 @@ public abstract class Filter<T> {
             throwException(e);
         }
         if (ethLog.hasError()) {
-            Error error = ethLog.getError();
-            String message = error.getMessage();
-            switch (error.getCode()) {
-                case RpcErrors.FILTER_NOT_FOUND:
-                    reinstallFilter();
-                    break;
-                default:
-                    if (Pattern.compile(FILTER_NOT_FOUND_PATTERN).matcher(message).find())
-                        reinstallFilter();
-                    else throwException(error);
-                    break;
-            }
+            handleError(ethLog.getError());
         } else {
             process(ethLog.getLogs());
+        }
+    }
+
+    private void handleError(Error error) {
+        if (RpcErrors.FILTER_NOT_FOUND == error.getCode()) {
+            reinstallFilter();
+        } else if (error.getMessage() != null
+                && Pattern.compile(FILTER_NOT_FOUND_PATTERN).matcher(error.getMessage()).find()) {
+            reinstallFilter();
+        } else {
+            throwException(error);
         }
     }
 
@@ -163,7 +163,9 @@ public abstract class Filter<T> {
         log.warn(
                 "Previously installed filter has not been found, trying to re-install. Filter id: {}",
                 filterId);
-        schedule.cancel(false);
+        if (schedule != null) {
+            schedule.cancel(false);
+        }
         this.run(scheduledExecutorService, blockTime);
     }
 

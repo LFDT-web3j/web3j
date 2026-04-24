@@ -7,8 +7,8 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
-* Replace raw usage of `EthLog.LogResult` with parameterized type to improve type safety (#2252)
-(https://github.com/LFDT-web3j/web3j/pull/2254)
+* Replace raw usage of `EthLog.LogResult` with parameterized type to improve type safety (#2252) (https://github.com/LFDT-web3j/web3j/pull/2254)
+* Fix handling of expired or missing filters in event subscriptions to prevent "filter not found" errors (#1998)
 
 ### Features
 
