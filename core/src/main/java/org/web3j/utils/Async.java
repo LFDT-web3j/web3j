@@ -98,7 +98,13 @@ public class Async {
      */
     public static ScheduledExecutorService defaultExecutorService() {
         ScheduledExecutorService scheduledExecutorService =
-                Executors.newScheduledThreadPool(getCpuCount());
+                Executors.newScheduledThreadPool(
+                        getCpuCount(),
+                        r -> {
+                            Thread t = new Thread(r);
+                            t.setDaemon(true);
+                            return t;
+                        });
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdown(scheduledExecutorService)));
 
@@ -110,7 +116,7 @@ public class Async {
      *
      * @param executorService executor service we wish to shut down.
      */
-    private static void shutdown(ExecutorService executorService) {
+    public static void shutdown(ExecutorService executorService) {
         executorService.shutdown();
         try {
             if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
