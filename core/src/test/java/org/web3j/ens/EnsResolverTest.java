@@ -101,31 +101,29 @@ class EnsResolverTest {
 
     @Test
     void testResolve() throws Exception {
-        configureSyncing(false);
-        configureLatestBlock(System.currentTimeMillis() / 1000); // block timestamp is in seconds
-
         NetVersion netVersion = new NetVersion();
         netVersion.setResult(Long.toString(ChainIdLong.MAINNET));
-
-        String resolverAddress =
-                "0x0000000000000000000000004c641fb9bad9b60ef180c31f56051ce826d21a9a";
-        String contractAddress =
-                "0x00000000000000000000000019e03255f667bdfd50a32722df860b1eeaf4d635";
-
-        EthCall resolverAddressResponse = new EthCall();
-        resolverAddressResponse.setResult(resolverAddress);
-
-        EthCall contractAddressResponse = new EthCall();
-        contractAddressResponse.setResult(contractAddress);
-
         when(web3jService.send(any(Request.class), eq(NetVersion.class))).thenReturn(netVersion);
-        when(web3jService.send(any(Request.class), eq(EthCall.class)))
-                .thenReturn(resolverAddressResponse);
-        when(web3jService.send(any(Request.class), eq(EthCall.class)))
-                .thenReturn(contractAddressResponse);
+
+        // UniversalResolver.resolveWithGateways(...) returns (bytes resultBytes, address resolver)
+        // where resultBytes is the ABI-encoded addr(bytes32) return: a 32-byte zero-padded address.
+        String urResponse =
+                "0x"
+                        // offset to resultBytes
+                        + "0000000000000000000000000000000000000000000000000000000000000040"
+                        // resolver address (value is irrelevant for this test)
+                        + "0000000000000000000000004c641fb9bad9b60ef180c31f56051ce826d21a9a"
+                        // resultBytes length = 32
+                        + "0000000000000000000000000000000000000000000000000000000000000020"
+                        // resolved address, zero-padded to 32 bytes
+                        + "00000000000000000000000019e03255f667bdfd50a32722df860b1eeaf4d635";
+        EthCall ethCall = new EthCall();
+        ethCall.setResult(urResponse);
+        when(web3jService.send(any(Request.class), eq(EthCall.class))).thenReturn(ethCall);
 
         assertEquals(
-                ensResolver.resolve("web3j.eth"), ("0x19e03255f667bdfd50a32722df860b1eeaf4d635"));
+                "0x19e03255f667bdfd50a32722df860b1eeaf4d635",
+                ensResolver.resolve("web3j.eth"));
     }
 
     @Test
@@ -612,56 +610,11 @@ class EnsResolverTest {
         }
     }
 
-    @Test
-    public void testResolveWildCardSuccess() throws Exception {
-        String resolvedAddress = "0x41563129cdbbd0c5d3e1c86cf9563926b243834d";
-
-        EnsResolverForTest ensResolverForTest = new EnsResolverForTest(web3j);
-
-        OffchainResolverContract resolverMock = mock(OffchainResolverContract.class);
-        ensResolverForTest.setResolverMock(resolverMock);
-
-        RemoteFunctionCall suppIntResp = mock(RemoteFunctionCall.class);
-        when(resolverMock.supportsInterface(any())).thenReturn(suppIntResp);
-        when(suppIntResp.send()).thenReturn(true);
-
-        RemoteFunctionCall addrResp = mock(RemoteFunctionCall.class);
-        when(resolverMock.addr(any())).thenReturn(addrResp);
-        when(addrResp.encodeFunctionCall()).thenReturn("0x12345");
-
-        RemoteFunctionCall resolveResp = mock(RemoteFunctionCall.class);
-        when(resolverMock.resolve(any(), any())).thenReturn(resolveResp);
-        when(resolveResp.send()).thenReturn(resolvedAddress);
-
-        String result = ensResolverForTest.resolve("1.offchainexample.eth");
-
-        assertNotNull(result);
-        assertEquals(resolvedAddress, result);
-    }
-
-    @Test
-    public void testResolveWildCardWhenResolvedAddressNotValid() throws Exception {
-        EnsResolverForTest ensResolverForTest = new EnsResolverForTest(web3j);
-
-        OffchainResolverContract resolverMock = mock(OffchainResolverContract.class);
-        ensResolverForTest.setResolverMock(resolverMock);
-
-        RemoteFunctionCall suppIntResp = mock(RemoteFunctionCall.class);
-        when(resolverMock.supportsInterface(any())).thenReturn(suppIntResp);
-        when(suppIntResp.send()).thenReturn(true);
-
-        RemoteFunctionCall addrResp = mock(RemoteFunctionCall.class);
-        when(resolverMock.addr(any())).thenReturn(addrResp);
-        when(addrResp.encodeFunctionCall()).thenReturn("0x12345");
-
-        RemoteFunctionCall resolveResp = mock(RemoteFunctionCall.class);
-        when(resolverMock.resolve(any(), any())).thenReturn(resolveResp);
-        when(resolveResp.send()).thenReturn("0xNotvalidAddress");
-
-        assertThrows(
-                EnsResolutionException.class,
-                () -> ensResolverForTest.resolve("1.offchainexample.eth"));
-    }
+    // Wildcard-specific resolve() tests were removed: with the Universal Resolver,
+    // ENSIP-10 wildcard traversal and CCIP-Read trampoline happen inside the UR
+    // contract itself. The client no longer branches on supportsInterface, so those
+    // tests no longer map to observable behaviour. The universal-resolver happy path
+    // is covered by UniversalResolverTest and the live-mainnet UniversalResolverIT.
 
     @Test
     void testGetEnsTextSuccess() throws Exception {

@@ -199,19 +199,23 @@ public class EnsResolver {
 
     /**
      * Resolves an ENS name to an address by calling the Universal Resolver contract
-     * (<code>resolveWithGateways(bytes, bytes, string[])</code>). This is the ENSv2-ready
-     * resolution path — as opposed to {@link #resolve(String)}, which walks the legacy
-     * ENS Registry and calls resolvers directly.
+     * (<code>resolveWithGateways(bytes, bytes, string[])</code>). The UR handles ENS
+     * Registry lookup, ENSIP-10 wildcard traversal, and CCIP-Read trampoline in a
+     * single call — this is the ENSv2-ready resolution path.
      *
-     * <p>See ENSv2 resolution test cases: https://github.com/ensdomains/resolution-tests
+     * <p>If {@code ensName} is already a plain address (no dot, valid hex), it's
+     * returned unchanged, matching the previous contract.
      *
-     * @param ensName ENS name (e.g. {@code vitalik.eth})
-     * @return resolved address, lowercased and 0x-prefixed
+     * @param ensName ENS name (e.g. {@code vitalik.eth}) or a 0x-prefixed address.
+     * @return resolved address, 0x-prefixed. {@code null} for blank / "." inputs.
      */
-    public String resolveViaUniversalResolver(String ensName) {
-        if (Strings.isBlank(ensName)
-                || (ensName.trim().length() == 1 && ensName.contains("."))) {
+    public String resolve(String ensName) {
+        if (Strings.isBlank(ensName) || (ensName.trim().length() == 1 && ensName.contains("."))) {
             return null;
+        }
+        if (!isValidEnsName(ensName, addressLength)) {
+            // Plain address input — preserve legacy behaviour and return as-is.
+            return ensName;
         }
         try {
             NetVersion netVersion = web3j.netVersion().send();
@@ -266,7 +270,7 @@ public class EnsResolver {
             byte[] innerBytes = ((DynamicBytes) decoded.get(0)).getValue();
             if (innerBytes == null || innerBytes.length == 0) {
                 throw new EnsResolutionException(
-                        "Universal Resolver returned empty addr for: " + ensName);
+                        "Unable to resolve address for name: " + ensName);
             }
             // Inner bytes are the addr(bytes32) return — decode as a single Address.
             List<Type> addrDecoded =
@@ -276,66 +280,11 @@ public class EnsResolver {
 
             if (!WalletUtils.isValidAddress(resolvedAddress, addressLength)) {
                 throw new EnsResolutionException(
-                        "Universal Resolver returned invalid address for: " + ensName);
+                        "Unable to resolve address for name: " + ensName);
             }
             return resolvedAddress;
         } catch (EnsResolutionException e) {
             throw e;
-        } catch (Exception e) {
-            throw new EnsResolutionException(
-                    "Unable to resolve via Universal Resolver: " + ensName, e);
-        }
-    }
-
-    /**
-     * Returns the address of the resolver for the specified node.
-     *
-     * @param ensName The specified node.
-     * @return address of the resolver.
-     */
-    public String resolve(String ensName) {
-        if (Strings.isBlank(ensName) || (ensName.trim().length() == 1 && ensName.contains("."))) {
-            return null;
-        }
-
-        try {
-            if (isValidEnsName(ensName, addressLength)) {
-                OffchainResolverContract resolver = obtainOffchainResolver(ensName);
-
-                boolean supportWildcard =
-                        resolver.supportsInterface(EnsUtils.ENSIP_10_INTERFACE_ID).send();
-                byte[] nameHash = NameHash.nameHashAsBytes(ensName);
-
-                String resolvedName;
-                if (supportWildcard) {
-                    String dnsEncoded = NameHash.dnsEncode(ensName);
-                    String addrFunction = resolver.addr(nameHash).encodeFunctionCall();
-
-                    String lookupDataHex =
-                            resolver.resolve(
-                                            Numeric.hexStringToByteArray(dnsEncoded),
-                                            Numeric.hexStringToByteArray(addrFunction))
-                                    .send();
-
-                    resolvedName = resolveOffchain(lookupDataHex, resolver, LOOKUP_LIMIT);
-                } else {
-                    try {
-                        resolvedName = resolver.addr(nameHash).send();
-                    } catch (Exception e) {
-                        throw new RuntimeException("Unable to execute Ethereum request: ", e);
-                    }
-                }
-
-                if (!WalletUtils.isValidAddress(resolvedName)) {
-                    throw new EnsResolutionException(
-                            "Unable to resolve address for name: " + ensName);
-                } else {
-                    return resolvedName;
-                }
-
-            } else {
-                return ensName;
-            }
         } catch (Exception e) {
             throw new EnsResolutionException(e);
         }

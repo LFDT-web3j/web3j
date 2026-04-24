@@ -43,7 +43,7 @@ public class UniversalResolverIT {
         Web3j web3j = Web3j.build(new HttpService(rpc));
         EnsResolver ens = new EnsResolver(web3j);
 
-        String resolved = ens.resolveViaUniversalResolver("ur.integration-tests.eth");
+        String resolved = ens.resolve("ur.integration-tests.eth");
 
         assertEquals(
                 "0x2222222222222222222222222222222222222222", resolved.toLowerCase());
