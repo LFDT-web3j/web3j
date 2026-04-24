@@ -85,11 +85,7 @@ public interface Web3jService extends AutoCloseable {
     <T extends Notification<?>> Flowable<T> subscribe(
             Request request, String unsubscribeMethod, Class<T> responseType);
 
-    /**
-     * Closes resources used by the service.
-     *
-     * @throws IOException thrown if a service failed to close all resources
-     */
+    /** Closes resources used by the service. */
     @Override
     void close();
 }

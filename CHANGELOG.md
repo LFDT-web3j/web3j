@@ -11,7 +11,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Features
 
-*
+* Make Web3jService implement AutoCloseable and add close() support to Web3j (#2266)
 
 ### BREAKING CHANGES
 
