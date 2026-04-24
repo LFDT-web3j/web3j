@@ -83,6 +83,10 @@ public class EnsResolver {
 
     public static final String REVERSE_NAME_SUFFIX = ".addr.reverse";
 
+    // Sentinel gateway URL viem / the ENSv2 Universal Resolver accept when the caller
+    // wants onchain-only resolution (batch handled client-side for CCIP-Read cases).
+    public static final String UNIVERSAL_RESOLVER_BATCH_GATEWAY = "x-batch-gateway:true";
+
     private final Web3j web3j;
     private final int addressLength;
     private final TransactionManager transactionManager;
@@ -225,8 +229,6 @@ public class EnsResolver {
             String addrCalldata = FunctionEncoder.encode(addrFn);
 
             // UniversalResolver.resolveWithGateways(bytes name, bytes data, string[] gateways).
-            // The gateway sentinel "x-batch-gateway:true" is what viem passes for onchain-only
-            // resolution; it's ignored when no CCIP-Read trampoline is needed.
             String dnsEncoded = NameHash.dnsEncode(ensName);
             Function resolveWithGateways =
                     new Function(
@@ -236,7 +238,7 @@ public class EnsResolver {
                                     new DynamicBytes(Numeric.hexStringToByteArray(addrCalldata)),
                                     new DynamicArray<>(
                                             Utf8String.class,
-                                            new Utf8String("x-batch-gateway:true"))),
+                                            new Utf8String(UNIVERSAL_RESOLVER_BATCH_GATEWAY))),
                             Arrays.asList(
                                     new TypeReference<DynamicBytes>() {},
                                     new TypeReference<Address>() {}));
@@ -262,13 +264,15 @@ public class EnsResolver {
                         "Universal Resolver returned unexpected output for: " + ensName);
             }
             byte[] innerBytes = ((DynamicBytes) decoded.get(0)).getValue();
-            if (innerBytes == null || innerBytes.length < 32) {
+            if (innerBytes == null || innerBytes.length == 0) {
                 throw new EnsResolutionException(
                         "Universal Resolver returned empty addr for: " + ensName);
             }
-            // The inner bytes are the addr(bytes32) return: a 32-byte zero-padded address.
-            String innerHex = Numeric.toHexString(innerBytes);
-            String resolvedAddress = "0x" + innerHex.substring(innerHex.length() - 40);
+            // Inner bytes are the addr(bytes32) return — decode as a single Address.
+            List<Type> addrDecoded =
+                    FunctionReturnDecoder.decode(
+                            Numeric.toHexString(innerBytes), addrFn.getOutputParameters());
+            String resolvedAddress = ((Address) addrDecoded.get(0)).getValue();
 
             if (!WalletUtils.isValidAddress(resolvedAddress, addressLength)) {
                 throw new EnsResolutionException(
