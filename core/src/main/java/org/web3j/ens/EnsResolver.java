@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -32,9 +33,17 @@ import org.slf4j.LoggerFactory;
 
 import org.web3j.abi.DefaultFunctionEncoder;
 import org.web3j.abi.DefaultFunctionReturnDecoder;
+import org.web3j.abi.FunctionEncoder;
+import org.web3j.abi.FunctionReturnDecoder;
+import org.web3j.abi.TypeReference;
+import org.web3j.abi.datatypes.Address;
+import org.web3j.abi.datatypes.DynamicArray;
 import org.web3j.abi.datatypes.DynamicBytes;
+import org.web3j.abi.datatypes.Function;
 import org.web3j.abi.datatypes.Type;
+import org.web3j.abi.datatypes.Utf8String;
 import org.web3j.abi.datatypes.ens.OffchainLookup;
+import org.web3j.abi.datatypes.generated.Bytes32;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.Keys;
 import org.web3j.crypto.WalletUtils;
@@ -47,7 +56,9 @@ import org.web3j.ens.contracts.generated.ReverseRegistrar;
 import org.web3j.protocol.ObjectMapperFactory;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
+import org.web3j.protocol.core.methods.request.Transaction;
 import org.web3j.protocol.core.methods.response.EthBlock;
+import org.web3j.protocol.core.methods.response.EthCall;
 import org.web3j.protocol.core.methods.response.EthSyncing;
 import org.web3j.protocol.core.methods.response.NetVersion;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
@@ -194,8 +205,82 @@ public class EnsResolver {
      * @return resolved address, lowercased and 0x-prefixed
      */
     public String resolveViaUniversalResolver(String ensName) {
-        throw new UnsupportedOperationException(
-                "resolveViaUniversalResolver not yet implemented");
+        if (Strings.isBlank(ensName)
+                || (ensName.trim().length() == 1 && ensName.contains("."))) {
+            return null;
+        }
+        try {
+            NetVersion netVersion = web3j.netVersion().send();
+            String urAddress =
+                    UniversalResolverContracts.resolveUniversalResolverContract(
+                            netVersion.getNetVersion());
+
+            // addr(bytes32) calldata targeting the ENS node for the requested name.
+            byte[] nameHashBytes = NameHash.nameHashAsBytes(ensName);
+            Function addrFn =
+                    new Function(
+                            "addr",
+                            Collections.singletonList(new Bytes32(nameHashBytes)),
+                            Collections.singletonList(new TypeReference<Address>() {}));
+            String addrCalldata = FunctionEncoder.encode(addrFn);
+
+            // UniversalResolver.resolveWithGateways(bytes name, bytes data, string[] gateways).
+            // The gateway sentinel "x-batch-gateway:true" is what viem passes for onchain-only
+            // resolution; it's ignored when no CCIP-Read trampoline is needed.
+            String dnsEncoded = NameHash.dnsEncode(ensName);
+            Function resolveWithGateways =
+                    new Function(
+                            "resolveWithGateways",
+                            Arrays.asList(
+                                    new DynamicBytes(Numeric.hexStringToByteArray(dnsEncoded)),
+                                    new DynamicBytes(Numeric.hexStringToByteArray(addrCalldata)),
+                                    new DynamicArray<>(
+                                            Utf8String.class,
+                                            new Utf8String("x-batch-gateway:true"))),
+                            Arrays.asList(
+                                    new TypeReference<DynamicBytes>() {},
+                                    new TypeReference<Address>() {}));
+            String encodedCall = FunctionEncoder.encode(resolveWithGateways);
+
+            EthCall response =
+                    web3j.ethCall(
+                                    Transaction.createEthCallTransaction(
+                                            null, urAddress, encodedCall),
+                                    DefaultBlockParameterName.LATEST)
+                            .send();
+
+            if (response == null || response.getValue() == null) {
+                throw new EnsResolutionException(
+                        "Universal Resolver call returned no data for: " + ensName);
+            }
+
+            List<Type> decoded =
+                    FunctionReturnDecoder.decode(
+                            response.getValue(), resolveWithGateways.getOutputParameters());
+            if (decoded.isEmpty() || !(decoded.get(0) instanceof DynamicBytes)) {
+                throw new EnsResolutionException(
+                        "Universal Resolver returned unexpected output for: " + ensName);
+            }
+            byte[] innerBytes = ((DynamicBytes) decoded.get(0)).getValue();
+            if (innerBytes == null || innerBytes.length < 32) {
+                throw new EnsResolutionException(
+                        "Universal Resolver returned empty addr for: " + ensName);
+            }
+            // The inner bytes are the addr(bytes32) return: a 32-byte zero-padded address.
+            String innerHex = Numeric.toHexString(innerBytes);
+            String resolvedAddress = "0x" + innerHex.substring(innerHex.length() - 40);
+
+            if (!WalletUtils.isValidAddress(resolvedAddress, addressLength)) {
+                throw new EnsResolutionException(
+                        "Universal Resolver returned invalid address for: " + ensName);
+            }
+            return resolvedAddress;
+        } catch (EnsResolutionException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new EnsResolutionException(
+                    "Unable to resolve via Universal Resolver: " + ensName, e);
+        }
     }
 
     /**
