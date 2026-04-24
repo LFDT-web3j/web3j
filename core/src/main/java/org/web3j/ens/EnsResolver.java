@@ -183,6 +183,22 @@ public class EnsResolver {
     }
 
     /**
+     * Resolves an ENS name to an address by calling the Universal Resolver contract
+     * (<code>resolveWithGateways(bytes, bytes, string[])</code>). This is the ENSv2-ready
+     * resolution path — as opposed to {@link #resolve(String)}, which walks the legacy
+     * ENS Registry and calls resolvers directly.
+     *
+     * <p>See ENSv2 resolution test cases: https://github.com/ensdomains/resolution-tests
+     *
+     * @param ensName ENS name (e.g. {@code vitalik.eth})
+     * @return resolved address, lowercased and 0x-prefixed
+     */
+    public String resolveViaUniversalResolver(String ensName) {
+        throw new UnsupportedOperationException(
+                "resolveViaUniversalResolver not yet implemented");
+    }
+
+    /**
      * Returns the address of the resolver for the specified node.
      *
      * @param ensName The specified node.
