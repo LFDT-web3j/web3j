@@ -13,6 +13,10 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 *
 
+### Documentation
+
+* Add practical Web3j use case examples for common workflows (#2267)
+
 ### BREAKING CHANGES
 
 *
