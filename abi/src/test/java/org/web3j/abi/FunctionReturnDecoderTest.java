@@ -38,6 +38,7 @@ import org.web3j.abi.datatypes.generated.Uint256;
 import org.web3j.crypto.Hash;
 import org.web3j.utils.Numeric;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class FunctionReturnDecoderTest {
@@ -1605,5 +1606,40 @@ public class FunctionReturnDecoderTest {
         assertEquals(tupleArrayEntry2.get(0).getValue(), BigInteger.valueOf(23));
         assertEquals(tupleArrayEntry2.get(1).getValue(), true);
         assertEquals(tupleArrayEntry2.get(2).getValue(), "gm");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testDecodeStaticArrayOfDynamicBytesFollowedByUint() {
+        // Tuple (bytes[2], uint256). The StaticArray<DynamicBytes> at the top
+        // level is encoded as a single pointer slot, so after decoding it the
+        // top-level offset must advance by exactly one slot (not length * slot).
+        // Otherwise the trailing uint256 reads from the wrong position.
+        String rawInput =
+                "0x"
+                        + "0000000000000000000000000000000000000000000000000000000000000040"
+                        + "00000000000000000000000000000000000000000000000000000000000007ad"
+                        + "0000000000000000000000000000000000000000000000000000000000000040"
+                        + "0000000000000000000000000000000000000000000000000000000000000080"
+                        + "0000000000000000000000000000000000000000000000000000000000000004"
+                        + "6c6f6c3100000000000000000000000000000000000000000000000000000000"
+                        + "0000000000000000000000000000000000000000000000000000000000000004"
+                        + "6f6d673200000000000000000000000000000000000000000000000000000000";
+
+        List<TypeReference<Type>> outputParameters = new ArrayList<>();
+        outputParameters.add(
+                (TypeReference) new TypeReference<StaticArray2<DynamicBytes>>() {});
+        outputParameters.add((TypeReference) new TypeReference<Uint256>() {});
+
+        List<Type> result = FunctionReturnDecoder.decode(rawInput, outputParameters);
+
+        StaticArray2<DynamicBytes> bytesArray = (StaticArray2<DynamicBytes>) result.get(0);
+        Uint256 trailing = (Uint256) result.get(1);
+
+        assertArrayEquals(
+                new byte[] {'l', 'o', 'l', '1'}, bytesArray.getValue().get(0).getValue());
+        assertArrayEquals(
+                new byte[] {'o', 'm', 'g', '2'}, bytesArray.getValue().get(1).getValue());
+        assertEquals(BigInteger.valueOf(0x7ad), trailing.getValue());
     }
 }
