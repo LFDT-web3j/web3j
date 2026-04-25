@@ -1485,7 +1485,7 @@ public class SolidityFunctionWrapper extends Generator {
 
     static TypeName getEventNativeType(TypeName typeName) {
         if (typeName instanceof ParameterizedTypeName) {
-            return TypeName.get(byte[].class);
+            return getNativeType((ParameterizedTypeName) typeName);
         }
 
         String simpleName = ((ClassName) typeName).simpleName();

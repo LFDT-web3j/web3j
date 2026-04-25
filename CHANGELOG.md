@@ -7,7 +7,8 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
--
+- Fix incorrect casting for array types in generated contract wrappers [#2274](https://github.com/LFDT-web3j/web3j/pull/2274)
+
 
 ### Features
 

@@ -170,7 +170,17 @@ public class SolidityFunctionWrapperTest extends TempFileProvider {
                 getEventNativeType(
                         ParameterizedTypeName.get(
                                 ClassName.get(DynamicArray.class), TypeName.get(Address.class))),
-                (TypeName.get(byte[].class)));
+                ParameterizedTypeName.get(ClassName.get(List.class), TypeName.get(String.class)));
+    }
+
+    @Test
+    public void testGetEventNativeTypeBytes32Array() {
+        // bytes32[] should map to List<byte[]>, not byte[] (issue #1994)
+        assertEquals(
+                getEventNativeType(
+                        ParameterizedTypeName.get(
+                                ClassName.get(DynamicArray.class), TypeName.get(Bytes32.class))),
+                ParameterizedTypeName.get(ClassName.get(List.class), TypeName.get(byte[].class)));
     }
 
     @Test
