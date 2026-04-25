@@ -12,7 +12,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Features
 
-*
+* Add utility to decode event logs using ABI into structured objects (#1870)
 
 ### BREAKING CHANGES
 
