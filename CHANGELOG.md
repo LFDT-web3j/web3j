@@ -9,6 +9,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 * Replace raw usage of `EthLog.LogResult` with parameterized type to improve type safety (#2252)
 (https://github.com/LFDT-web3j/web3j/pull/2254)
+* Fix filter reinstall logic to prevent scheduler cancellation on initialization failure (#1993)
 
 ### Features
 

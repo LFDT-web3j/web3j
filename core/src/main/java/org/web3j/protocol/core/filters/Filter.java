@@ -163,8 +163,17 @@ public abstract class Filter<T> {
         log.warn(
                 "Previously installed filter has not been found, trying to re-install. Filter id: {}",
                 filterId);
-        schedule.cancel(false);
-        this.run(scheduledExecutorService, blockTime);
+        try {
+            EthFilter ethFilter = sendRequest();
+            if (ethFilter.hasError()) {
+                throwException(ethFilter.getError());
+            }
+
+            filterId = ethFilter.getFilterId();
+            getInitialFilterLogs();
+        } catch (IOException | FilterException e) {
+            log.error("Error re-installing filter", e);
+        }
     }
 
     public void cancel() {
