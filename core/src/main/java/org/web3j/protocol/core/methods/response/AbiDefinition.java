@@ -222,6 +222,19 @@ public class AbiDefinition {
             this(name, type, Collections.emptyList(), DEFAULT_INTERNAL_TYPE, indexed);
         }
 
+    private String cleanInternalType(String internalType) {
+        if (internalType != null) {
+            String clean = internalType;
+            if (clean.startsWith("struct ")) {
+                clean = clean.substring(7);
+            } else if (clean.startsWith("enum ")) {
+                clean = clean.substring(5);
+            }
+            return clean;
+        }
+        return internalType;
+    }
+
         public NamedType(
                 String name,
                 String type,
@@ -231,7 +244,7 @@ public class AbiDefinition {
             this.name = name;
             this.type = type;
             this.components = components;
-            this.internalType = internalType;
+            this.internalType = cleanInternalType(internalType);
             this.indexed = indexed;
         }
 
@@ -256,7 +269,7 @@ public class AbiDefinition {
         }
 
         public void setInternalType(final String internalType) {
-            this.internalType = internalType;
+            this.internalType = cleanInternalType(internalType);
         }
 
         public boolean isIndexed() {

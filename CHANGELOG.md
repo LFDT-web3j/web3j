@@ -8,6 +8,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * Replace raw usage of `EthLog.LogResult` with parameterized type to improve type safety (#2252)
+* Fix code generation failure when ABI contains struct types prefixed with `struct` keyword (#1978)
 (https://github.com/LFDT-web3j/web3j/pull/2254)
 
 ### Features

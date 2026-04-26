@@ -81,6 +81,18 @@ public class SolidityFunctionWrapperTest extends TempFileProvider {
     }
 
     @Test
+    public void testCleanInternalType() {
+        NamedType namedType =
+                new NamedType("op", "tuple", Collections.emptyList(), "struct UserOperation", false);
+        assertEquals("UserOperation", namedType.structIdentifier());
+        assertEquals("UserOperation", namedType.getInternalType());
+
+        namedType.setInternalType("enum MyEnum");
+        assertEquals("MyEnum", namedType.structIdentifier());
+        assertEquals("MyEnum", namedType.getInternalType());
+    }
+
+    @Test
     public void testBuildTypeName() throws Exception {
         assertEquals(buildTypeName("uint256"), (ClassName.get(Uint256.class)));
         assertEquals(buildTypeName("uint64"), (ClassName.get(Uint64.class)));
