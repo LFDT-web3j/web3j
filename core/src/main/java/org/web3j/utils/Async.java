@@ -80,18 +80,7 @@ public class Async {
                     },
                     getExecutor());
         } catch (RejectedExecutionException e) {
-            synchronized (Async.class) {
-                executor = null;
-            }
-            CompletableFuture.runAsync(
-                    () -> {
-                        try {
-                            result.complete(callable.call());
-                        } catch (Throwable throwable) {
-                            result.completeExceptionally(throwable);
-                        }
-                    },
-                    getExecutor());
+            result.completeExceptionally(e);
         }
         return result;
     }
