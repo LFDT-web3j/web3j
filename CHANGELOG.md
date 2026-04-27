@@ -7,8 +7,9 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
-* Replace raw usage of `EthLog.LogResult` with parameterized type to improve type safety (#2252)
-(https://github.com/LFDT-web3j/web3j/pull/2254)
+* Fix Async executor lifecycle to support safe shutdown and reuse (#2244)
+* Fix Async executor lifecycle to safely recreate executor after shutdown and prevent RejectedExecutionException (#2255)
+* Replace raw usage of EthLog.LogResult with parameterized type to improve type safety (#2252)
 
 ### Features
 
