@@ -102,6 +102,10 @@ public class Log {
         this.transactionHash = transactionHash;
     }
 
+    public void setHash(String hash) {
+        this.transactionHash = hash;
+    }
+
     public String getBlockHash() {
         return blockHash;
     }

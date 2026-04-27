@@ -8,6 +8,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 * Replace raw usage of `EthLog.LogResult` with parameterized type to improve type safety (#2252)
+* Fix pendingTransactionFlowable failure on WebSocket nodes without filter support (#1941)
 (https://github.com/LFDT-web3j/web3j/pull/2254)
 
 ### Features
