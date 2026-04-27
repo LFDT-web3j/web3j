@@ -16,6 +16,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -32,10 +33,10 @@ public class Async {
 
     private static ExecutorService getExecutor() {
         ExecutorService result = executor;
-        if (result == null || result.isShutdown()) {
+        if (result == null || result.isShutdown() || result.isTerminated()) {
             synchronized (Async.class) {
                 result = executor;
-                if (result == null || result.isShutdown()) {
+                if (result == null || result.isShutdown() || result.isTerminated()) {
                     executor =
                             result =
                                     Executors.newCachedThreadPool(
@@ -66,17 +67,32 @@ public class Async {
 
     public static <T> CompletableFuture<T> run(Callable<T> callable) {
         CompletableFuture<T> result = new CompletableFuture<>();
-        CompletableFuture.runAsync(
-                () -> {
-                    // we need to explicitly catch any exceptions,
-                    // otherwise they will be silently discarded
-                    try {
-                        result.complete(callable.call());
-                    } catch (Throwable e) {
-                        result.completeExceptionally(e);
-                    }
-                },
-                getExecutor());
+        try {
+            CompletableFuture.runAsync(
+                    () -> {
+                        // we need to explicitly catch any exceptions,
+                        // otherwise they will be silently discarded
+                        try {
+                            result.complete(callable.call());
+                        } catch (Throwable throwable) {
+                            result.completeExceptionally(throwable);
+                        }
+                    },
+                    getExecutor());
+        } catch (RejectedExecutionException e) {
+            synchronized (Async.class) {
+                executor = null;
+            }
+            CompletableFuture.runAsync(
+                    () -> {
+                        try {
+                            result.complete(callable.call());
+                        } catch (Throwable throwable) {
+                            result.completeExceptionally(throwable);
+                        }
+                    },
+                    getExecutor());
+        }
         return result;
     }
 
