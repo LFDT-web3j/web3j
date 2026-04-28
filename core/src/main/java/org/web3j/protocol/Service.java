@@ -39,7 +39,7 @@ public abstract class Service implements Web3jService {
 
     public Service(boolean includeRawResponses) {
         this.includeRawResponses = includeRawResponses;
-        objectMapper = ObjectMapperFactory.getObjectMapper(includeRawResponses);
+        objectMapper = ObjectMapperFactory.getObjectMapper();
     }
 
     protected abstract InputStream performIO(String payload) throws IOException;
