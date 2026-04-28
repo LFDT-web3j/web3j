@@ -100,7 +100,7 @@ public class WebSocketService implements Web3jService {
         this.webSocketClient = webSocketClient;
         this.executor = executor;
         this.includeRawResponses = includeRawResponses;
-        this.objectMapper = ObjectMapperFactory.getObjectMapper(includeRawResponses);
+        this.objectMapper = ObjectMapperFactory.getObjectMapper();
     }
 
     /**
