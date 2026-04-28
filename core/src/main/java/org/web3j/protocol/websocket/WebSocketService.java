@@ -73,6 +73,7 @@ public class WebSocketService implements Web3jService {
     private final ScheduledExecutorService executor;
     // Object mapper to map incoming JSON objects
     private final ObjectMapper objectMapper;
+    private final boolean includeRawResponses;
 
     // Map of a sent request id to objects necessary to process this request
     private Map<Long, WebSocketRequest<?>> requestForId = new ConcurrentHashMap<>();
@@ -98,6 +99,7 @@ public class WebSocketService implements Web3jService {
             boolean includeRawResponses) {
         this.webSocketClient = webSocketClient;
         this.executor = executor;
+        this.includeRawResponses = includeRawResponses;
         this.objectMapper = ObjectMapperFactory.getObjectMapper(includeRawResponses);
     }
 
@@ -288,7 +290,10 @@ public class WebSocketService implements Web3jService {
         long replyId = getReplyId(replyJson);
         WebSocketRequest request = getAndRemoveRequest(replyId);
         try {
-            Object reply = objectMapper.convertValue(replyJson, request.getResponseType());
+            Object reply = objectMapper.treeToValue(replyJson, request.getResponseType());
+            if (includeRawResponses && reply instanceof Response) {
+                ((Response<?>) reply).setRawResponse(replyStr);
+            }
             // Instead of sending a reply to a caller asynchronously we need to process it here
             // to avoid race conditions we need to modify state of this class.
             if (reply instanceof EthSubscribe) {
@@ -315,6 +320,9 @@ public class WebSocketService implements Web3jService {
                 Response<?> response =
                         objectMapper.treeToValue(
                                 replyJson.get(i), requests.get(i).getResponseType());
+                if (includeRawResponses) {
+                    response.setRawResponse(replyJson.get(i).toString());
+                }
                 responses.add(response);
             }
 
@@ -394,7 +402,7 @@ public class WebSocketService implements Web3jService {
     }
 
     private String extractSubscriptionId(JsonNode replyJson) {
-        return replyJson.get("params").get("subscription").asText();
+        return replyJson.get("params").get("subscription").asString();
     }
 
     @SuppressWarnings("unchecked")
@@ -440,19 +448,19 @@ public class WebSocketService implements Web3jService {
         }
 
         if (!idField.isIntegralNumber()) {
-            if (idField.isTextual()) {
+            if (idField.isString()) {
                 try {
-                    return Long.parseLong(idField.asText());
+                    return Long.parseLong(idField.asString());
                 } catch (NumberFormatException e) {
                     throw new IOException(
                             String.format(
                                     "Found Textual 'id' that cannot be casted to long. Input : '%s'",
-                                    idField.asText()));
+                                    idField.asString()));
                 }
             } else {
                 throw new IOException(
                         String.format(
-                                "'id' expected to be long, but it is: '%s'", idField.asText()));
+                                "'id' expected to be long, but it is: '%s'", idField.asString()));
             }
         }
 

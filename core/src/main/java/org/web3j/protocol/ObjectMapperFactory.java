@@ -13,67 +13,30 @@
 package org.web3j.protocol;
 
 import tools.jackson.core.json.JsonReadFeature;
-import tools.jackson.databind.BeanDescription;
-import tools.jackson.databind.DeserializationConfig;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.ObjectReader;
-import tools.jackson.databind.ValueDeserializer;
-import tools.jackson.databind.deser.ValueDeserializerModifier;
 import tools.jackson.databind.json.JsonMapper;
-import tools.jackson.databind.module.SimpleModule;
-
-import org.web3j.protocol.core.Response;
-import org.web3j.protocol.deserializer.RawResponseDeserializer;
 
 /** Factory for managing our ObjectMapper instances. */
 public class ObjectMapperFactory {
 
-    private static final ObjectMapper DEFAULT_OBJECT_MAPPER = buildObjectMapper(false);
+    private static final ObjectMapper DEFAULT_OBJECT_MAPPER = buildObjectMapper();
 
     public static ObjectMapper getObjectMapper() {
-        return getObjectMapper(false);
-    }
-
-    public static ObjectMapper getObjectMapper(boolean shouldIncludeRawResponses) {
-        if (!shouldIncludeRawResponses) {
-            return DEFAULT_OBJECT_MAPPER;
-        }
-
-        return buildObjectMapper(true);
+        return buildObjectMapper();
     }
 
     public static ObjectReader getObjectReader() {
         return DEFAULT_OBJECT_MAPPER.reader();
     }
 
-    private static ObjectMapper buildObjectMapper(boolean shouldIncludeRawResponses) {
+    private static ObjectMapper buildObjectMapper() {
         JsonMapper.Builder builder =
                 JsonMapper.builder()
                         .enable(JsonReadFeature.ALLOW_UNQUOTED_PROPERTY_NAMES)
                         .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                         .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES);
-
-        if (shouldIncludeRawResponses) {
-            SimpleModule module = new SimpleModule();
-            module.setDeserializerModifier(
-                    new ValueDeserializerModifier() {
-                        @Override
-                        public ValueDeserializer<?> modifyDeserializer(
-                                DeserializationConfig config,
-                                BeanDescription.Supplier beanDesc,
-                                ValueDeserializer<?> deserializer) {
-                            if (Response.class.isAssignableFrom(beanDesc.getBeanClass())) {
-                                return new RawResponseDeserializer(
-                                        (ValueDeserializer<?>) deserializer);
-                            }
-
-                            return deserializer;
-                        }
-                    });
-
-            builder.addModule(module);
-        }
 
         return builder.build();
     }

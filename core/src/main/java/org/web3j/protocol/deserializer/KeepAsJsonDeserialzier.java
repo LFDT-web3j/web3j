@@ -13,6 +13,7 @@
 package org.web3j.protocol.deserializer;
 
 import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
 import tools.jackson.core.TreeNode;
 import tools.jackson.databind.DeserializationContext;
 import tools.jackson.databind.ValueDeserializer;
@@ -21,7 +22,11 @@ public class KeepAsJsonDeserialzier extends ValueDeserializer<String> {
 
     @Override
     public String deserialize(JsonParser jp, DeserializationContext ctxt) {
+        if (jp.currentToken() == JsonToken.VALUE_NULL) {
+            return null;
+        }
+
         TreeNode tree = jp.readValueAsTree();
-        return tree.toString();
+        return tree != null ? tree.toString() : null;
     }
 }
