@@ -12,9 +12,12 @@
  */
 package org.web3j.protocol.core.methods.response;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
 import java.util.List;
 import java.util.Objects;
 
+@JsonPropertyOrder({"address", "storageKeys"})
 public class AccessListObject {
     private String address;
     private List<String> storageKeys;
