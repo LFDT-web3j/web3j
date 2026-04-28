@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.web3j.abi.datatypes.DynamicArray;
@@ -1640,6 +1641,69 @@ public class FunctionReturnDecoderTest {
                 new byte[] {'l', 'o', 'l', '1'}, bytesArray.getValue().get(0).getValue());
         assertArrayEquals(
                 new byte[] {'o', 'm', 'g', '2'}, bytesArray.getValue().get(1).getValue());
+        assertEquals(BigInteger.valueOf(0x7ad), trailing.getValue());
+    }
+
+    @Test
+    @Disabled(
+            "Nested StaticArray of dynamic-element StaticArrays (e.g. bytes[2][2]) "
+                    + "throws StringIndexOutOfBoundsException in TypeDecoder.decodeArrayElements. "
+                    + "This is a pre-existing bug independent of the top-level offset fix in this PR.")
+    @SuppressWarnings("unchecked")
+    public void testDecodeNestedStaticArrayOfDynamicBytesFollowedByUint() {
+        // Tuple (bytes[2][2], uint256). bytes[2][2] is dynamic (inner bytes is
+        // dynamic), so at the top level the whole nested array occupies a
+        // single pointer slot and the trailing uint256 must read from slot 1.
+        // Encoded values:
+        //   bytes[2][2] = [["lol1", "omg2"], ["wat3", "yes4"]]
+        //   uint256 = 0x7ad
+        String rawInput =
+                "0x"
+                        // top-level head
+                        + "0000000000000000000000000000000000000000000000000000000000000040"
+                        + "00000000000000000000000000000000000000000000000000000000000007ad"
+                        // bytes[2][2] head at 0x40
+                        + "0000000000000000000000000000000000000000000000000000000000000040"
+                        + "0000000000000000000000000000000000000000000000000000000000000100"
+                        // first bytes[2] at 0x80
+                        + "0000000000000000000000000000000000000000000000000000000000000040"
+                        + "0000000000000000000000000000000000000000000000000000000000000080"
+                        + "0000000000000000000000000000000000000000000000000000000000000004"
+                        + "6c6f6c3100000000000000000000000000000000000000000000000000000000"
+                        + "0000000000000000000000000000000000000000000000000000000000000004"
+                        + "6f6d673200000000000000000000000000000000000000000000000000000000"
+                        // second bytes[2] at 0x140
+                        + "0000000000000000000000000000000000000000000000000000000000000040"
+                        + "0000000000000000000000000000000000000000000000000000000000000080"
+                        + "0000000000000000000000000000000000000000000000000000000000000004"
+                        + "7761743300000000000000000000000000000000000000000000000000000000"
+                        + "0000000000000000000000000000000000000000000000000000000000000004"
+                        + "7965733400000000000000000000000000000000000000000000000000000000";
+
+        List<TypeReference<Type>> outputParameters = new ArrayList<>();
+        outputParameters.add(
+                (TypeReference)
+                        new TypeReference<StaticArray2<StaticArray2<DynamicBytes>>>() {});
+        outputParameters.add((TypeReference) new TypeReference<Uint256>() {});
+
+        List<Type> result = FunctionReturnDecoder.decode(rawInput, outputParameters);
+
+        StaticArray2<StaticArray2<DynamicBytes>> nested =
+                (StaticArray2<StaticArray2<DynamicBytes>>) result.get(0);
+        Uint256 trailing = (Uint256) result.get(1);
+
+        assertArrayEquals(
+                new byte[] {'l', 'o', 'l', '1'},
+                nested.getValue().get(0).getValue().get(0).getValue());
+        assertArrayEquals(
+                new byte[] {'o', 'm', 'g', '2'},
+                nested.getValue().get(0).getValue().get(1).getValue());
+        assertArrayEquals(
+                new byte[] {'w', 'a', 't', '3'},
+                nested.getValue().get(1).getValue().get(0).getValue());
+        assertArrayEquals(
+                new byte[] {'y', 'e', 's', '4'},
+                nested.getValue().get(1).getValue().get(1).getValue());
         assertEquals(BigInteger.valueOf(0x7ad), trailing.getValue());
     }
 }
