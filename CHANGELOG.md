@@ -7,6 +7,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
+* Fix NullPointerException when deriving child keys from public-only Bip32ECKeyPair (#1927)
 * Replace raw usage of `EthLog.LogResult` with parameterized type to improve type safety (#2252)
 (https://github.com/LFDT-web3j/web3j/pull/2254)
 
