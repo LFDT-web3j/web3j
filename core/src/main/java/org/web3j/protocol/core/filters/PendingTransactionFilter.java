@@ -35,8 +35,8 @@ public class PendingTransactionFilter extends Filter<String> {
     }
 
     @Override
-    protected void process(List<EthLog.LogResult> logResults) {
-        for (EthLog.LogResult logResult : logResults) {
+    protected void process(List<EthLog.LogResult<?>> logResults) {
+        for (EthLog.LogResult<?> logResult : logResults) {
             if (logResult instanceof EthLog.Hash) {
                 String transactionHash = ((EthLog.Hash) logResult).get();
                 callback.onEvent(transactionHash);
