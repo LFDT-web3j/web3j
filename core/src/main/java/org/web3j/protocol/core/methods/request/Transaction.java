@@ -29,7 +29,7 @@ import org.web3j.utils.Numeric;
  * </ol>
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({"from", "to", "data"})
+@JsonPropertyOrder({"from", "to", "gas", "gasPrice", "value", "data", "nonce", "chainId", "maxPriorityFeePerGas", "maxFeePerGas"})
 public class Transaction {
     // default as per https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_sendtransaction
     public static final BigInteger DEFAULT_GAS = BigInteger.valueOf(9000);
