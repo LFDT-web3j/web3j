@@ -221,7 +221,7 @@ public class Sign {
         ECPoint R = decompressKey(x, (recId & 1) == 1);
         //   1.4. If nR != point at infinity, then do another iteration of Step 1 (callers
         //        responsibility).
-        if (!R.multiply(n).isInfinity()) {
+        if (R == null || !R.multiply(n).isInfinity()) {
             return null;
         }
         //   1.5. Compute e from M using Steps 2 and 3 of ECDSA signature verification.
@@ -256,7 +256,11 @@ public class Sign {
         X9IntegerConverter x9 = new X9IntegerConverter();
         byte[] compEnc = x9.integerToBytes(xBN, 1 + x9.getByteLength(CURVE.getCurve()));
         compEnc[0] = (byte) (yBit ? 0x03 : 0x02);
-        return CURVE.getCurve().decodePoint(compEnc);
+        try {
+            return CURVE.getCurve().decodePoint(compEnc);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     /**
@@ -280,14 +284,22 @@ public class Sign {
      * public key that was used to sign it. This can then be compared to the expected public key to
      * determine if the signature was correct.
      *
+     * <p>Rejects malleable signatures where the {@code s} value is in the upper half of the curve
+     * order, as required by EIP-2 and Bitcoin's strict-DER rules.
+     *
      * @param message The message.
      * @param signatureData The message signature components
      * @return the public key used to sign the message
-     * @throws SignatureException If the public key could not be recovered or if there was a
-     *     signature format error.
+     * @throws SignatureException If the public key could not be recovered, if the signature format
+     *     is invalid, or if the signature is malleable.
      */
     public static BigInteger signedPrefixedMessageToKey(byte[] message, SignatureData signatureData)
             throws SignatureException {
+        BigInteger s = new BigInteger(1, signatureData.getS());
+        if (s.compareTo(HALF_CURVE_ORDER) > 0) {
+            throw new SignatureException(
+                    "Invalid signature: s is in the upper half of the curve order");
+        }
         return signedMessageHashToKey(getEthereumMessageHash(message), signatureData);
     }
 
