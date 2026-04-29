@@ -135,6 +135,74 @@ class EnsResolverTest {
     }
 
     @Test
+    void testResolveThrowsWhenZeroAddressReturned() throws Exception {
+        // Names with no addr record: resolvers return 0x0000...0000. resolve() must
+        // raise EnsResolutionException so callers never silently get a burn address.
+        NetVersion netVersion = new NetVersion();
+        netVersion.setResult(Long.toString(ChainIdLong.MAINNET));
+        when(web3jService.send(any(Request.class), eq(NetVersion.class))).thenReturn(netVersion);
+
+        String urResponse =
+                "0x"
+                        + "0000000000000000000000000000000000000000000000000000000000000040"
+                        + "0000000000000000000000004c641fb9bad9b60ef180c31f56051ce826d21a9a"
+                        + "0000000000000000000000000000000000000000000000000000000000000020"
+                        + "0000000000000000000000000000000000000000000000000000000000000000";
+        EthCall ethCall = new EthCall();
+        ethCall.setResult(urResponse);
+        when(web3jService.send(any(Request.class), eq(EthCall.class))).thenReturn(ethCall);
+
+        assertThrows(EnsResolutionException.class, () -> ensResolver.resolve("nope.eth"));
+    }
+
+    @Test
+    void testResolveFallsBackToLegacyResolveSignature() throws Exception {
+        // resolveWithGateways(bytes,bytes,string[]) is unavailable on this UR deployment
+        // (call returns 0x simulating method-not-found). resolve() must fall back to the
+        // older resolve(bytes,bytes) signature, which returns just (bytes resultBytes).
+        NetVersion netVersion = new NetVersion();
+        netVersion.setResult(Long.toString(ChainIdLong.MAINNET));
+        when(web3jService.send(any(Request.class), eq(NetVersion.class))).thenReturn(netVersion);
+
+        EthCall emptyResponse = new EthCall();
+        emptyResponse.setResult("0x");
+
+        String legacyResponse =
+                "0x"
+                        // offset to resultBytes
+                        + "0000000000000000000000000000000000000000000000000000000000000020"
+                        // resultBytes length = 32
+                        + "0000000000000000000000000000000000000000000000000000000000000020"
+                        // ABI-encoded addr() result
+                        + "00000000000000000000000019e03255f667bdfd50a32722df860b1eeaf4d635";
+        EthCall legacyCall = new EthCall();
+        legacyCall.setResult(legacyResponse);
+
+        when(web3jService.send(any(Request.class), eq(EthCall.class)))
+                .thenReturn(emptyResponse, legacyCall);
+
+        assertEquals(
+                "0x19e03255f667bdfd50a32722df860b1eeaf4d635",
+                ensResolver.resolve("web3j.eth"));
+    }
+
+    @Test
+    void testResolveThrowsWhenBothSignaturesUnavailable() throws Exception {
+        // Both resolveWithGateways and the legacy resolve(bytes,bytes) revert.
+        // resolve() must surface EnsResolutionException rather than returning null
+        // or a junk address.
+        NetVersion netVersion = new NetVersion();
+        netVersion.setResult(Long.toString(ChainIdLong.MAINNET));
+        when(web3jService.send(any(Request.class), eq(NetVersion.class))).thenReturn(netVersion);
+
+        EthCall reverted = new EthCall();
+        reverted.setError(new org.web3j.protocol.core.Response.Error(3, "execution reverted"));
+        when(web3jService.send(any(Request.class), eq(EthCall.class))).thenReturn(reverted);
+
+        assertThrows(EnsResolutionException.class, () -> ensResolver.resolve("nope.eth"));
+    }
+
+    @Test
     void testReverseResolve() throws Exception {
         configureSyncing(false);
         configureLatestBlock(System.currentTimeMillis() / 1000); // block timestamp is in seconds
@@ -610,11 +678,11 @@ class EnsResolverTest {
         }
     }
 
-    // Wildcard-specific resolve() tests were removed: with the Universal Resolver,
-    // ENSIP-10 wildcard traversal and CCIP-Read trampoline happen inside the UR
-    // contract itself. The client no longer branches on supportsInterface, so those
-    // tests no longer map to observable behaviour. The universal-resolver happy path
-    // is covered by UniversalResolverTest and the live-mainnet UniversalResolverIT.
+    // ENSIP-10 wildcard traversal and CCIP-Read trampoline now happen inside the UR
+    // contract itself, so client-side branching on supportsInterface no longer exists
+    // to test. The UR happy path is covered above by testResolve and live in
+    // UniversalResolverIT; failure cases (zero address, both signatures unavailable,
+    // legacy fallback) are covered by the testResolve* tests added above.
 
     @Test
     void testGetEnsTextSuccess() throws Exception {
