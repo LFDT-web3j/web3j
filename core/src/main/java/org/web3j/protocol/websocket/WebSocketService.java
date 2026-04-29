@@ -290,7 +290,7 @@ public class WebSocketService implements Web3jService {
         long replyId = getReplyId(replyJson);
         WebSocketRequest request = getAndRemoveRequest(replyId);
         try {
-            Object reply = objectMapper.treeToValue(replyJson, request.getResponseType());
+            Object reply = objectMapper.convertValue(replyJson, request.getResponseType());
             if (includeRawResponses && reply instanceof Response) {
                 ((Response<?>) reply).setRawResponse(replyStr);
             }
