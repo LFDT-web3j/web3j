@@ -1325,29 +1325,20 @@ public class SolidityFunctionWrapper extends Generator {
             if (typeNames.size() != 1) {
                 throw new UnsupportedOperationException(
                         "Only a single parameterized type is supported");
-            } else if (structClassNameMap.values().stream()
-                    .map(ClassName::simpleName)
-                    .anyMatch(
-                            name ->
-                                    name.equals(
-                                            ((ClassName)
-                                                            ((ParameterizedTypeName)
-                                                                            parameterSpec.type)
-                                                                    .typeArguments.get(0))
-                                                    .simpleName()))) {
+            }
+            TypeName firstTypeArg = typeNames.get(0);
+            if (firstTypeArg instanceof ClassName
+                    && structClassNameMap.values().stream()
+                            .map(ClassName::simpleName)
+                            .anyMatch(
+                                    name -> name.equals(((ClassName) firstTypeArg).simpleName()))) {
                 String structName =
                         structClassNameMap.values().stream()
                                 .map(ClassName::simpleName)
                                 .filter(
                                         name ->
                                                 name.equals(
-                                                        ((ClassName)
-                                                                        ((ParameterizedTypeName)
-                                                                                        parameterSpec
-                                                                                                .type)
-                                                                                .typeArguments.get(
-                                                                                        0))
-                                                                .simpleName()))
+                                                        ((ClassName) firstTypeArg).simpleName()))
                                 .collect(Collectors.toList())
                                 .get(0);
                 return "new "
