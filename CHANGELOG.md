@@ -7,7 +7,8 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
--
+- Fix Utf8String encoding + dynamic array for non-ASCII characters [#2289](https://github.com/LFDT-web3j/web3j/pull/2289)
+
 
 ### Features
 
