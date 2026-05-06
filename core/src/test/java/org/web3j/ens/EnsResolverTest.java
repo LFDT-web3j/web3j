@@ -122,8 +122,7 @@ class EnsResolverTest {
         when(web3jService.send(any(Request.class), eq(EthCall.class))).thenReturn(ethCall);
 
         assertEquals(
-                "0x19e03255f667bdfd50a32722df860b1eeaf4d635",
-                ensResolver.resolve("web3j.eth"));
+                "0x19e03255f667bdfd50a32722df860b1eeaf4d635", ensResolver.resolve("web3j.eth"));
     }
 
     @Test
@@ -182,8 +181,7 @@ class EnsResolverTest {
                 .thenReturn(emptyResponse, legacyCall);
 
         assertEquals(
-                "0x19e03255f667bdfd50a32722df860b1eeaf4d635",
-                ensResolver.resolve("web3j.eth"));
+                "0x19e03255f667bdfd50a32722df860b1eeaf4d635", ensResolver.resolve("web3j.eth"));
     }
 
     @Test

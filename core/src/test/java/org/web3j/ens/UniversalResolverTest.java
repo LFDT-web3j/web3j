@@ -42,16 +42,14 @@ class UniversalResolverTest {
     }
 
     /**
-     * ENSv2 resolution-tests "universal-resolver" case: resolve()
-     * must drive ur.integration-tests.eth to
-     * 0x2222222222222222222222222222222222222222 by calling the Universal
-     * Resolver (not the legacy ENS Registry → resolver path).
+     * ENSv2 resolution-tests "universal-resolver" case: resolve() must drive
+     * ur.integration-tests.eth to 0x2222222222222222222222222222222222222222 by calling the
+     * Universal Resolver (not the legacy ENS Registry → resolver path).
      *
-     * <p>The mock returns the UR's {@code (bytes, address)} tuple for any
-     * EthCall. The legacy path would call {@code ENSRegistry.resolver()}
-     * first and decode this tuple as a plain address — ending up at
-     * {@code 0x0000…0040}, not {@code 0x2222…2222}. So this test only
-     * passes when {@code resolve()} actually calls the UR.
+     * <p>The mock returns the UR's {@code (bytes, address)} tuple for any EthCall. The legacy path
+     * would call {@code ENSRegistry.resolver()} first and decode this tuple as a plain address —
+     * ending up at {@code 0x0000…0040}, not {@code 0x2222…2222}. So this test only passes when
+     * {@code resolve()} actually calls the UR.
      *
      * <p>Spec: https://github.com/ensdomains/resolution-tests
      */

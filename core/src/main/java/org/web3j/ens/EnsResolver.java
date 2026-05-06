@@ -34,14 +34,11 @@ import org.slf4j.LoggerFactory;
 import org.web3j.abi.DefaultFunctionEncoder;
 import org.web3j.abi.DefaultFunctionReturnDecoder;
 import org.web3j.abi.FunctionEncoder;
-import org.web3j.abi.FunctionReturnDecoder;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Address;
-import org.web3j.abi.datatypes.DynamicArray;
 import org.web3j.abi.datatypes.DynamicBytes;
 import org.web3j.abi.datatypes.Function;
 import org.web3j.abi.datatypes.Type;
-import org.web3j.abi.datatypes.Utf8String;
 import org.web3j.abi.datatypes.ens.OffchainLookup;
 import org.web3j.abi.datatypes.generated.Bytes32;
 import org.web3j.crypto.Credentials;
@@ -53,12 +50,11 @@ import org.web3j.ens.contracts.generated.ENS;
 import org.web3j.ens.contracts.generated.OffchainResolverContract;
 import org.web3j.ens.contracts.generated.PublicResolver;
 import org.web3j.ens.contracts.generated.ReverseRegistrar;
+import org.web3j.ens.contracts.generated.UniversalResolver;
 import org.web3j.protocol.ObjectMapperFactory;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
-import org.web3j.protocol.core.methods.request.Transaction;
 import org.web3j.protocol.core.methods.response.EthBlock;
-import org.web3j.protocol.core.methods.response.EthCall;
 import org.web3j.protocol.core.methods.response.EthSyncing;
 import org.web3j.protocol.core.methods.response.NetVersion;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
@@ -198,61 +194,47 @@ public class EnsResolver {
     }
 
     /**
-     * Resolves an ENS name to an address by calling the Universal Resolver contract.
-     * The UR handles ENS Registry lookup, ENSIP-10 wildcard traversal, and CCIP-Read
-     * trampoline in a single call — this is the ENSv2-ready resolution path.
+     * Resolves an ENS name to an address via the Universal Resolver. Tries the ENSv2 {@code
+     * resolveWithGateways} signature first and falls back to legacy {@code resolve} for older
+     * deployments. Plain addresses are returned unchanged.
      *
-     * <p>Tries the ENSv2 signature {@code resolveWithGateways(bytes, bytes, string[])}
-     * first, and falls back to the older {@code resolve(bytes, bytes)} signature for
-     * deployments that don't expose it (older mainnet UR, test environments).
-     *
-     * <p>If {@code ensName} is already a plain address (no dot, valid hex), it's
-     * returned unchanged, matching the previous contract.
-     *
-     * @param ensName ENS name (e.g. {@code vitalik.eth}) or a 0x-prefixed address.
-     * @return resolved address, 0x-prefixed. {@code null} for blank / "." inputs.
-     * @throws EnsResolutionException if the name does not resolve, including the case
-     *     where the resolver returns the zero address (no record set) — callers must
-     *     never silently receive a burn address.
+     * @param ensName ENS name or 0x-prefixed address.
+     * @return resolved address; {@code null} for blank / "." inputs.
+     * @throws EnsResolutionException if the name does not resolve, including the zero-address case
+     *     — callers must never silently receive a burn address.
      */
     public String resolve(String ensName) {
         if (Strings.isBlank(ensName) || (ensName.trim().length() == 1 && ensName.contains("."))) {
             return null;
         }
         if (!isValidEnsName(ensName, addressLength)) {
-            // Plain address input — preserve legacy behaviour and return as-is.
             return ensName;
         }
         try {
-            NetVersion netVersion = web3j.netVersion().send();
-            String urAddress =
-                    UniversalResolverContracts.resolveUniversalResolverContract(
-                            netVersion.getNetVersion());
+            UniversalResolver universalResolver = getUniversalResolverContract();
+            byte[] dnsEncoded = Numeric.hexStringToByteArray(NameHash.dnsEncode(ensName));
+            byte[] addrCalldata = encodeAddrCall(ensName);
 
-            // addr(bytes32) calldata targeting the ENS node for the requested name.
-            byte[] nameHashBytes = NameHash.nameHashAsBytes(ensName);
-            Function addrFn =
-                    new Function(
-                            "addr",
-                            Collections.singletonList(new Bytes32(nameHashBytes)),
-                            Collections.singletonList(new TypeReference<Address>() {}));
-            String addrCalldata = FunctionEncoder.encode(addrFn);
-            String dnsEncoded = NameHash.dnsEncode(ensName);
-
-            String resolvedAddress =
-                    callUniversalResolverWithGateways(urAddress, dnsEncoded, addrCalldata, addrFn);
-            if (resolvedAddress == null) {
-                resolvedAddress =
-                        callUniversalResolverLegacy(urAddress, dnsEncoded, addrCalldata, addrFn);
+            byte[] innerResult;
+            try {
+                innerResult =
+                        universalResolver
+                                .resolveWithGateways(
+                                        dnsEncoded,
+                                        addrCalldata,
+                                        Collections.singletonList(UNIVERSAL_RESOLVER_BATCH_GATEWAY))
+                                .send()
+                                .component1();
+            } catch (Exception ignored) {
+                innerResult =
+                        universalResolver.resolve(dnsEncoded, addrCalldata).send().component1();
             }
 
-            // ENS resolvers return 0x0000…0000 when a name has no addr record. Treat that
-            // as an explicit failure rather than silently returning a burn address.
+            String resolvedAddress = decodeAddrResult(innerResult);
             if (resolvedAddress == null
                     || EnsUtils.isAddressEmpty(resolvedAddress)
                     || !WalletUtils.isValidAddress(resolvedAddress, addressLength)) {
-                throw new EnsResolutionException(
-                        "Unable to resolve address for name: " + ensName);
+                throw new EnsResolutionException("Unable to resolve address for name: " + ensName);
             }
             return resolvedAddress;
         } catch (EnsResolutionException e) {
@@ -262,90 +244,29 @@ public class EnsResolver {
         }
     }
 
-    /**
-     * Calls {@code UniversalResolver.resolveWithGateways(bytes, bytes, string[])} and
-     * decodes the inner {@code addr(bytes32)} return.
-     *
-     * @return resolved address, or {@code null} if the deployment does not expose this
-     *     signature (the call reverts or returns no data) — caller should fall back.
-     */
-    private String callUniversalResolverWithGateways(
-            String urAddress, String dnsEncoded, String addrCalldata, Function addrFn)
-            throws Exception {
-        Function fn =
+    private static byte[] encodeAddrCall(String ensName) {
+        Function addrFn =
                 new Function(
-                        "resolveWithGateways",
-                        Arrays.asList(
-                                new DynamicBytes(Numeric.hexStringToByteArray(dnsEncoded)),
-                                new DynamicBytes(Numeric.hexStringToByteArray(addrCalldata)),
-                                new DynamicArray<>(
-                                        Utf8String.class,
-                                        new Utf8String(UNIVERSAL_RESOLVER_BATCH_GATEWAY))),
-                        Arrays.asList(
-                                new TypeReference<DynamicBytes>() {},
-                                new TypeReference<Address>() {}));
-        return decodeUniversalResolverInnerAddr(callContract(urAddress, fn), fn, addrFn);
+                        "addr",
+                        Collections.singletonList(new Bytes32(NameHash.nameHashAsBytes(ensName))),
+                        Collections.singletonList(new TypeReference<Address>() {}));
+        return Numeric.hexStringToByteArray(FunctionEncoder.encode(addrFn));
     }
 
-    /**
-     * Calls the older {@code UniversalResolver.resolve(bytes, bytes)} signature and
-     * decodes the inner {@code addr(bytes32)} return. Used as a fallback when the
-     * gateway-aware signature is unavailable.
-     *
-     * @return resolved address, or {@code null} if the call reverts / returns no data.
-     */
-    private String callUniversalResolverLegacy(
-            String urAddress, String dnsEncoded, String addrCalldata, Function addrFn)
-            throws Exception {
-        Function fn =
-                new Function(
-                        "resolve",
-                        Arrays.asList(
-                                new DynamicBytes(Numeric.hexStringToByteArray(dnsEncoded)),
-                                new DynamicBytes(Numeric.hexStringToByteArray(addrCalldata))),
-                        Collections.singletonList(new TypeReference<DynamicBytes>() {}));
-        return decodeUniversalResolverInnerAddr(callContract(urAddress, fn), fn, addrFn);
+    private static String decodeAddrResult(byte[] resultBytes) {
+        if (resultBytes == null || resultBytes.length == 0) {
+            return null;
+        }
+        return DefaultFunctionReturnDecoder.decodeAddress(Numeric.toHexString(resultBytes));
     }
 
-    private EthCall callContract(String contractAddress, Function fn) throws IOException {
-        return web3j.ethCall(
-                        Transaction.createEthCallTransaction(
-                                null, contractAddress, FunctionEncoder.encode(fn)),
-                        DefaultBlockParameterName.LATEST)
-                .send();
-    }
-
-    /**
-     * Decodes the UR's outer return (whose first field is the inner resolver call's
-     * raw bytes) and then the inner {@code addr()} bytes into an address string.
-     *
-     * @return the address, or {@code null} if the call reverted, returned no data, or
-     *     decoded to a structurally invalid result.
-     */
-    private static String decodeUniversalResolverInnerAddr(
-            EthCall response, Function urFn, Function addrFn) {
-        if (response == null || response.isReverted()) {
-            return null;
-        }
-        String value = response.getValue();
-        if (value == null || value.isEmpty() || "0x".equals(value)) {
-            return null;
-        }
-        List<Type> decoded = FunctionReturnDecoder.decode(value, urFn.getOutputParameters());
-        if (decoded.isEmpty() || !(decoded.get(0) instanceof DynamicBytes)) {
-            return null;
-        }
-        byte[] innerBytes = ((DynamicBytes) decoded.get(0)).getValue();
-        if (innerBytes == null || innerBytes.length == 0) {
-            return null;
-        }
-        List<Type> addrDecoded =
-                FunctionReturnDecoder.decode(
-                        Numeric.toHexString(innerBytes), addrFn.getOutputParameters());
-        if (addrDecoded.isEmpty() || !(addrDecoded.get(0) instanceof Address)) {
-            return null;
-        }
-        return ((Address) addrDecoded.get(0)).getValue();
+    private UniversalResolver getUniversalResolverContract() throws IOException {
+        NetVersion netVersion = web3j.netVersion().send();
+        String urAddress =
+                UniversalResolverContracts.resolveUniversalResolverContract(
+                        netVersion.getNetVersion());
+        return UniversalResolver.load(
+                urAddress, web3j, transactionManager, new DefaultGasProvider());
     }
 
     protected String resolveOffchain(
