@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -32,9 +33,14 @@ import org.slf4j.LoggerFactory;
 
 import org.web3j.abi.DefaultFunctionEncoder;
 import org.web3j.abi.DefaultFunctionReturnDecoder;
+import org.web3j.abi.FunctionEncoder;
+import org.web3j.abi.TypeReference;
+import org.web3j.abi.datatypes.Address;
 import org.web3j.abi.datatypes.DynamicBytes;
+import org.web3j.abi.datatypes.Function;
 import org.web3j.abi.datatypes.Type;
 import org.web3j.abi.datatypes.ens.OffchainLookup;
+import org.web3j.abi.datatypes.generated.Bytes32;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.Keys;
 import org.web3j.crypto.WalletUtils;
@@ -44,6 +50,7 @@ import org.web3j.ens.contracts.generated.ENS;
 import org.web3j.ens.contracts.generated.OffchainResolverContract;
 import org.web3j.ens.contracts.generated.PublicResolver;
 import org.web3j.ens.contracts.generated.ReverseRegistrar;
+import org.web3j.ens.contracts.generated.UniversalResolver;
 import org.web3j.protocol.ObjectMapperFactory;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
@@ -71,6 +78,10 @@ public class EnsResolver {
     public static final int LOOKUP_LIMIT = 4;
 
     public static final String REVERSE_NAME_SUFFIX = ".addr.reverse";
+
+    // Sentinel gateway URL viem / the ENSv2 Universal Resolver accept when the caller
+    // wants onchain-only resolution (batch handled client-side for CCIP-Read cases).
+    public static final String UNIVERSAL_RESOLVER_BATCH_GATEWAY = "x-batch-gateway:true";
 
     private final Web3j web3j;
     private final int addressLength;
@@ -183,57 +194,79 @@ public class EnsResolver {
     }
 
     /**
-     * Returns the address of the resolver for the specified node.
+     * Resolves an ENS name to an address via the Universal Resolver. Tries the ENSv2 {@code
+     * resolveWithGateways} signature first and falls back to legacy {@code resolve} for older
+     * deployments. Plain addresses are returned unchanged.
      *
-     * @param ensName The specified node.
-     * @return address of the resolver.
+     * @param ensName ENS name or 0x-prefixed address.
+     * @return resolved address; {@code null} for blank / "." inputs.
+     * @throws EnsResolutionException if the name does not resolve, including the zero-address case
+     *     — callers must never silently receive a burn address.
      */
     public String resolve(String ensName) {
         if (Strings.isBlank(ensName) || (ensName.trim().length() == 1 && ensName.contains("."))) {
             return null;
         }
-
+        if (!isValidEnsName(ensName, addressLength)) {
+            return ensName;
+        }
         try {
-            if (isValidEnsName(ensName, addressLength)) {
-                OffchainResolverContract resolver = obtainOffchainResolver(ensName);
+            UniversalResolver universalResolver = getUniversalResolverContract();
+            byte[] dnsEncoded = Numeric.hexStringToByteArray(NameHash.dnsEncode(ensName));
+            byte[] addrCalldata = encodeAddrCall(ensName);
 
-                boolean supportWildcard =
-                        resolver.supportsInterface(EnsUtils.ENSIP_10_INTERFACE_ID).send();
-                byte[] nameHash = NameHash.nameHashAsBytes(ensName);
-
-                String resolvedName;
-                if (supportWildcard) {
-                    String dnsEncoded = NameHash.dnsEncode(ensName);
-                    String addrFunction = resolver.addr(nameHash).encodeFunctionCall();
-
-                    String lookupDataHex =
-                            resolver.resolve(
-                                            Numeric.hexStringToByteArray(dnsEncoded),
-                                            Numeric.hexStringToByteArray(addrFunction))
-                                    .send();
-
-                    resolvedName = resolveOffchain(lookupDataHex, resolver, LOOKUP_LIMIT);
-                } else {
-                    try {
-                        resolvedName = resolver.addr(nameHash).send();
-                    } catch (Exception e) {
-                        throw new RuntimeException("Unable to execute Ethereum request: ", e);
-                    }
-                }
-
-                if (!WalletUtils.isValidAddress(resolvedName)) {
-                    throw new EnsResolutionException(
-                            "Unable to resolve address for name: " + ensName);
-                } else {
-                    return resolvedName;
-                }
-
-            } else {
-                return ensName;
+            byte[] innerResult;
+            try {
+                innerResult =
+                        universalResolver
+                                .resolveWithGateways(
+                                        dnsEncoded,
+                                        addrCalldata,
+                                        Collections.singletonList(UNIVERSAL_RESOLVER_BATCH_GATEWAY))
+                                .send()
+                                .component1();
+            } catch (Exception ignored) {
+                innerResult =
+                        universalResolver.resolve(dnsEncoded, addrCalldata).send().component1();
             }
+
+            String resolvedAddress = decodeAddrResult(innerResult);
+            if (resolvedAddress == null
+                    || EnsUtils.isAddressEmpty(resolvedAddress)
+                    || !WalletUtils.isValidAddress(resolvedAddress, addressLength)) {
+                throw new EnsResolutionException("Unable to resolve address for name: " + ensName);
+            }
+            return resolvedAddress;
+        } catch (EnsResolutionException e) {
+            throw e;
         } catch (Exception e) {
             throw new EnsResolutionException(e);
         }
+    }
+
+    private static byte[] encodeAddrCall(String ensName) {
+        Function addrFn =
+                new Function(
+                        "addr",
+                        Collections.singletonList(new Bytes32(NameHash.nameHashAsBytes(ensName))),
+                        Collections.singletonList(new TypeReference<Address>() {}));
+        return Numeric.hexStringToByteArray(FunctionEncoder.encode(addrFn));
+    }
+
+    private static String decodeAddrResult(byte[] resultBytes) {
+        if (resultBytes == null || resultBytes.length == 0) {
+            return null;
+        }
+        return DefaultFunctionReturnDecoder.decodeAddress(Numeric.toHexString(resultBytes));
+    }
+
+    private UniversalResolver getUniversalResolverContract() throws IOException {
+        NetVersion netVersion = web3j.netVersion().send();
+        String urAddress =
+                UniversalResolverContracts.resolveUniversalResolverContract(
+                        netVersion.getNetVersion());
+        return UniversalResolver.load(
+                urAddress, web3j, transactionManager, new DefaultGasProvider());
     }
 
     protected String resolveOffchain(
