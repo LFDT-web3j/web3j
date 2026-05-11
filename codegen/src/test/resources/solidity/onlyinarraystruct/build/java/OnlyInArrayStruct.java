@@ -105,6 +105,17 @@ public class OnlyInArrayStruct extends Contract {
         return new OnlyInArrayStruct(contractAddress, web3j, transactionManager, contractGasProvider);
     }
 
+    /**
+     * Returns the contract name used during code generation.
+     * <p>
+     * This method is strictly for identifying the generated contract name and does not perform runtime detection.
+     *
+     * @return the generated contract name
+     */
+    public String getImplementationName() {
+        return "OnlyInArrayStruct";
+    }
+
     public static class Foo extends DynamicStruct {
         public String id;
 

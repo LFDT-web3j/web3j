@@ -275,9 +275,23 @@ public class SolidityFunctionWrapper extends Generator {
             classBuilder.addMethod(buildGetDeploymentBinaryMethod());
         }
 
+        classBuilder.addMethod(buildGetImplementationNameMethod(contractName));
+
         addAddressesSupport(classBuilder, addresses);
 
         write(basePackageName, classBuilder.build(), destinationDir);
+    }
+
+    MethodSpec buildGetImplementationNameMethod(String contractName) {
+        return MethodSpec.methodBuilder("getImplementationName")
+                .addJavadoc(
+                        "Returns the contract name used during code generation.\n<p>\n"
+                                + "This method is strictly for identifying the generated contract name and does not perform runtime detection.\n\n"
+                                + "@return the generated contract name\n")
+                .addModifiers(Modifier.PUBLIC)
+                .returns(String.class)
+                .addStatement("return $S", contractName)
+                .build();
     }
 
     private void buildStructsNamedTypesList(List<AbiDefinition> abi) {

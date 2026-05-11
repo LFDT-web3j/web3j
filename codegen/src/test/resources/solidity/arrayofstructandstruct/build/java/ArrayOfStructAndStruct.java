@@ -133,6 +133,17 @@ public class ArrayOfStructAndStruct extends Contract {
         }
     }
 
+    /**
+     * Returns the contract name used during code generation.
+     * <p>
+     * This method is strictly for identifying the generated contract name and does not perform runtime detection.
+     *
+     * @return the generated contract name
+     */
+    public String getImplementationName() {
+        return "ArrayOfStructAndStruct";
+    }
+
     public static class Foo extends StaticStruct {
         public Boolean dummy;
 

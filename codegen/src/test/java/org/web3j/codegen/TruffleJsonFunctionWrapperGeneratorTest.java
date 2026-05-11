@@ -38,7 +38,7 @@ public class TruffleJsonFunctionWrapperGeneratorTest extends TempFileProvider {
         super.setUp();
 
         URL url = SolidityFunctionWrapperGeneratorTest.class.getResource("/truffle");
-        contractBaseDir = url.getPath();
+        contractBaseDir = java.net.URLDecoder.decode(url.getPath(), "UTF-8");
     }
 
     @Test

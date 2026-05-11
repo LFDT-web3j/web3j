@@ -49,7 +49,7 @@ public class SolidityFunctionWrapperGeneratorTest extends TempFileProvider {
         super.setUp();
 
         URL url = SolidityFunctionWrapperGeneratorTest.class.getResource("/solidity");
-        solidityBaseDir = url.getPath();
+        solidityBaseDir = java.net.URLDecoder.decode(url.getPath(), "UTF-8");
     }
 
     @Test
