@@ -12,6 +12,7 @@
  */
 package org.web3j.utils;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import org.junit.jupiter.api.Test;
@@ -38,5 +39,34 @@ class AsyncTest {
                                     })
                             .get();
                 });
+    }
+
+    @Test
+    void testAsyncLifecycleReuse() throws ExecutionException, InterruptedException {
+        // 1. call Async.run()
+        CompletableFuture<String> future1 = Async.run(() -> "first");
+        assertEquals("first", future1.get());
+
+        // 2. call Async.shutdown()
+        Async.shutdown();
+
+        // 3. call Async.run() again
+        CompletableFuture<String> future2 = Async.run(() -> "second");
+
+        // EXPECT: works again, no exception
+        assertEquals("second", future2.get());
+    }
+
+    @Test
+    void testConcurrentCalls() throws Exception {
+        int count = 100;
+        java.util.List<CompletableFuture<Integer>> futures = new java.util.ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            final int index = i;
+            futures.add(Async.run(() -> index));
+        }
+        for (int i = 0; i < count; i++) {
+            assertEquals(i, futures.get(i).get());
+        }
     }
 }
