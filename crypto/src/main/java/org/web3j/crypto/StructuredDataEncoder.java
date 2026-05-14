@@ -32,6 +32,8 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.web3j.abi.TypeEncoder;
 import org.web3j.abi.datatypes.AbiTypes;
@@ -43,6 +45,8 @@ import static org.web3j.crypto.Hash.sha3;
 import static org.web3j.crypto.Hash.sha3String;
 
 public class StructuredDataEncoder {
+    private static final Logger log = LoggerFactory.getLogger(StructuredDataEncoder.class);
+
     public static ObjectMapper mapper =
             new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
     public final StructuredData.EIP712Message jsonMessageObject;
@@ -266,7 +270,7 @@ public class StructuredDataEncoder {
                 hashBytes = Numeric.toBytesPadded(bi, 32);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.warn("Unable to convert structured data item for type '{}'", baseType, e);
             hashBytes = new byte[0];
         }
 
