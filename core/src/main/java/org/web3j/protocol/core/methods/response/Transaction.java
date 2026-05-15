@@ -282,8 +282,10 @@ public class Transaction {
     }
 
     public BigInteger getNonce() {
+        if (nonce == null) return null;
         return Numeric.decodeQuantity(nonce);
     }
+
 
     public void setNonce(String nonce) {
         this.nonce = nonce;
@@ -302,8 +304,10 @@ public class Transaction {
     }
 
     public BigInteger getBlockNumber() {
+        if (blockNumber == null) return null;
         return Numeric.decodeQuantity(blockNumber);
     }
+
 
     public void setBlockNumber(String blockNumber) {
         this.blockNumber = blockNumber;
@@ -314,8 +318,10 @@ public class Transaction {
     }
 
     public BigInteger getTransactionIndex() {
+        if (transactionIndex == null) return null;
         return Numeric.decodeQuantity(transactionIndex);
     }
+
 
     public void setTransactionIndex(String transactionIndex) {
         this.transactionIndex = transactionIndex;
@@ -342,8 +348,10 @@ public class Transaction {
     }
 
     public BigInteger getValue() {
+        if (value == null) return null;
         return Numeric.decodeQuantity(value);
     }
+
 
     public void setValue(String value) {
         this.value = value;
@@ -354,8 +362,10 @@ public class Transaction {
     }
 
     public BigInteger getGasPrice() {
+        if (gasPrice == null) return null;
         return Numeric.decodeQuantity(gasPrice);
     }
+
 
     public void setGasPrice(String gasPrice) {
         this.gasPrice = gasPrice;
@@ -366,8 +376,10 @@ public class Transaction {
     }
 
     public BigInteger getGas() {
+        if (gas == null) return null;
         return Numeric.decodeQuantity(gas);
     }
+
 
     public void setGas(String gas) {
         this.gas = gas;
@@ -494,8 +506,10 @@ public class Transaction {
     }
 
     public BigInteger getMaxPriorityFeePerGas() {
+        if (maxPriorityFeePerGas == null) return null;
         return Numeric.decodeQuantity(maxPriorityFeePerGas);
     }
+
 
     public void setMaxPriorityFeePerGas(String maxPriorityFeePerGas) {
         this.maxPriorityFeePerGas = maxPriorityFeePerGas;
@@ -514,8 +528,10 @@ public class Transaction {
     }
 
     public BigInteger getMaxFeePerBlobGas() {
+        if (maxFeePerBlobGas == null) return null;
         return Numeric.decodeQuantity(maxFeePerBlobGas);
     }
+
 
     public void setMaxFeePerBlobGas(String maxFeePerBlobGas) {
         this.maxFeePerBlobGas = maxFeePerBlobGas;
