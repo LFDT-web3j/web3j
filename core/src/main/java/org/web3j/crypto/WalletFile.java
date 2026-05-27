@@ -12,17 +12,15 @@
  */
 package org.web3j.crypto;
 
-import java.io.IOException;
-
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.node.ObjectNode;
 
 /** Ethereum wallet file. */
 public class WalletFile {
@@ -429,15 +427,15 @@ public class WalletFile {
 
     // If we need to work with MyEtherWallet we'll need to use this deserializer, see the
     // following issue https://github.com/kvhnuke/etherwallet/issues/269
-    static class KdfParamsDeserialiser extends JsonDeserializer<KdfParams> {
+    static class KdfParamsDeserialiser extends ValueDeserializer<KdfParams> {
+
+        private final ObjectMapper objectMapper = new ObjectMapper();
 
         @Override
         public KdfParams deserialize(
-                JsonParser jsonParser, DeserializationContext deserializationContext)
-                throws IOException {
+                JsonParser jsonParser, DeserializationContext deserializationContext) {
 
-            ObjectMapper objectMapper = (ObjectMapper) jsonParser.getCodec();
-            ObjectNode root = objectMapper.readTree(jsonParser);
+            ObjectNode root = jsonParser.readValueAsTree();
             KdfParams kdfParams;
 
             // it would be preferable to detect the class to use based on the kdf parameter in the

@@ -12,19 +12,17 @@
  */
 package org.web3j.protocol.core.methods.response;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.annotation.JsonDeserialize;
 
-import org.web3j.protocol.ObjectMapperFactory;
 import org.web3j.protocol.core.Response;
 
 /**
@@ -127,29 +125,28 @@ public class EthLog extends Response<List<EthLog.LogResult<?>>> {
         }
     }
 
-    public static class LogResultDeserialiser extends JsonDeserializer<List<LogResult<?>>> {
+    public static class LogResultDeserialiser extends ValueDeserializer<List<LogResult<?>>> {
 
-        private ObjectReader objectReader = ObjectMapperFactory.getObjectReader();
+        private final ObjectMapper objectMapper = new ObjectMapper();
 
         @Override
         public List<LogResult<?>> deserialize(
-                JsonParser jsonParser, DeserializationContext deserializationContext)
-                throws IOException {
+                JsonParser jsonParser, DeserializationContext deserializationContext) {
 
             List<LogResult<?>> logResults = new ArrayList<>();
             JsonToken nextToken = jsonParser.nextToken();
 
             if (nextToken == JsonToken.START_OBJECT) {
                 Iterator<LogObject> logObjectIterator =
-                        objectReader.readValues(jsonParser, LogObject.class);
+                        objectMapper.readerFor(LogObject.class).readValues(jsonParser);
                 while (logObjectIterator.hasNext()) {
                     logResults.add(logObjectIterator.next());
                 }
             } else if (nextToken == JsonToken.VALUE_STRING) {
-                jsonParser.getValueAsString();
+                jsonParser.getString();
 
                 Iterator<Hash> transactionHashIterator =
-                        objectReader.readValues(jsonParser, Hash.class);
+                        objectMapper.readerFor(Hash.class).readValues(jsonParser);
                 while (transactionHashIterator.hasNext()) {
                     logResults.add(transactionHashIterator.next());
                 }

@@ -17,8 +17,6 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.Call;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -29,6 +27,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import org.web3j.abi.TypeEncoder;
 import org.web3j.abi.datatypes.Utf8String;
@@ -811,7 +811,7 @@ class EnsResolverTest {
     }
 
     private okhttp3.Response buildResponse(int code, String url, String sender, String data)
-            throws JsonProcessingException {
+            throws JacksonException {
         EnsGatewayResponseDTO responseDTO = new EnsGatewayResponseDTO(data);
 
         return new okhttp3.Response.Builder()

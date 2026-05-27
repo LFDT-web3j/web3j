@@ -15,7 +15,8 @@ plugins {
 
 ext {
     bouncycastleVersion = '1.80'
-    jacksonVersion = '2.17.1'
+    jacksonVersion = '3.1.0'
+    jacksonAnnotationsVersion = '2.17.1'
     javaPoetVersion = '1.13.0'
     kotlinVersion = '1.9.24'
     kotlinPoetVersion = '1.16.0'
@@ -87,9 +88,9 @@ allprojects {
                 force(group: "org.jetbrains.kotlin", name: "kotlin-stdlib-common", version: kotlinVersion)
                 force(group: "org.jetbrains.kotlin", name: "kotlin-stdlib-jdk7", version: kotlinVersion)
                 force(group: "org.jetbrains.kotlin", name: "kotlin-stdlib-jdk8", version: kotlinVersion)
-                force(group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: jacksonVersion)
-                force(group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: jacksonVersion)
-                force(group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: jacksonVersion)
+                force(group: 'tools.jackson.core', name: 'jackson-core', version: jacksonVersion)
+                force(group: 'tools.jackson.core', name: 'jackson-databind', version: jacksonVersion)
+                force(group: 'tools.jackson.core', name: 'jackson-annotations', version: jacksonAnnotationsVersion)
                 force(group: 'org.slf4j', name: 'slf4j-api', version: slf4jVersion)
             }
         }

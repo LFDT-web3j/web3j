@@ -30,7 +30,7 @@ public class BesuSignerMetric {
     public BesuSignerMetric(
             @JsonProperty(value = "address") final String address,
             @JsonProperty(value = "proposedBlockCount") final String proposedBlockCount,
-            @JsonProperty(value = "name") final String lastProposedBlockNumber) {
+            @JsonProperty(value = "lastProposedBlockNumber") final String lastProposedBlockNumber) {
         this.address = address;
         this.proposedBlockCount = proposedBlockCount;
         this.lastProposedBlockNumber = lastProposedBlockNumber;

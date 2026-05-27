@@ -16,7 +16,7 @@ dependencies {
             "com.squareup.okhttp3:logging-interceptor:$okhttpVersion",
             "io.reactivex.rxjava2:rxjava:$rxjavaVersion",
             "org.java-websocket:Java-WebSocket:$javaWebSocketVersion",
-            "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion",
+            "tools.jackson.core:jackson-databind:$jacksonVersion",
             "org.slf4j:slf4j-api:$slf4jVersion",
             "io.github.adraffy:ens-normalize:$ensAdraffyVersion",
             "io.consensys.tuweni:tuweni-bytes:$tuweniVersion",

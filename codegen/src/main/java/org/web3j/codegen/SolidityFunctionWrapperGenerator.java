@@ -17,10 +17,10 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
+import tools.jackson.databind.ObjectMapper;
 
 import org.web3j.abi.datatypes.Address;
 import org.web3j.protocol.ObjectMapperFactory;
