@@ -13,7 +13,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Features
 
-*
+- Add support for EIP-7594 blob transaction wrapper (#2263)
 
 ### BREAKING CHANGES
 
