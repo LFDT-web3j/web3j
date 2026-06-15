@@ -50,7 +50,11 @@ public abstract class Filter<T> {
 
     private long blockTime;
 
-    private static final String FILTER_NOT_FOUND_PATTERN = "(?i)\\bfilter\\s+not\\s+found\\b";
+    private static final Pattern FILTER_NOT_FOUND_REGEX =
+            Pattern.compile("(?i)\\bfilter\\s+not\\s+found\\b");
+
+    private int reinstallRetries = 0;
+    private static final int MAX_REINSTALL_RETRIES = 3;
 
     public Filter(Web3j web3j, Callback<T> callback) {
         this.web3j = web3j;
@@ -120,10 +124,11 @@ public abstract class Filter<T> {
             }
 
             if (ethLog.hasError()) {
-                throwException(ethLog.getError());
+                handleError(ethLog.getError());
+            } else {
+                reinstallRetries = 0;
+                process(ethLog.getLogs());
             }
-
-            process(ethLog.getLogs());
 
         } catch (IOException e) {
             throwException(e);
@@ -138,20 +143,21 @@ public abstract class Filter<T> {
             throwException(e);
         }
         if (ethLog.hasError()) {
-            Error error = ethLog.getError();
-            String message = error.getMessage();
-            switch (error.getCode()) {
-                case RpcErrors.FILTER_NOT_FOUND:
-                    reinstallFilter();
-                    break;
-                default:
-                    if (Pattern.compile(FILTER_NOT_FOUND_PATTERN).matcher(message).find())
-                        reinstallFilter();
-                    else throwException(error);
-                    break;
-            }
+            handleError(ethLog.getError());
         } else {
+            reinstallRetries = 0;
             process(ethLog.getLogs());
+        }
+    }
+
+    private void handleError(Error error) {
+        if (RpcErrors.FILTER_NOT_FOUND == error.getCode()) {
+            reinstallFilter();
+        } else if (error.getMessage() != null
+                && FILTER_NOT_FOUND_REGEX.matcher(error.getMessage()).find()) {
+            reinstallFilter();
+        } else {
+            throwException(error);
         }
     }
 
@@ -160,10 +166,21 @@ public abstract class Filter<T> {
     protected abstract void process(List<EthLog.LogResult<?>> logResults);
 
     private void reinstallFilter() {
+        if (reinstallRetries >= MAX_REINSTALL_RETRIES) {
+            log.error(
+                    "Exceeded maximum number of filter re-installations ({})",
+                    MAX_REINSTALL_RETRIES);
+            throw new FilterException("Exceeded maximum number of filter re-installations");
+        }
+        reinstallRetries++;
+
         log.warn(
-                "Previously installed filter has not been found, trying to re-install. Filter id: {}",
-                filterId);
-        schedule.cancel(false);
+                "Previously installed filter has not been found, trying to re-install. Filter id: {}, retry: {}",
+                filterId,
+                reinstallRetries);
+        if (schedule != null) {
+            schedule.cancel(false);
+        }
         this.run(scheduledExecutorService, blockTime);
     }
 
