@@ -952,4 +952,116 @@ public class Eip7594TransactionTest {
         RlpList outer = bodyWithFields(5);
         assertThrows(IllegalArgumentException.class, () -> decodeType3(outer));
     }
+
+    // =========================================================================
+    // 19. End-to-end: build a valid EIP-7594 tx directly from raw blobs
+    //     (commitments, cell proofs, and versioned hashes auto-computed via
+    //     BlobUtils / jc-kzg). Uses REAL proofs, not the zero-filled dummies.
+    // =========================================================================
+
+    @Test
+    public void testBuildEip7594FromRawBlobs() throws Exception {
+        Credentials credentials = Credentials.create(PRIVATE_KEY);
+
+        int blobCount = 2;
+        RawTransaction rawTx =
+                RawTransaction.createEip7594Transaction(
+                        blobs(blobCount),
+                        1L,
+                        BigInteger.ZERO,
+                        BigInteger.TEN,
+                        BigInteger.TEN,
+                        BigInteger.valueOf(21000),
+                        TO_ADDRESS,
+                        BigInteger.ZERO,
+                        "",
+                        BigInteger.TEN);
+
+        byte[] signed = TransactionEncoder.signMessage(rawTx, credentials);
+        RawTransaction decoded = TransactionDecoder.decode(Numeric.toHexString(signed));
+
+        Transaction4844 tx = (Transaction4844) decoded.getTransaction();
+        assertTrue(tx.getWrapperVersion().isPresent());
+        assertEquals(BigInteger.ONE, tx.getWrapperVersion().get());
+        assertFalse(
+                tx.getKzgProofs().isPresent() && !tx.getKzgProofs().get().isEmpty(),
+                "EIP-7594 tx must not carry per-blob kzgProofs");
+
+        assertTrue(tx.getCellProofs().isPresent());
+        assertEquals(CELLS_PER_EXT_BLOB * blobCount, tx.getCellProofs().get().size());
+        for (Bytes proof : tx.getCellProofs().get()) {
+            assertEquals(PROOF_BYTES, proof.size());
+        }
+
+        // Commitments auto-derived (48 bytes each), versioned hashes start with 0x01.
+        assertTrue(tx.getKzgCommitments().isPresent());
+        assertEquals(blobCount, tx.getKzgCommitments().get().size());
+        for (Bytes commitment : tx.getKzgCommitments().get()) {
+            assertEquals(PROOF_BYTES, commitment.size());
+        }
+        assertEquals(blobCount, tx.getVersionedHashes().size());
+        for (Bytes vh : tx.getVersionedHashes()) {
+            assertEquals(
+                    0x01, vh.toArray()[0] & 0xff, "versioned hash must use KZG version byte 0x01");
+        }
+    }
+
+    @Test
+    public void testEip7594RawBlobsProofIntegrityRoundTrip() throws Exception {
+        Credentials credentials = Credentials.create(PRIVATE_KEY);
+
+        int blobCount = 2;
+        RawTransaction rawTx =
+                RawTransaction.createEip7594Transaction(
+                        blobs(blobCount),
+                        1L,
+                        BigInteger.ZERO,
+                        BigInteger.TEN,
+                        BigInteger.TEN,
+                        BigInteger.valueOf(21000),
+                        TO_ADDRESS,
+                        BigInteger.ZERO,
+                        "",
+                        BigInteger.TEN);
+
+        byte[] signed = TransactionEncoder.signMessage(rawTx, credentials);
+        RawTransaction decoded = TransactionDecoder.decode(Numeric.toHexString(signed));
+        Transaction4844 tx = (Transaction4844) decoded.getTransaction();
+
+        // The proofs that survived RLP encode/decode must still verify against the blobs.
+        assertTrue(
+                BlobUtils.checkCellProofsValidity(
+                        tx.getBlobs().get(),
+                        tx.getKzgCommitments().get(),
+                        tx.getCellProofs().get()),
+                "decoded cell proofs must remain cryptographically valid");
+    }
+
+    @Test
+    public void testCreateEip7594FromRawBlobsWithAccessList() throws Exception {
+        Credentials credentials = Credentials.create(PRIVATE_KEY);
+        List<AccessListObject> accessList = sampleAccessList();
+
+        RawTransaction rawTx =
+                RawTransaction.createEip7594Transaction(
+                        blobs(1),
+                        1L,
+                        BigInteger.ZERO,
+                        BigInteger.TEN,
+                        BigInteger.TEN,
+                        BigInteger.valueOf(21000),
+                        TO_ADDRESS,
+                        BigInteger.ZERO,
+                        "",
+                        BigInteger.TEN,
+                        accessList);
+
+        byte[] signed = TransactionEncoder.signMessage(rawTx, credentials);
+        RawTransaction decoded = TransactionDecoder.decode(Numeric.toHexString(signed));
+        Transaction4844 tx = (Transaction4844) decoded.getTransaction();
+
+        assertEquals(BigInteger.ONE, tx.getWrapperVersion().get());
+        assertEquals(CELLS_PER_EXT_BLOB, tx.getCellProofs().get().size());
+        assertAccessListEquals(accessList, tx.getAccessList());
+    }
 }

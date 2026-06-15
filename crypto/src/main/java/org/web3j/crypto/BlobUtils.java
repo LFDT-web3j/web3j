@@ -63,10 +63,10 @@ public class BlobUtils {
     }
 
     /**
-     * Computes the EIP-7594 cell proofs for multiple blobs as a single flat list in <strong>blob-major
-     * order</strong>: {@code [blob0.proof0..127, blob1.proof0..127, ...]}, total {@code
-     * CELLS_PER_EXT_BLOB * blobs.size()} proofs. This is the exact layout the EIP-7594 network wrapper
-     * expects for its flat {@code cell_proofs} field.
+     * Computes the EIP-7594 cell proofs for multiple blobs as a single flat list in
+     * <strong>blob-major order</strong>: {@code [blob0.proof0..127, blob1.proof0..127, ...]}, total
+     * {@code CELLS_PER_EXT_BLOB * blobs.size()} proofs. This is the exact layout the EIP-7594
+     * network wrapper expects for its flat {@code cell_proofs} field.
      *
      * @param blobs the blobs to compute cell proofs for
      * @return the flat, blob-major list of cell proofs
@@ -80,13 +80,14 @@ public class BlobUtils {
     }
 
     /**
-     * Verifies a flat, blob-major list of EIP-7594 cell proofs against the blobs and their commitments
-     * using {@link CKZG4844JNI#verifyCellKzgProofBatch}. The cells are recomputed from the blobs.
+     * Verifies a flat, blob-major list of EIP-7594 cell proofs against the blobs and their
+     * commitments using {@link CKZG4844JNI#verifyCellKzgProofBatch}. The cells are recomputed from
+     * the blobs.
      *
      * @param blobs the blobs
      * @param commitments one 48-byte KZG commitment per blob
-     * @param cellProofs the flat {@code CELLS_PER_EXT_BLOB * blobs.size()} cell proofs in blob-major
-     *     order (as produced by {@link #getCellProofs(List)})
+     * @param cellProofs the flat {@code CELLS_PER_EXT_BLOB * blobs.size()} cell proofs in
+     *     blob-major order (as produced by {@link #getCellProofs(List)})
      * @return true if every cell proof verifies
      */
     public static boolean checkCellProofsValidity(

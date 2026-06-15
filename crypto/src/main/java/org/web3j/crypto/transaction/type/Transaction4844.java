@@ -753,9 +753,9 @@ public class Transaction4844 extends Transaction1559 implements ITransaction {
     }
 
     /**
-     * Create an EIP-7594 (Osaka/Fusaka) transaction directly from raw blobs. The KZG commitments, the
-     * flat {@code CELLS_PER_EXT_BLOB * len(blobs)} cell proofs, and the blob versioned hashes are all
-     * computed automatically via {@link BlobUtils}.
+     * Create an EIP-7594 (Osaka/Fusaka) transaction directly from raw blobs. The KZG commitments,
+     * the flat {@code CELLS_PER_EXT_BLOB * len(blobs)} cell proofs, and the blob versioned hashes
+     * are all computed automatically via {@link BlobUtils}.
      *
      * @param blobs the raw blobs
      */
@@ -785,8 +785,8 @@ public class Transaction4844 extends Transaction1559 implements ITransaction {
     }
 
     /**
-     * Create an EIP-7594 (Osaka/Fusaka) transaction directly from raw blobs, with an access list. The
-     * KZG commitments, flat cell proofs, and versioned hashes are computed automatically.
+     * Create an EIP-7594 (Osaka/Fusaka) transaction directly from raw blobs, with an access list.
+     * The KZG commitments, flat cell proofs, and versioned hashes are computed automatically.
      *
      * @param blobs the raw blobs
      * @param accessList optional EIP-2930 access list

@@ -201,8 +201,8 @@ public class RawTransaction {
     }
 
     /**
-     * Create an EIP-7594 (Osaka/Fusaka) blob transaction directly from raw blobs. The KZG commitments,
-     * flat cell proofs, and blob versioned hashes are computed automatically.
+     * Create an EIP-7594 (Osaka/Fusaka) blob transaction directly from raw blobs. The KZG
+     * commitments, flat cell proofs, and blob versioned hashes are computed automatically.
      *
      * @param blobs the raw blobs
      */
@@ -233,8 +233,8 @@ public class RawTransaction {
     }
 
     /**
-     * Create an EIP-7594 (Osaka/Fusaka) blob transaction directly from raw blobs, with an access list.
-     * The KZG commitments, flat cell proofs, and versioned hashes are computed automatically.
+     * Create an EIP-7594 (Osaka/Fusaka) blob transaction directly from raw blobs, with an access
+     * list. The KZG commitments, flat cell proofs, and versioned hashes are computed automatically.
      *
      * @param blobs the raw blobs
      * @param accessList optional EIP-2930 access list
