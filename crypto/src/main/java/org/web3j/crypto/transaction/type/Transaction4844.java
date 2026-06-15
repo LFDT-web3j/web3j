@@ -120,7 +120,52 @@ public class Transaction4844 extends Transaction1559 implements ITransaction {
             String data,
             BigInteger maxFeePerBlobGas,
             List<Bytes> versionedHashes) {
-        super(chainId, nonce, gasLimit, to, value, data, maxPriorityFeePerGas, maxFeePerGas);
+        this(
+                blobs,
+                kzgCommitments,
+                kzgProofs,
+                chainId,
+                nonce,
+                maxPriorityFeePerGas,
+                maxFeePerGas,
+                gasLimit,
+                to,
+                value,
+                data,
+                maxFeePerBlobGas,
+                versionedHashes,
+                Collections.emptyList());
+    }
+
+    // -------------------------------------------------------------------------
+    // Constructor 2b: EIP-4844 network wrapper (Cancun/Prague) with access list
+    //   blobs + kzgCommitments + kzgProofs (one proof per blob) + accessList
+    // -------------------------------------------------------------------------
+    protected Transaction4844(
+            List<Blob> blobs,
+            List<Bytes> kzgCommitments,
+            List<Bytes> kzgProofs,
+            long chainId,
+            BigInteger nonce,
+            BigInteger maxPriorityFeePerGas,
+            BigInteger maxFeePerGas,
+            BigInteger gasLimit,
+            String to,
+            BigInteger value,
+            String data,
+            BigInteger maxFeePerBlobGas,
+            List<Bytes> versionedHashes,
+            List<AccessListObject> accessList) {
+        super(
+                chainId,
+                nonce,
+                gasLimit,
+                to,
+                value,
+                data,
+                maxPriorityFeePerGas,
+                maxFeePerGas,
+                accessList != null ? accessList : Collections.emptyList());
         this.maxFeePerBlobGas = Objects.requireNonNull(maxFeePerBlobGas, "maxFeePerBlobGas");
         this.versionedHashes =
                 Collections.unmodifiableList(
@@ -230,7 +275,19 @@ public class Transaction4844 extends Transaction1559 implements ITransaction {
         if (!blobs.isPresent() || !kzgCommitments.isPresent() || !kzgProofs.isPresent()) {
             return; // partial construction allowed (some fields may be absent)
         }
+        // Note: no per-transaction blob-count cap on the EIP-4844 path. EIP-4844 only defines a
+        // block-level limit (MAX_BLOBS_PER_BLOCK, fork-dependent: 6 at Cancun, 9 at Prague), not a
+        // per-tx count. The 6-blob per-transaction cap is EIP-7594-specific
+        // (validateEip7594Sidecar).
         int blobCount = blobs.get().size();
+        if (versionedHashes.size() != blobCount) {
+            throw new IllegalArgumentException(
+                    "EIP-4844: versionedHashes count ("
+                            + versionedHashes.size()
+                            + ") must equal blob count ("
+                            + blobCount
+                            + ")");
+        }
         if (kzgCommitments.get().size() != blobCount) {
             throw new IllegalArgumentException(
                     "EIP-4844: kzgCommitments count ("
@@ -266,6 +323,15 @@ public class Transaction4844 extends Transaction1559 implements ITransaction {
 
         int blobCount = blobs.get().size();
         validateBlobCount(blobCount);
+
+        if (versionedHashes.size() != blobCount) {
+            throw new IllegalArgumentException(
+                    "EIP-7594: versionedHashes count ("
+                            + versionedHashes.size()
+                            + ") must equal blob count ("
+                            + blobCount
+                            + ")");
+        }
 
         if (kzgCommitments.get().size() != blobCount) {
             throw new IllegalArgumentException(
@@ -473,6 +539,47 @@ public class Transaction4844 extends Transaction1559 implements ITransaction {
             String data,
             BigInteger maxFeePerBlobGas,
             List<Bytes> versionedHashes) {
+        return createTransaction(
+                blobs,
+                kzgCommitments,
+                kzgProofs,
+                chainId,
+                nonce,
+                maxPriorityFeePerGas,
+                maxFeePerGas,
+                gasLimit,
+                to,
+                value,
+                data,
+                maxFeePerBlobGas,
+                versionedHashes,
+                Collections.emptyList());
+    }
+
+    /**
+     * Create an EIP-4844 transaction with an explicit blob sidecar and access list.
+     *
+     * @param blobs list of blobs (one per versioned hash)
+     * @param kzgCommitments KZG commitments matching blobs
+     * @param kzgProofs one KZG proof per blob
+     * @param versionedHashes blob versioned hashes derived from commitments
+     * @param accessList optional EIP-2930 access list
+     */
+    public static Transaction4844 createTransaction(
+            List<Blob> blobs,
+            List<Bytes> kzgCommitments,
+            List<Bytes> kzgProofs,
+            long chainId,
+            BigInteger nonce,
+            BigInteger maxPriorityFeePerGas,
+            BigInteger maxFeePerGas,
+            BigInteger gasLimit,
+            String to,
+            BigInteger value,
+            String data,
+            BigInteger maxFeePerBlobGas,
+            List<Bytes> versionedHashes,
+            List<AccessListObject> accessList) {
         return new Transaction4844(
                 blobs,
                 kzgCommitments,
@@ -486,7 +593,8 @@ public class Transaction4844 extends Transaction1559 implements ITransaction {
                 value,
                 data,
                 maxFeePerBlobGas,
-                versionedHashes);
+                versionedHashes,
+                accessList);
     }
 
     /**

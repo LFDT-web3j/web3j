@@ -261,7 +261,8 @@ public class RawTransaction {
                         value,
                         data,
                         maxFeePerBlobGas,
-                        versionedHashes));
+                        versionedHashes,
+                        accessList));
     }
 
     /**

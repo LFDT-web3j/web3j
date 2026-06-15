@@ -21,11 +21,16 @@ import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 
 import org.web3j.crypto.transaction.type.Transaction4844;
+import org.web3j.rlp.RlpEncoder;
+import org.web3j.rlp.RlpList;
+import org.web3j.rlp.RlpString;
+import org.web3j.rlp.RlpType;
 import org.web3j.utils.Numeric;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -95,6 +100,50 @@ public class Eip7594TransactionTest {
         List<Bytes> list = new ArrayList<>(n);
         for (int i = 0; i < n; i++) list.add(Bytes.wrap(new byte[32]));
         return list;
+    }
+
+    /** A sample single-entry access list (one address, one storage key). */
+    private static List<AccessListObject> sampleAccessList() {
+        return Collections.singletonList(
+                new AccessListObject(
+                        "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe",
+                        Collections.singletonList(
+                                "0x0000000000000000000000000000000000000000000000000000000000000003")));
+    }
+
+    /**
+     * Asserts that a decoded access list matches the expected one. The decoder normalises hex to
+     * lower case (RlpString.asString -> Numeric.toHexString), so addresses/keys are compared
+     * case-insensitively.
+     */
+    private static void assertAccessListEquals(
+            List<AccessListObject> expected, List<AccessListObject> actual) {
+        assertNotNull(actual, "decoded access list must not be null");
+        assertEquals(expected.size(), actual.size(), "access list size mismatch");
+        for (int i = 0; i < expected.size(); i++) {
+            AccessListObject e = expected.get(i);
+            AccessListObject a = actual.get(i);
+            assertTrue(
+                    e.getAddress().equalsIgnoreCase(a.getAddress()),
+                    "access list address mismatch: expected "
+                            + e.getAddress()
+                            + " got "
+                            + a.getAddress());
+            assertEquals(
+                    e.getStorageKeys().size(),
+                    a.getStorageKeys().size(),
+                    "storage key count mismatch");
+            for (int k = 0; k < e.getStorageKeys().size(); k++) {
+                assertTrue(
+                        e.getStorageKeys().get(k).equalsIgnoreCase(a.getStorageKeys().get(k)),
+                        "storage key mismatch at "
+                                + k
+                                + ": expected "
+                                + e.getStorageKeys().get(k)
+                                + " got "
+                                + a.getStorageKeys().get(k));
+            }
+        }
     }
 
     // =========================================================================
@@ -209,12 +258,7 @@ public class Eip7594TransactionTest {
     public void testAccessListPreservation() throws Exception {
         Credentials credentials = Credentials.create(PRIVATE_KEY);
 
-        List<AccessListObject> accessList =
-                Collections.singletonList(
-                        new AccessListObject(
-                                "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe",
-                                Collections.singletonList(
-                                        "0x0000000000000000000000000000000000000000000000000000000000000003")));
+        List<AccessListObject> accessList = sampleAccessList();
 
         int blobCount = 1;
         RawTransaction rawTx =
@@ -237,9 +281,11 @@ public class Eip7594TransactionTest {
 
         byte[] signed = TransactionEncoder.signMessage(rawTx, credentials);
         RawTransaction decoded = TransactionDecoder.decode(Numeric.toHexString(signed));
-        // Access list round-trip is preserved (non-empty tx body has access list)
-        // The decoded tx should be signed
         assertTrue(decoded instanceof SignedRawTransaction);
+
+        // The access list must round-trip unchanged through encode/decode.
+        Transaction4844 tx = (Transaction4844) decoded.getTransaction();
+        assertAccessListEquals(accessList, tx.getAccessList());
     }
 
     // =========================================================================
@@ -760,12 +806,7 @@ public class Eip7594TransactionTest {
     @Test
     public void testAccessListPassedThroughInEip7594() throws Exception {
         Credentials credentials = Credentials.create(PRIVATE_KEY);
-        List<AccessListObject> accessList =
-                Collections.singletonList(
-                        new AccessListObject(
-                                "0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe",
-                                Collections.singletonList(
-                                        "0x0000000000000000000000000000000000000000000000000000000000000003")));
+        List<AccessListObject> accessList = sampleAccessList();
         int blobCount = 1;
         RawTransaction rawTx =
                 RawTransaction.createTransaction(
@@ -791,5 +832,124 @@ public class Eip7594TransactionTest {
         assertTrue(tx.getWrapperVersion().isPresent());
         assertEquals(BigInteger.ONE, tx.getWrapperVersion().get());
         assertTrue(tx.getCellProofs().isPresent());
+        assertAccessListEquals(accessList, tx.getAccessList());
+    }
+
+    // =========================================================================
+    // 17. Access list round-trip on the EIP-4844 (kzgProofs) path
+    //     Regression test: the 14-arg createTransaction overload must thread the
+    //     access list through to tx_payload_body. Before the fix it was dropped,
+    //     yielding a different tx_payload_body (and thus a different tx hash).
+    // =========================================================================
+
+    @Test
+    public void testEip4844AccessListRoundTrip() throws Exception {
+        Credentials credentials = Credentials.create(PRIVATE_KEY);
+        List<AccessListObject> accessList = sampleAccessList();
+
+        int blobCount = 1;
+        // EIP-4844: one proof per blob (not per cell), via the kzgProofs overload.
+        RawTransaction rawTx =
+                RawTransaction.createTransaction(
+                        blobs(blobCount),
+                        commitments(blobCount),
+                        makeProofs(blobCount),
+                        1L,
+                        BigInteger.ZERO,
+                        BigInteger.TEN,
+                        BigInteger.TEN,
+                        BigInteger.valueOf(21000),
+                        TO_ADDRESS,
+                        BigInteger.ZERO,
+                        "",
+                        BigInteger.TEN,
+                        versionedHashes(blobCount),
+                        accessList);
+
+        byte[] signed = TransactionEncoder.signMessage(rawTx, credentials);
+        RawTransaction decoded = TransactionDecoder.decode(Numeric.toHexString(signed));
+
+        Transaction4844 tx = (Transaction4844) decoded.getTransaction();
+        // This is an EIP-4844 tx: no wrapper_version, no cell_proofs.
+        assertFalse(tx.getWrapperVersion().isPresent(), "EIP-4844 must not have wrapperVersion");
+        // The access list must survive the round-trip (regression for the dropped-access-list bug).
+        assertAccessListEquals(accessList, tx.getAccessList());
+    }
+
+    // =========================================================================
+    // 18. Decoder rejection of malformed payloads
+    //     These feed crafted RLP directly to TransactionDecoder.decode and assert
+    //     the guarded branches throw IllegalArgumentException (not a raw cast).
+    // =========================================================================
+
+    /** Encodes {@code outer} as a type-0x03 transaction and runs it through the decoder. */
+    private static RawTransaction decodeType3(RlpType outer) {
+        byte[] rlp = RlpEncoder.encode(outer);
+        byte[] tx = new byte[rlp.length + 1];
+        tx[0] = 0x03;
+        System.arraycopy(rlp, 0, tx, 1, rlp.length);
+        return TransactionDecoder.decode(Numeric.toHexString(tx));
+    }
+
+    /** Builds a tx_payload_body RlpList with {@code n} empty RlpString fields. */
+    private static RlpList bodyWithFields(int n) {
+        List<RlpType> fields = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            fields.add(RlpString.create(""));
+        }
+        return new RlpList(fields);
+    }
+
+    @Test
+    public void testDecoderRejectsWrongWrapperElementCount() {
+        // First element is a list (network wrapper), but total size is neither 4 nor 5.
+        RlpList outer = new RlpList(bodyWithFields(11), RlpString.create(""), RlpString.create(""));
+        assertThrows(IllegalArgumentException.class, () -> decodeType3(outer));
+    }
+
+    @Test
+    public void testDecoderRejectsNonStringWrapperVersion() {
+        // 5-element wrapper, but wrapper_version (index 1) is an RlpList, not an RlpString.
+        RlpList outer =
+                new RlpList(
+                        bodyWithFields(11),
+                        new RlpList(),
+                        new RlpList(),
+                        new RlpList(),
+                        new RlpList());
+        assertThrows(IllegalArgumentException.class, () -> decodeType3(outer));
+    }
+
+    @Test
+    public void testDecoderRejectsNonListBlobs() {
+        // 5-element wrapper, valid version, but blobs (index 2) is an RlpString, not an RlpList.
+        RlpList outer =
+                new RlpList(
+                        bodyWithFields(11),
+                        RlpString.create(BigInteger.ONE),
+                        RlpString.create("blobs"),
+                        new RlpList(),
+                        new RlpList());
+        assertThrows(IllegalArgumentException.class, () -> decodeType3(outer));
+    }
+
+    @Test
+    public void testDecoderRejectsMissingAccessList() {
+        // 5-element wrapper with valid types, but tx_payload_body has < 9 fields (no index 8).
+        RlpList outer =
+                new RlpList(
+                        bodyWithFields(3),
+                        RlpString.create(BigInteger.ONE),
+                        new RlpList(),
+                        new RlpList(),
+                        new RlpList());
+        assertThrows(IllegalArgumentException.class, () -> decodeType3(outer));
+    }
+
+    @Test
+    public void testDecoderRejectsTooFewPayloadFields() {
+        // No-sidecar body (first element is an RlpString) with fewer than 11 fields.
+        RlpList outer = bodyWithFields(5);
+        assertThrows(IllegalArgumentException.class, () -> decodeType3(outer));
     }
 }
