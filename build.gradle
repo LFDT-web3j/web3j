@@ -27,7 +27,7 @@ ext {
     javaWebSocketVersion = '1.5.6'
     picocliVersion = '4.7.6'
     ensAdraffyVersion = '0.2.0'
-    kzg4844Version = '2.0.0'
+    kzg4844Version = '2.1.6'
     awsSdkVersion = '2.27.24'
     tuweniVersion = '2.7.0'
     // test dependencies
