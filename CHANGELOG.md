@@ -13,7 +13,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Features
 
-*
+- Add support for txpool_contentFrom JSON-RPC method to query transaction pool by address (#2262)
 
 ### BREAKING CHANGES
 
