@@ -12,7 +12,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Features
 
 - Add support for EIP-7594 blob transaction wrapper [#2263](https://github.com/LFDT-web3j/web3j/pull/2263)
-- Full EIP-7594 tx and Kzg cell proof generation [#2295](https://github.com/LFDT-web3j/web3j/pull/2295)
+- Full EIP-7594 tx and Kzg cell proof generation [#2296](https://github.com/LFDT-web3j/web3j/pull/2296)
 
 ### BREAKING CHANGES
 
@@ -28,11 +28,11 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Features
 
-- Add support for EIP-7594 blob transaction wrapper (#2263)
+- ens: route resolve() through the Universal Resolver (ENSv2 readiness) [#2283](https://github.com/LFDT-web3j/web3j/pull/2283)
 
 ### BREAKING CHANGES
 
--
+- update Jackson imports to use tools.jackson package [#2285](https://github.com/LFDT-web3j/web3j/pull/2285)
 
 # [5.0.2](https://github.com/LFDT-web3j/web3j/releases/tag/v5.0.2) (2026-01-21)
 
