@@ -267,6 +267,59 @@ public class Transaction4844 extends Transaction1559 implements ITransaction {
         this.cellProofs = Optional.empty();
     }
 
+    // -------------------------------------------------------------------------
+    // Constructor 5: auto-compute commitments + cell proofs from raw blobs (EIP-7594)
+    //   The leading wrapperVersion param differentiates this from Constructor 4.
+    // -------------------------------------------------------------------------
+    protected Transaction4844(
+            List<Blob> blobsData,
+            BigInteger wrapperVersion,
+            long chainId,
+            BigInteger nonce,
+            BigInteger maxPriorityFeePerGas,
+            BigInteger maxFeePerGas,
+            BigInteger gasLimit,
+            String to,
+            BigInteger value,
+            String data,
+            BigInteger maxFeePerBlobGas,
+            List<AccessListObject> accessList) {
+        super(
+                chainId,
+                nonce,
+                gasLimit,
+                to,
+                value,
+                data,
+                maxPriorityFeePerGas,
+                maxFeePerGas,
+                accessList != null ? accessList : Collections.emptyList());
+        this.maxFeePerBlobGas = Objects.requireNonNull(maxFeePerBlobGas, "maxFeePerBlobGas");
+
+        if (blobsData == null) {
+            throw new IllegalArgumentException("blobsData must not be null");
+        }
+
+        this.blobs = Optional.of(blobsData);
+
+        List<Bytes> commitments =
+                blobsData.stream().map(BlobUtils::getCommitment).collect(Collectors.toList());
+        this.kzgCommitments = Optional.of(commitments);
+
+        // EIP-7594: flat, blob-major list of CELLS_PER_EXT_BLOB * blobCount cell proofs.
+        this.cellProofs = Optional.of(BlobUtils.getCellProofs(blobsData));
+        this.kzgProofs = Optional.empty(); // EIP-7594 does not use per-blob kzgProofs
+
+        this.versionedHashes =
+                commitments.stream()
+                        .map(BlobUtils::kzgToVersionedHash)
+                        .collect(Collectors.toList());
+
+        this.wrapperVersion = Optional.of(WRAPPER_VERSION_1);
+
+        validateEip7594Sidecar();
+    }
+
     // =========================================================================
     // Validation helpers
     // =========================================================================
@@ -697,6 +750,72 @@ public class Transaction4844 extends Transaction1559 implements ITransaction {
                 value,
                 data,
                 maxFeePerBlobGas);
+    }
+
+    /**
+     * Create an EIP-7594 (Osaka/Fusaka) transaction directly from raw blobs. The KZG commitments,
+     * the flat {@code CELLS_PER_EXT_BLOB * len(blobs)} cell proofs, and the blob versioned hashes
+     * are all computed automatically via {@link BlobUtils}.
+     *
+     * @param blobs the raw blobs
+     */
+    public static Transaction4844 createEip7594Transaction(
+            List<Blob> blobs,
+            long chainId,
+            BigInteger nonce,
+            BigInteger maxPriorityFeePerGas,
+            BigInteger maxFeePerGas,
+            BigInteger gasLimit,
+            String to,
+            BigInteger value,
+            String data,
+            BigInteger maxFeePerBlobGas) {
+        return createEip7594Transaction(
+                blobs,
+                chainId,
+                nonce,
+                maxPriorityFeePerGas,
+                maxFeePerGas,
+                gasLimit,
+                to,
+                value,
+                data,
+                maxFeePerBlobGas,
+                Collections.emptyList());
+    }
+
+    /**
+     * Create an EIP-7594 (Osaka/Fusaka) transaction directly from raw blobs, with an access list.
+     * The KZG commitments, flat cell proofs, and versioned hashes are computed automatically.
+     *
+     * @param blobs the raw blobs
+     * @param accessList optional EIP-2930 access list
+     */
+    public static Transaction4844 createEip7594Transaction(
+            List<Blob> blobs,
+            long chainId,
+            BigInteger nonce,
+            BigInteger maxPriorityFeePerGas,
+            BigInteger maxFeePerGas,
+            BigInteger gasLimit,
+            String to,
+            BigInteger value,
+            String data,
+            BigInteger maxFeePerBlobGas,
+            List<AccessListObject> accessList) {
+        return new Transaction4844(
+                blobs,
+                WRAPPER_VERSION_1,
+                chainId,
+                nonce,
+                maxPriorityFeePerGas,
+                maxFeePerGas,
+                gasLimit,
+                to,
+                value,
+                data,
+                maxFeePerBlobGas,
+                accessList);
     }
 
     /** Create a tx-only EIP-4844 transaction (no sidecar, versioned hashes only). */

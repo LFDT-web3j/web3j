@@ -200,6 +200,73 @@ public class RawTransaction {
                         maxFeePerBlobGas));
     }
 
+    /**
+     * Create an EIP-7594 (Osaka/Fusaka) blob transaction directly from raw blobs. The KZG
+     * commitments, flat cell proofs, and blob versioned hashes are computed automatically.
+     *
+     * @param blobs the raw blobs
+     */
+    public static RawTransaction createEip7594Transaction(
+            List<Blob> blobs,
+            long chainId,
+            BigInteger nonce,
+            BigInteger maxPriorityFeePerGas,
+            BigInteger maxFeePerGas,
+            BigInteger gasLimit,
+            String to,
+            BigInteger value,
+            String data,
+            BigInteger maxFeePerBlobGas) {
+
+        return new RawTransaction(
+                Transaction4844.createEip7594Transaction(
+                        blobs,
+                        chainId,
+                        nonce,
+                        maxPriorityFeePerGas,
+                        maxFeePerGas,
+                        gasLimit,
+                        to,
+                        value,
+                        data,
+                        maxFeePerBlobGas));
+    }
+
+    /**
+     * Create an EIP-7594 (Osaka/Fusaka) blob transaction directly from raw blobs, with an access
+     * list. The KZG commitments, flat cell proofs, and versioned hashes are computed automatically.
+     *
+     * @param blobs the raw blobs
+     * @param accessList optional EIP-2930 access list
+     */
+    public static RawTransaction createEip7594Transaction(
+            List<Blob> blobs,
+            long chainId,
+            BigInteger nonce,
+            BigInteger maxPriorityFeePerGas,
+            BigInteger maxFeePerGas,
+            BigInteger gasLimit,
+            String to,
+            BigInteger value,
+            String data,
+            BigInteger maxFeePerBlobGas,
+            List<AccessListObject> accessList) {
+
+        return new RawTransaction(
+                Transaction4844.createEip7594Transaction(
+                        blobs,
+                        chainId,
+                        nonce,
+                        maxPriorityFeePerGas,
+                        maxFeePerGas,
+                        gasLimit,
+                        to,
+                        value,
+                        data,
+                        maxFeePerBlobGas,
+                        accessList));
+    }
+
     public static RawTransaction createTransaction(
             List<Blob> blobs,
             List<Bytes> kzgCommitments,
