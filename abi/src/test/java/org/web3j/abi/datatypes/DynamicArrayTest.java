@@ -13,12 +13,14 @@
 package org.web3j.abi.datatypes;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
 
+import org.web3j.abi.datatypes.generated.StaticArray2;
 import org.web3j.abi.datatypes.generated.Uint256;
 import org.web3j.abi.datatypes.generated.Uint8;
 
@@ -61,6 +63,81 @@ public class DynamicArrayTest {
                                                 new DynamicArray<>(
                                                         Uint256.class, new ArrayList<>())))));
         assertEquals("uint256[][][]", array.getTypeAsString());
+    }
+
+    @Test
+    public void testString2DArrayTypeAsString() {
+        DynamicArray<Utf8String> innerArray =
+                new DynamicArray<>(Utf8String.class, new Utf8String("a"), new Utf8String("b"));
+        DynamicArray<DynamicArray> outerArray =
+                new DynamicArray<>(
+                        DynamicArray.class,
+                        Collections.singletonList(innerArray));
+
+        assertEquals("string[][]", outerArray.getTypeAsString());
+    }
+
+    @Test
+    public void testEmptyString2DArrayTypeAsString() {
+        DynamicArray<Utf8String> innerArray =
+                new DynamicArray<>(Utf8String.class, Collections.emptyList());
+        DynamicArray<DynamicArray> outerArray =
+                new DynamicArray<>(
+                        DynamicArray.class,
+                        Collections.singletonList(innerArray));
+
+        assertEquals("string[][]", outerArray.getTypeAsString());
+    }
+
+    @Test
+    public void testBytes2DArrayTypeAsString() {
+        DynamicArray<DynamicBytes> inner =
+                new DynamicArray<>(DynamicBytes.class, new DynamicBytes(new byte[] {0x01}));
+        DynamicArray<DynamicArray> outer =
+                new DynamicArray<>(
+                        DynamicArray.class,
+                        Collections.singletonList(inner));
+
+        assertEquals("bytes[][]", outer.getTypeAsString());
+    }
+
+    @Test
+    public void testTripleDimensionArrayTypeAsString() {
+        DynamicArray<Utf8String> level1 = new DynamicArray<>(Utf8String.class, new Utf8String("x"));
+        DynamicArray<DynamicArray> level2 =
+                new DynamicArray<>(
+                        DynamicArray.class,
+                        Collections.singletonList(level1));
+        DynamicArray<DynamicArray> level3 =
+                new DynamicArray<>(
+                        DynamicArray.class,
+                        Collections.singletonList(level2));
+
+        assertEquals("string[][][]", level3.getTypeAsString());
+    }
+
+    @Test
+    public void testNestedStaticArrayTypeAsString() {
+        StaticArray2<Uint256> inner =
+                new StaticArray2<>(Uint256.class, new Uint256(1), new Uint256(2));
+        DynamicArray<StaticArray2> outer =
+                new DynamicArray<>(
+                        StaticArray2.class,
+                        Collections.singletonList(inner));
+
+        assertEquals("uint256[2][]", outer.getTypeAsString());
+    }
+
+    @Test
+    public void testUint256DynamicArrayNested() {
+        List<Uint256> innerValues = Arrays.asList(new Uint256(1), new Uint256(2));
+        DynamicArray<Uint256> inner = new DynamicArray<>(Uint256.class, innerValues);
+        DynamicArray<DynamicArray> outer =
+                new DynamicArray<>(
+                        DynamicArray.class,
+                        Collections.singletonList(inner));
+
+        assertEquals("uint256[][]", outer.getTypeAsString());
     }
 
     private Uint[] arrayOfUints(int length) {
