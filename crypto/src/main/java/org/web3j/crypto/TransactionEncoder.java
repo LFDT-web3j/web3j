@@ -38,37 +38,44 @@ public class TransactionEncoder {
      * @return signature
      */
     public static byte[] signMessage(RawTransaction rawTransaction, Credentials credentials) {
+        Sign.SignatureData signatureData =
+                signMessageToSignatureData(rawTransaction, credentials);
+
+        return encodeNetwork(rawTransaction, signatureData);
+    }
+
+    public static Sign.SignatureData signMessageToSignatureData(
+            RawTransaction rawTransaction, Credentials credentials) {
         byte[] encodedTransaction;
         if (rawTransaction.getTransaction().getType().isEip4844()) {
             encodedTransaction = encode4844(rawTransaction);
         } else {
             encodedTransaction = encode(rawTransaction);
         }
-        Sign.SignatureData signatureData =
-                Sign.signMessage(encodedTransaction, credentials.getEcKeyPair());
-
-        return encode(rawTransaction, signatureData);
+        return Sign.signMessage(encodedTransaction, credentials.getEcKeyPair());
     }
 
-    /**
-     * Use for legacy txs (after Eip155 before Eip1559)
-     *
-     * @return signature
-     */
-    public static byte[] signMessage(
+    public static Sign.SignatureData signMessageToSignatureData(
             RawTransaction rawTransaction, long chainId, Credentials credentials) {
-
-        // Eip1559: Tx has ChainId inside
-        if (rawTransaction.getType().isEip1559()) {
-            return signMessage(rawTransaction, credentials);
+        if (rawTransaction.getType().isEip1559()
+                || rawTransaction.getType().isEip2930()
+                || rawTransaction.getType().isEip4844()
+                || rawTransaction.getType().isEip7702()) {
+            return signMessageToSignatureData(rawTransaction, credentials);
         }
 
         byte[] encodedTransaction = encode(rawTransaction, chainId);
         Sign.SignatureData signatureData =
                 Sign.signMessage(encodedTransaction, credentials.getEcKeyPair());
 
-        Sign.SignatureData eip155SignatureData = createEip155SignatureData(signatureData, chainId);
-        return encode(rawTransaction, eip155SignatureData);
+        return createEip155SignatureData(signatureData, chainId);
+    }
+
+    public static byte[] signMessage(
+            RawTransaction rawTransaction, long chainId, Credentials credentials) {
+        Sign.SignatureData signatureData =
+                signMessageToSignatureData(rawTransaction, chainId, credentials);
+        return encode(rawTransaction, signatureData);
     }
 
     @Deprecated
@@ -132,6 +139,22 @@ public class TransactionEncoder {
                     .array();
         }
         return encoded;
+    }
+
+    public static byte[] encodeNetwork(
+            RawTransaction rawTransaction, Sign.SignatureData signatureData) {
+        if (!rawTransaction.getType().isEip4844()) {
+            return encode(rawTransaction, signatureData);
+        }
+
+        List<RlpType> values = rawTransaction.getTransaction().asNetworkRlpValues(signatureData);
+        RlpList rlpList = new RlpList(values);
+        byte[] encoded = RlpEncoder.encode(rlpList);
+
+        return ByteBuffer.allocate(encoded.length + 1)
+                .put(rawTransaction.getType().getRlpType())
+                .put(encoded)
+                .array();
     }
 
     public static byte[] encode4844(RawTransaction rawTransaction) {

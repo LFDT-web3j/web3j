@@ -382,7 +382,7 @@ public class TransactionDecoderTest {
 
         final Sign.SignatureData fakeSignatureData =
                 new Sign.SignatureData(new byte[] {27}, new byte[] {0}, new byte[] {0});
-        final byte[] encodedMessage = TransactionEncoder.encode(rawTransaction, fakeSignatureData);
+        final byte[] encodedMessage = TransactionEncoder.encodeNetwork(rawTransaction, fakeSignatureData);
         final String hexMessage = Numeric.toHexString(encodedMessage);
 
         final RawTransaction result = TransactionDecoder.decode(hexMessage);

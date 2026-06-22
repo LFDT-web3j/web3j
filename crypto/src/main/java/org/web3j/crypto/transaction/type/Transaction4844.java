@@ -466,23 +466,22 @@ public class Transaction4844 extends Transaction1559 implements ITransaction {
     //       (which internally delegates to asNetworkRlpValues when sidecar present)
     // =========================================================================
 
-    /**
-     * Returns the RLP field list for the transaction payload body only (tx_payload_body). When
-     * signatureData is not null, includes v/r/s and then delegates to {@link
-     * #buildNetworkWrapper(Sign.SignatureData)} to append the blob sidecar.
-     */
     @Override
     public List<RlpType> asRlpValues(Sign.SignatureData signatureData) {
-        List<RlpType> txPayloadBody = buildTxPayloadBody(signatureData);
+        return buildTxPayloadBody(signatureData);
+    }
 
-        if (signatureData != null && hasAnySidecar()) {
-            // Produce the full network wrapper as a flat list so TransactionEncoder
-            // wraps it in a single RlpList → 0x03 || rlp([...])
+    @Override
+    public List<RlpType> asNetworkRlpValues(Sign.SignatureData signatureData) {
+        if (signatureData == null) {
+            return asRlpValues(null);
+        }
+        if (hasAnySidecar()) {
             return buildNetworkWrapper(signatureData);
         }
-
-        return txPayloadBody;
+        return asRlpValues(signatureData);
     }
+
 
     /**
      * Builds tx_payload_body: the 11 unsigned fields (+ optional v/r/s when signing). This is also
