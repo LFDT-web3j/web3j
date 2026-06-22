@@ -88,6 +88,10 @@ public class Bip32ECKeyPair extends ECKeyPair {
 
     private Bip32ECKeyPair deriveChildKey(int childNumber) {
         if (!hasPrivateKey()) {
+            if (isHardened(childNumber)) {
+                throw new UnsupportedOperationException(
+                        "Cannot derive hardened child key from public-only keypair");
+            }
             byte[] parentPublicKey = getPublicKeyPoint().getEncoded(true);
             ByteBuffer data = ByteBuffer.allocate(37);
             data.put(parentPublicKey);
@@ -155,7 +159,15 @@ public class Bip32ECKeyPair extends ECKeyPair {
 
     public ECPoint getPublicKeyPoint() {
         if (publicKeyPoint == null) {
-            publicKeyPoint = Sign.publicPointFromPrivate(getPrivateKey());
+            if (hasPrivateKey()) {
+                publicKeyPoint = Sign.publicPointFromPrivate(getPrivateKey());
+            } else {
+                byte[] pubKeyBytes = Numeric.toBytesPadded(getPublicKey(), 64);
+                byte[] uncompressedPrefixed = new byte[65];
+                uncompressedPrefixed[0] = 0x04;
+                System.arraycopy(pubKeyBytes, 0, uncompressedPrefixed, 1, 64);
+                publicKeyPoint = Sign.CURVE.getCurve().decodePoint(uncompressedPrefixed);
+            }
         }
         return publicKeyPoint;
     }
