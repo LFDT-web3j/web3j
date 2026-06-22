@@ -13,6 +13,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 - Add support for EIP-7594 blob transaction wrapper [#2263](https://github.com/LFDT-web3j/web3j/pull/2263)
 - Full EIP-7594 tx and Kzg cell proof generation [#2296](https://github.com/LFDT-web3j/web3j/pull/2296)
+- Bump snapshot version to 5.0.4 [#2297](https://github.com/LFDT-web3j/web3j/pull/2297)
 
 ### BREAKING CHANGES
 
@@ -22,17 +23,17 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
-- Fix Async executor lifecycle to support safe shutdown and reuse (#2244)
-- Fix Async executor lifecycle to safely recreate executor after shutdown and prevent RejectedExecutionException (#2255)
-- Replace raw usage of EthLog.LogResult with parameterized type to improve type safety (#2252)
+- Fix Async executor lifecycle to support safe shutdown and reuse [#2244](https://github.com/LFDT-web3j/web3j/pull/2285)
+- Fix Async executor lifecycle to safely recreate executor after shutdown and prevent RejectedExecutionException [#2255](https://github.com/LFDT-web3j/web3j/pull/2255)
+- Replace raw usage of EthLog.LogResult with parameterized type to improve type safety [#2252](https://github.com/LFDT-web3j/web3j/pull/2255)
 
 ### Features
 
-- ens: route resolve() through the Universal Resolver (ENSv2 readiness) [#2283](https://github.com/LFDT-web3j/web3j/pull/2283)
+- route resolve() through the Universal Resolver (ENSv2 readiness) [#2283](https://github.com/LFDT-web3j/web3j/pull/2283)
 
 ### BREAKING CHANGES
 
-- update Jackson imports to use tools.jackson package [#2285](https://github.com/LFDT-web3j/web3j/pull/2285)
+- Update to Jackson 3.1.0 [#2285](https://github.com/LFDT-web3j/web3j/pull/2285)
 
 # [5.0.2](https://github.com/LFDT-web3j/web3j/releases/tag/v5.0.2) (2026-01-21)
 
