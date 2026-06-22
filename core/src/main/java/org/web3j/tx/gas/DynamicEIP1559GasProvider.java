@@ -19,6 +19,7 @@ import java.math.BigInteger;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.methods.request.Transaction;
+import org.web3j.protocol.core.methods.response.EthBlock;
 import org.web3j.protocol.core.methods.response.EthEstimateGas;
 import org.web3j.protocol.core.methods.response.EthGasPrice;
 import org.web3j.protocol.core.methods.response.EthMaxPriorityFeePerGas;
@@ -29,6 +30,7 @@ public class DynamicEIP1559GasProvider implements ContractEIP1559GasProvider, Pr
     private final Priority priority;
     private final BigDecimal customMultiplier;
     private BigInteger maxGasLimit = BigInteger.valueOf(9_000_000);
+    private BigInteger lastMaxPriorityFeePerGas = BigInteger.ZERO;
 
     public DynamicEIP1559GasProvider(Web3j web3j, long chainId) {
         this(web3j, chainId, Priority.NORMAL);
@@ -54,20 +56,43 @@ public class DynamicEIP1559GasProvider implements ContractEIP1559GasProvider, Pr
     @Override
     public BigInteger getMaxFeePerGas() {
         try {
-            BigInteger baseFee =
-                    web3j.ethGetBlockByNumber(DefaultBlockParameterName.LATEST, false)
-                            .send()
-                            .getBlock()
-                            .getBaseFeePerGas();
+            EthBlock ethBlock =
+                    web3j.ethGetBlockByNumber(DefaultBlockParameterName.LATEST, false).send();
+            if (ethBlock == null
+                    || ethBlock.getBlock() == null
+                    || ethBlock.getBlock().getBaseFeePerGas() == null) {
+                throw new RuntimeException("Failed to fetch base fee from latest block");
+            }
+            BigInteger baseFee = ethBlock.getBlock().getBaseFeePerGas();
 
-            return baseFee.multiply(BigInteger.valueOf(2)).add(getMaxPriorityFeePerGas());
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to get ethMaxFeePerGas");
+            BigInteger maxPriorityFeePerGas = getMaxPriorityFeePerGas();
+            BigInteger maxFee =
+                    baseFee.multiply(BigInteger.valueOf(2))
+                            .add(maxPriorityFeePerGas)
+                            .max(lastMaxPriorityFeePerGas)
+                            .max(BigInteger.ZERO);
+            return maxFee;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get ethMaxFeePerGas", e);
         }
     }
 
     @Override
     public BigInteger getMaxPriorityFeePerGas() {
+        BigInteger currentPriorityFee =
+                applyPriority(fetchMaxPriorityFeePerGas(), priority, customMultiplier);
+
+        if (currentPriorityFee.compareTo(BigInteger.ZERO) < 0) {
+            currentPriorityFee = BigInteger.ZERO;
+        }
+
+        if (currentPriorityFee.compareTo(lastMaxPriorityFeePerGas) > 0) {
+            lastMaxPriorityFeePerGas = currentPriorityFee;
+        }
+        return currentPriorityFee;
+    }
+
+    private BigInteger fetchMaxPriorityFeePerGas() {
         try {
             EthMaxPriorityFeePerGas ethMaxPriorityFeePerGas =
                     web3j.ethMaxPriorityFeePerGas().send();
@@ -78,7 +103,7 @@ public class DynamicEIP1559GasProvider implements ContractEIP1559GasProvider, Pr
             }
             return ethMaxPriorityFeePerGas.getMaxPriorityFeePerGas();
         } catch (IOException e) {
-            throw new RuntimeException("Failed to get ethMaxPriorityFeePerGas");
+            throw new RuntimeException("Failed to get ethMaxPriorityFeePerGas", e);
         }
     }
 

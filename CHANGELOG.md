@@ -7,7 +7,8 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
--
+- Fix maxPriorityFeePerGas exceeding maxFeePerGas in DynamicEIP1559GasProvider [#2264](https://github.com/LFDT-web3j/web3j/pull/2264)
+
 
 ### Features
 
