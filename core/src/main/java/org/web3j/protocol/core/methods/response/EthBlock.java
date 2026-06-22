@@ -12,19 +12,19 @@
  */
 package org.web3j.protocol.core.methods.response;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.annotation.JsonDeserialize;
 
 import org.web3j.protocol.ObjectMapperFactory;
 import org.web3j.protocol.core.Response;
@@ -955,14 +955,13 @@ public class EthBlock extends Response<EthBlock.Block> {
     }
 
     public static class ResultTransactionDeserialiser
-            extends JsonDeserializer<List<TransactionResult>> {
+            extends ValueDeserializer<List<TransactionResult>> {
 
         private ObjectReader objectReader = ObjectMapperFactory.getObjectReader();
 
         @Override
         public List<TransactionResult> deserialize(
-                JsonParser jsonParser, DeserializationContext deserializationContext)
-                throws IOException {
+                JsonParser jsonParser, DeserializationContext deserializationContext) {
 
             List<TransactionResult> transactionResults = new ArrayList<>();
             JsonToken nextToken = jsonParser.nextToken();
@@ -1051,16 +1050,15 @@ public class EthBlock extends Response<EthBlock.Block> {
         }
     }
 
-    public static class ResponseDeserialiser extends JsonDeserializer<Block> {
+    public static class ResponseDeserialiser extends ValueDeserializer<Block> {
 
-        private ObjectReader objectReader = ObjectMapperFactory.getObjectReader();
+        private final ObjectMapper objectMapper = new ObjectMapper();
 
         @Override
         public Block deserialize(
-                JsonParser jsonParser, DeserializationContext deserializationContext)
-                throws IOException {
-            if (jsonParser.getCurrentToken() != JsonToken.VALUE_NULL) {
-                return objectReader.readValue(jsonParser, Block.class);
+                JsonParser jsonParser, DeserializationContext deserializationContext) {
+            if (jsonParser.currentToken() != JsonToken.VALUE_NULL) {
+                return objectMapper.convertValue(jsonParser.readValueAsTree(), Block.class);
             } else {
                 return null; // null is wrapped by Optional in above getter
             }

@@ -200,6 +200,73 @@ public class RawTransaction {
                         maxFeePerBlobGas));
     }
 
+    /**
+     * Create an EIP-7594 (Osaka/Fusaka) blob transaction directly from raw blobs. The KZG
+     * commitments, flat cell proofs, and blob versioned hashes are computed automatically.
+     *
+     * @param blobs the raw blobs
+     */
+    public static RawTransaction createEip7594Transaction(
+            List<Blob> blobs,
+            long chainId,
+            BigInteger nonce,
+            BigInteger maxPriorityFeePerGas,
+            BigInteger maxFeePerGas,
+            BigInteger gasLimit,
+            String to,
+            BigInteger value,
+            String data,
+            BigInteger maxFeePerBlobGas) {
+
+        return new RawTransaction(
+                Transaction4844.createEip7594Transaction(
+                        blobs,
+                        chainId,
+                        nonce,
+                        maxPriorityFeePerGas,
+                        maxFeePerGas,
+                        gasLimit,
+                        to,
+                        value,
+                        data,
+                        maxFeePerBlobGas));
+    }
+
+    /**
+     * Create an EIP-7594 (Osaka/Fusaka) blob transaction directly from raw blobs, with an access
+     * list. The KZG commitments, flat cell proofs, and versioned hashes are computed automatically.
+     *
+     * @param blobs the raw blobs
+     * @param accessList optional EIP-2930 access list
+     */
+    public static RawTransaction createEip7594Transaction(
+            List<Blob> blobs,
+            long chainId,
+            BigInteger nonce,
+            BigInteger maxPriorityFeePerGas,
+            BigInteger maxFeePerGas,
+            BigInteger gasLimit,
+            String to,
+            BigInteger value,
+            String data,
+            BigInteger maxFeePerBlobGas,
+            List<AccessListObject> accessList) {
+
+        return new RawTransaction(
+                Transaction4844.createEip7594Transaction(
+                        blobs,
+                        chainId,
+                        nonce,
+                        maxPriorityFeePerGas,
+                        maxFeePerGas,
+                        gasLimit,
+                        to,
+                        value,
+                        data,
+                        maxFeePerBlobGas,
+                        accessList));
+    }
+
     public static RawTransaction createTransaction(
             List<Blob> blobs,
             List<Bytes> kzgCommitments,
@@ -214,6 +281,38 @@ public class RawTransaction {
             String data,
             BigInteger maxFeePerBlobGas,
             List<Bytes> versionedHashes) {
+        return createTransaction(
+                blobs,
+                kzgCommitments,
+                kzgProofs,
+                chainId,
+                nonce,
+                maxPriorityFeePerGas,
+                maxFeePerGas,
+                gasLimit,
+                to,
+                value,
+                data,
+                maxFeePerBlobGas,
+                versionedHashes,
+                Collections.emptyList());
+    }
+
+    public static RawTransaction createTransaction(
+            List<Blob> blobs,
+            List<Bytes> kzgCommitments,
+            List<Bytes> kzgProofs,
+            long chainId,
+            BigInteger nonce,
+            BigInteger maxPriorityFeePerGas,
+            BigInteger maxFeePerGas,
+            BigInteger gasLimit,
+            String to,
+            BigInteger value,
+            String data,
+            BigInteger maxFeePerBlobGas,
+            List<Bytes> versionedHashes,
+            List<AccessListObject> accessList) {
 
         return new RawTransaction(
                 Transaction4844.createTransaction(
@@ -229,7 +328,90 @@ public class RawTransaction {
                         value,
                         data,
                         maxFeePerBlobGas,
-                        versionedHashes));
+                        versionedHashes,
+                        accessList));
+    }
+
+    /**
+     * Create an EIP-7594 (Osaka/Fusaka) blob transaction.
+     *
+     * @param cellProofs flat list of {@code CELLS_PER_EXT_BLOB * len(blobs)} 48-byte KZG proofs
+     * @param wrapperVersion must be BigInteger.ONE per EIP-7594
+     */
+    public static RawTransaction createTransaction(
+            List<Blob> blobs,
+            List<Bytes> kzgCommitments,
+            List<Bytes> cellProofs,
+            BigInteger wrapperVersion,
+            long chainId,
+            BigInteger nonce,
+            BigInteger maxPriorityFeePerGas,
+            BigInteger maxFeePerGas,
+            BigInteger gasLimit,
+            String to,
+            BigInteger value,
+            String data,
+            BigInteger maxFeePerBlobGas,
+            List<Bytes> versionedHashes) {
+        return createTransaction(
+                blobs,
+                kzgCommitments,
+                cellProofs,
+                wrapperVersion,
+                chainId,
+                nonce,
+                maxPriorityFeePerGas,
+                maxFeePerGas,
+                gasLimit,
+                to,
+                value,
+                data,
+                maxFeePerBlobGas,
+                versionedHashes,
+                Collections.emptyList());
+    }
+
+    /**
+     * Create an EIP-7594 (Osaka/Fusaka) blob transaction with access list.
+     *
+     * @param cellProofs flat list of {@code CELLS_PER_EXT_BLOB * len(blobs)} 48-byte KZG proofs
+     * @param wrapperVersion must be BigInteger.ONE per EIP-7594
+     * @param accessList optional EIP-2930 access list
+     */
+    public static RawTransaction createTransaction(
+            List<Blob> blobs,
+            List<Bytes> kzgCommitments,
+            List<Bytes> cellProofs,
+            BigInteger wrapperVersion,
+            long chainId,
+            BigInteger nonce,
+            BigInteger maxPriorityFeePerGas,
+            BigInteger maxFeePerGas,
+            BigInteger gasLimit,
+            String to,
+            BigInteger value,
+            String data,
+            BigInteger maxFeePerBlobGas,
+            List<Bytes> versionedHashes,
+            List<AccessListObject> accessList) {
+
+        return new RawTransaction(
+                Transaction4844.createTransaction(
+                        blobs,
+                        kzgCommitments,
+                        cellProofs,
+                        wrapperVersion,
+                        chainId,
+                        nonce,
+                        maxPriorityFeePerGas,
+                        maxFeePerGas,
+                        gasLimit,
+                        to,
+                        value,
+                        data,
+                        maxFeePerBlobGas,
+                        versionedHashes,
+                        accessList));
     }
 
     public static RawTransaction createTransaction(

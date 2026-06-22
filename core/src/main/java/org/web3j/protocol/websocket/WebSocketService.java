@@ -28,16 +28,16 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
 import io.reactivex.subjects.BehaviorSubject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import org.web3j.protocol.ObjectMapperFactory;
 import org.web3j.protocol.Web3jService;
@@ -73,6 +73,7 @@ public class WebSocketService implements Web3jService {
     private final ScheduledExecutorService executor;
     // Object mapper to map incoming JSON objects
     private final ObjectMapper objectMapper;
+    private final boolean includeRawResponses;
 
     // Map of a sent request id to objects necessary to process this request
     private Map<Long, WebSocketRequest<?>> requestForId = new ConcurrentHashMap<>();
@@ -98,7 +99,8 @@ public class WebSocketService implements Web3jService {
             boolean includeRawResponses) {
         this.webSocketClient = webSocketClient;
         this.executor = executor;
-        this.objectMapper = ObjectMapperFactory.getObjectMapper(includeRawResponses);
+        this.includeRawResponses = includeRawResponses;
+        this.objectMapper = ObjectMapperFactory.getObjectMapper();
     }
 
     /**
@@ -193,7 +195,7 @@ public class WebSocketService implements Web3jService {
         requestForId.put(requestId, new WebSocketRequest<>(result, responseType));
         try {
             sendRequest(request, requestId);
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             closeRequest(requestId, e);
         }
 
@@ -231,22 +233,21 @@ public class WebSocketService implements Web3jService {
 
         try {
             sendBatchRequest(requests, requestId);
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             closeRequest(requestId, e);
         }
 
         return result;
     }
 
-    private void sendRequest(Request request, long requestId) throws JsonProcessingException {
+    private void sendRequest(Request request, long requestId) throws JacksonException {
         String payload = objectMapper.writeValueAsString(request);
         log.debug("Sending request: {}", payload);
         webSocketClient.send(payload);
         setRequestTimeout(requestId);
     }
 
-    private void sendBatchRequest(BatchRequest request, long requestId)
-            throws JsonProcessingException {
+    private void sendBatchRequest(BatchRequest request, long requestId) throws JacksonException {
         String payload = objectMapper.writeValueAsString(request.getRequests());
         log.debug("Sending batch request: {}", payload);
         webSocketClient.send(payload);
@@ -290,6 +291,9 @@ public class WebSocketService implements Web3jService {
         WebSocketRequest request = getAndRemoveRequest(replyId);
         try {
             Object reply = objectMapper.convertValue(replyJson, request.getResponseType());
+            if (includeRawResponses && reply instanceof Response) {
+                ((Response<?>) reply).setRawResponse(replyStr);
+            }
             // Instead of sending a reply to a caller asynchronously we need to process it here
             // to avoid race conditions we need to modify state of this class.
             if (reply instanceof EthSubscribe) {
@@ -316,6 +320,9 @@ public class WebSocketService implements Web3jService {
                 Response<?> response =
                         objectMapper.treeToValue(
                                 replyJson.get(i), requests.get(i).getResponseType());
+                if (includeRawResponses) {
+                    response.setRawResponse(replyJson.get(i).toString());
+                }
                 responses.add(response);
             }
 
@@ -395,7 +402,7 @@ public class WebSocketService implements Web3jService {
     }
 
     private String extractSubscriptionId(JsonNode replyJson) {
-        return replyJson.get("params").get("subscription").asText();
+        return replyJson.get("params").get("subscription").asString();
     }
 
     @SuppressWarnings("unchecked")
@@ -419,7 +426,7 @@ public class WebSocketService implements Web3jService {
     private JsonNode parseToTree(String replyStr) throws IOException {
         try {
             return objectMapper.readTree(replyStr);
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             throw new IOException("Failed to parse incoming WebSocket message", e);
         }
     }
@@ -441,19 +448,19 @@ public class WebSocketService implements Web3jService {
         }
 
         if (!idField.isIntegralNumber()) {
-            if (idField.isTextual()) {
+            if (idField.isString()) {
                 try {
-                    return Long.parseLong(idField.asText());
+                    return Long.parseLong(idField.asString());
                 } catch (NumberFormatException e) {
                     throw new IOException(
                             String.format(
                                     "Found Textual 'id' that cannot be casted to long. Input : '%s'",
-                                    idField.asText()));
+                                    idField.asString()));
                 }
             } else {
                 throw new IOException(
                         String.format(
-                                "'id' expected to be long, but it is: '%s'", idField.asText()));
+                                "'id' expected to be long, but it is: '%s'", idField.asString()));
             }
         }
 

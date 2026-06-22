@@ -52,3 +52,6 @@ docs/build
 
 # Besu-dev-quickstart logs
 integration-tests/src/test/resources/quorum-test-network/logs
+
+# Agent files, folders, etc
+Web3j Agent

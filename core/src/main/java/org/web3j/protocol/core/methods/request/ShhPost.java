@@ -17,10 +17,12 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import org.web3j.utils.Numeric;
 
 /** https://github.com/ethereum/wiki/wiki/JSON-RPC#shh_post */
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonPropertyOrder({"from", "to", "topics", "payload", "priority", "ttl"})
 public class ShhPost {
     private String from;
     private String to;

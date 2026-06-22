@@ -15,10 +15,14 @@ package org.web3j.protocol.core.methods.response;
 import java.math.BigInteger;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import org.web3j.crypto.TransactionUtils;
 import org.web3j.utils.Numeric;
 
 /** Transaction object used by both {@link EthTransaction} and {@link EthBlock}. */
+@JsonPropertyOrder({"hash", "nonce", "blockHash", "blockNumber", "chainId", "transactionIndex", "from", "to", "value", "gas", "gasPrice",
+        "input", "creates", "publicKey", "raw", "r", "s", "v", "yParity", "accessList", "type", "maxFeePerGas",
+        "maxPriorityFeePerGas", "maxFeePerBlobGas", "blobVersionedHashes", "authorizationList"})
 public class Transaction {
     private String hash;
     private String nonce;
@@ -278,8 +282,10 @@ public class Transaction {
     }
 
     public BigInteger getNonce() {
+        if (nonce == null) return null;
         return Numeric.decodeQuantity(nonce);
     }
+
 
     public void setNonce(String nonce) {
         this.nonce = nonce;
@@ -298,8 +304,10 @@ public class Transaction {
     }
 
     public BigInteger getBlockNumber() {
+        if (blockNumber == null) return null;
         return Numeric.decodeQuantity(blockNumber);
     }
+
 
     public void setBlockNumber(String blockNumber) {
         this.blockNumber = blockNumber;
@@ -310,8 +318,10 @@ public class Transaction {
     }
 
     public BigInteger getTransactionIndex() {
+        if (transactionIndex == null) return null;
         return Numeric.decodeQuantity(transactionIndex);
     }
+
 
     public void setTransactionIndex(String transactionIndex) {
         this.transactionIndex = transactionIndex;
@@ -338,8 +348,10 @@ public class Transaction {
     }
 
     public BigInteger getValue() {
+        if (value == null) return null;
         return Numeric.decodeQuantity(value);
     }
+
 
     public void setValue(String value) {
         this.value = value;
@@ -350,8 +362,10 @@ public class Transaction {
     }
 
     public BigInteger getGasPrice() {
+        if (gasPrice == null) return null;
         return Numeric.decodeQuantity(gasPrice);
     }
+
 
     public void setGasPrice(String gasPrice) {
         this.gasPrice = gasPrice;
@@ -362,8 +376,10 @@ public class Transaction {
     }
 
     public BigInteger getGas() {
+        if (gas == null) return null;
         return Numeric.decodeQuantity(gas);
     }
+
 
     public void setGas(String gas) {
         this.gas = gas;
@@ -444,7 +460,7 @@ public class Transaction {
     //        this.v = v;
     //    }
 
-    public String getyParity() {
+    public String getYParity() {
         return yParity;
     }
 
@@ -490,8 +506,10 @@ public class Transaction {
     }
 
     public BigInteger getMaxPriorityFeePerGas() {
+        if (maxPriorityFeePerGas == null) return null;
         return Numeric.decodeQuantity(maxPriorityFeePerGas);
     }
+
 
     public void setMaxPriorityFeePerGas(String maxPriorityFeePerGas) {
         this.maxPriorityFeePerGas = maxPriorityFeePerGas;
@@ -510,8 +528,10 @@ public class Transaction {
     }
 
     public BigInteger getMaxFeePerBlobGas() {
+        if (maxFeePerBlobGas == null) return null;
         return Numeric.decodeQuantity(maxFeePerBlobGas);
     }
+
 
     public void setMaxFeePerBlobGas(String maxFeePerBlobGas) {
         this.maxFeePerBlobGas = maxFeePerBlobGas;
@@ -617,9 +637,9 @@ public class Transaction {
         if (getR() != null ? !getR().equals(that.getR()) : that.getR() != null) {
             return false;
         }
-        if (getyParity() != null
-                ? !getyParity().equals(that.getyParity())
-                : that.getyParity() != null) {
+        if (getYParity() != null
+                ? !getYParity().equals(that.getYParity())
+                : that.getYParity() != null) {
             return false;
         }
         if (getType() != null ? !getType().equals(that.getType()) : that.getType() != null) {
@@ -683,7 +703,7 @@ public class Transaction {
         result = 31 * result + (getR() != null ? getR().hashCode() : 0);
         result = 31 * result + (getS() != null ? getS().hashCode() : 0);
         result = 31 * result + BigInteger.valueOf(getV()).hashCode();
-        result = 31 * result + (getyParity() != null ? getyParity().hashCode() : 0);
+        result = 31 * result + (getYParity() != null ? getYParity().hashCode() : 0);
         result = 31 * result + (getType() != null ? getType().hashCode() : 0);
         result = 31 * result + (getMaxFeePerGasRaw() != null ? getMaxFeePerGasRaw().hashCode() : 0);
         result =
