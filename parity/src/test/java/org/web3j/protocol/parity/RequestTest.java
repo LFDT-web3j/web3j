@@ -274,7 +274,21 @@ public class RequestTest extends RequestTester {
         web3j.parityNewAccountFromWallet(walletFile, "password").send();
 
         verifyResult(
-                "{\"jsonrpc\":\"2.0\",\"method\":\"parity_newAccountFromWallet\",\"params\":[{\"address\":\"0x...\",\"id\":\"cab06c9e-79a9-48ea-afc7-d3bdb3a59526\",\"version\":1,\"crypto\":{\"cipher\":\"CIPHER\",\"ciphertext\":\"CIPHERTEXT\",\"cipherparams\":{\"iv\":\"IV\"},\"kdf\":\"KDF\",\"kdfparams\":{\"dklen\":32,\"n\":1,\"p\":10,\"r\":100,\"salt\":\"SALT\"},\"mac\":\"MAC\"}},\"password\"],\"id\":1}");
+                "{\"jsonrpc\":\"2.0\",\"method\":\"parity_newAccountFromWallet\",\"params\":[{"
+                        +   "\"address\":\"0x...\","
+                        +   "\"crypto\":{"
+                        +       "\"cipher\":\"CIPHER\","
+                        +       "\"cipherparams\":{\"iv\":\"IV\"},"
+                        +       "\"ciphertext\":\"CIPHERTEXT\","
+                        +       "\"kdf\":\"KDF\","
+                        +       "\"kdfparams\":{\"dklen\":32,\"n\":1,\"p\":10,\"r\":100,\"salt\":\"SALT\"},"
+                        +       "\"mac\":\"MAC\""
+                        +   "},"
+                        +   "\"id\":\"cab06c9e-79a9-48ea-afc7-d3bdb3a59526\","
+                        +   "\"version\":1"
+                        + "},"
+                        + "\"password\"],"
+                        + "\"id\":1}");
     }
 
     public void testParityRemoveAddress() throws Exception {
@@ -466,9 +480,12 @@ public class RequestTest extends RequestTester {
 
         verifyResult(
                 "{\"jsonrpc\":\"2.0\",\"method\":\"trace_filter\","
-                        + "\"params\":[{\"fromBlock\":\"earliest\",\"toBlock\":\"latest\","
+                        + "\"params\":[{"
                         + "\"fromAddress\":[\"0xa9bebd4853ce06c3dc1b711bbafa1514ed5b5130\"],"
-                        + "\"toAddress\":[\"0xB4d9b203d8D16f41916a62DEab83389cF2b7eeCb\"]}],"
+                        + "\"fromBlock\":\"earliest\","
+                        + "\"toAddress\":[\"0xB4d9b203d8D16f41916a62DEab83389cF2b7eeCb\"],"
+                        + "\"toBlock\":\"latest\""
+                        + "}],"
                         + "\"id\":1}");
     }
 

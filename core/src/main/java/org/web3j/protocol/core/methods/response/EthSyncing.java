@@ -12,17 +12,14 @@
  */
 package org.web3j.protocol.core.methods.response;
 
-import java.io.IOException;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.annotation.JsonDeserialize;
 
-import org.web3j.protocol.ObjectMapperFactory;
 import org.web3j.protocol.core.Response;
 
 /**
@@ -156,20 +153,19 @@ public class EthSyncing extends Response<EthSyncing.Result> {
         }
     }
 
-    public static class ResponseDeserialiser extends JsonDeserializer<Result> {
+    public static class ResponseDeserialiser extends ValueDeserializer<Result> {
 
-        private ObjectReader objectReader = ObjectMapperFactory.getObjectReader();
+        private final ObjectMapper objectMapper = new ObjectMapper();
 
         @Override
         public Result deserialize(
-                JsonParser jsonParser, DeserializationContext deserializationContext)
-                throws IOException {
+                JsonParser jsonParser, DeserializationContext deserializationContext) {
             Result result;
-            if (jsonParser.getCurrentToken() == JsonToken.VALUE_FALSE) {
+            if (jsonParser.currentToken() == JsonToken.VALUE_FALSE) {
                 result = new Result();
                 result.setSyncing(jsonParser.getBooleanValue());
             } else {
-                result = objectReader.readValue(jsonParser, Syncing.class);
+                result = objectMapper.convertValue(jsonParser.readValueAsTree(), Syncing.class);
             }
             return result;
         }

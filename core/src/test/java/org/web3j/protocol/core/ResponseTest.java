@@ -1587,6 +1587,9 @@ class ResponseTest extends ResponseTester {
                                                 "0x4869ff95a61ee1ded0b22e2d0e3f54f3199886a9f361e634132c95164bfc5129"))));
 
         EthTransaction ethTransaction = deserialiseResponse(EthTransaction.class);
+        assertEquals(ethTransaction.getTransaction().get().getFrom(), (transaction.getFrom()));
+        System.out.println("ethTransaction.getTransaction().get().getyParity()");
+        System.out.println(ethTransaction.getTransaction().get().getYParity());
         assertEquals(ethTransaction.getTransaction().get(), (transaction));
     }
 
@@ -2058,7 +2061,6 @@ class ResponseTest extends ResponseTester {
                         + "        }\n"
                         + "      }\n"
                         + "    }\n"
-                        + "    }"
                         + "  }\n"
                         + "}");
 

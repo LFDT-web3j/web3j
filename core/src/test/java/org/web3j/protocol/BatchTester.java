@@ -14,7 +14,6 @@ package org.web3j.protocol;
 
 import java.io.IOException;
 
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import okhttp3.Interceptor;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -24,6 +23,7 @@ import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import okio.Buffer;
 import org.junit.jupiter.api.BeforeEach;
+import tools.jackson.databind.node.ArrayNode;
 
 import org.web3j.protocol.http.HttpService;
 

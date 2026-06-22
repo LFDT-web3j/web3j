@@ -101,6 +101,9 @@ class HttpServiceTest {
             assertEquals(
                     e.getMessage(),
                     "Invalid response received: " + response.code() + "; " + content);
+            assertEquals(
+                    response.code(),
+                    e.getCode());
             return;
         }
 

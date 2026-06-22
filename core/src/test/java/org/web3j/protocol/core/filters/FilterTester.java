@@ -21,10 +21,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.reactivex.Flowable;
 import io.reactivex.disposables.Disposable;
 import org.junit.jupiter.api.BeforeEach;
+import tools.jackson.databind.ObjectMapper;
 
 import org.web3j.protocol.ObjectMapperFactory;
 import org.web3j.protocol.Web3j;
@@ -111,12 +111,13 @@ public abstract class FilterTester {
         assertTrue(subscription.isDisposed());
     }
 
-    List createExpected(EthLog ethLog) {
-        List<EthLog.LogResult> logResults = ethLog.getLogs();
+    @SuppressWarnings("unchecked")
+    <T> List<T> createExpected(EthLog ethLog) {
+        List<EthLog.LogResult<?>> logResults = ethLog.getLogs();
         if (logResults.isEmpty()) {
             fail("Results cannot be empty");
         }
 
-        return ethLog.getLogs().stream().map(EthLog.LogResult::get).toList();
+        return (List<T>) ethLog.getLogs().stream().map(EthLog.LogResult::get).toList();
     }
 }
