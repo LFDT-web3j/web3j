@@ -25,11 +25,9 @@ import com.fasterxml.jackson.annotation.JsonValue;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public abstract class Filter<T extends Filter> {
 
-    private T thisObj;
     private List<FilterTopic> topics;
 
     Filter() {
-        thisObj = getThis();
         topics = new ArrayList<>();
     }
 
