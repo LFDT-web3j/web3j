@@ -14,6 +14,7 @@ package org.web3j.crypto.transaction.type;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.web3j.crypto.AccessListObject;
@@ -39,7 +40,16 @@ public class Transaction7702 extends Transaction1559 implements ITransaction {
             String data,
             List<AccessListObject> accessList,
             List<AuthorizationTuple> authorizationList) {
-        super(chainId, nonce, gasLimit, to, value, data, maxPriorityFeePerGas, maxFeePerGas);
+        super(
+                chainId,
+                nonce,
+                gasLimit,
+                to,
+                value,
+                data,
+                maxPriorityFeePerGas,
+                maxFeePerGas,
+                accessList == null ? Collections.emptyList() : accessList);
         this.authorizationList = authorizationList;
     }
 
