@@ -143,6 +143,8 @@ public class EthLog extends Response<List<EthLog.LogResult<?>>> {
                     logResults.add(logObjectIterator.next());
                 }
             } else if (nextToken == JsonToken.VALUE_STRING) {
+                jsonParser.getString();
+
                 Iterator<Hash> transactionHashIterator =
                         objectMapper.readerFor(Hash.class).readValues(jsonParser);
                 while (transactionHashIterator.hasNext()) {
