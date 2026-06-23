@@ -12,16 +12,14 @@
  */
 package org.web3j.protocol.core.methods.response;
 
-import java.io.IOException;
 import java.util.Optional;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.ObjectReader;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ValueDeserializer;
 
-import org.web3j.protocol.ObjectMapperFactory;
 import org.web3j.protocol.core.Response;
 
 /** eth_getTransactionReceipt. */
@@ -31,16 +29,16 @@ public class EthGetTransactionReceipt extends Response<TransactionReceipt> {
         return Optional.ofNullable(getResult());
     }
 
-    public static class ResponseDeserialiser extends JsonDeserializer<TransactionReceipt> {
+    public static class ResponseDeserialiser extends ValueDeserializer<TransactionReceipt> {
 
-        private ObjectReader objectReader = ObjectMapperFactory.getObjectReader();
+        private final ObjectMapper objectMapper = new ObjectMapper();
 
         @Override
         public TransactionReceipt deserialize(
-                JsonParser jsonParser, DeserializationContext deserializationContext)
-                throws IOException {
-            if (jsonParser.getCurrentToken() != JsonToken.VALUE_NULL) {
-                return objectReader.readValue(jsonParser, TransactionReceipt.class);
+                JsonParser jsonParser, DeserializationContext deserializationContext) {
+            if (jsonParser.currentToken() != JsonToken.VALUE_NULL) {
+                return objectMapper.convertValue(
+                        jsonParser.readValueAsTree(), TransactionReceipt.class);
             } else {
                 return null; // null is wrapped by Optional in above getter
             }

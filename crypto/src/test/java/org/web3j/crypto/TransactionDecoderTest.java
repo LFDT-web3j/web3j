@@ -534,6 +534,21 @@ public class TransactionDecoderTest {
     }
 
     @Test
+    public void testEip7702RetainsAccessList() {
+        final RawTransaction rawTransaction = createEip7702RawTransaction();
+        final Transaction7702 tx7702 = (Transaction7702) rawTransaction.getTransaction();
+
+        final List<AccessListObject> expectedAccessList =
+                Collections.singletonList(
+                        new AccessListObject(
+                                "0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae",
+                                Collections.singletonList(
+                                        "0x0000000000000000000000000000000000000000000000000000000000000003")));
+
+        assertIterableEquals(expectedAccessList, tx7702.getAccessList());
+    }
+
+    @Test
     public void testDecoding7702() {
         final RawTransaction rawTransaction = createEip7702RawTransaction();
         final Transaction7702 tx7702 = (Transaction7702) rawTransaction.getTransaction();

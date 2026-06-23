@@ -17,10 +17,12 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.reactivex.Flowable;
 
 import org.web3j.protocol.Web3jService;
 
+@JsonPropertyOrder({"jsonrpc", "method", "params", "id"})
 public class Request<S, T extends Response> {
     private String jsonrpc = "2.0";
     private String method;

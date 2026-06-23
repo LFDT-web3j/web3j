@@ -381,7 +381,19 @@ class RequestTest extends RequestTester {
 
         verifyResult(
                 "{\"jsonrpc\":\"2.0\",\"method\":\"eth_sendUserOperation\","
-                        + "\"params\":[{\"sender\":\"0xa70e8dd61c5d32be8058bb8eb970870f07233155\",\"nonce\":\"0x1\",\"initCode\":\"0x0\",\"callData\":\"0x0\",\"callGasLimit\":\"0x0\",\"verificationGasLimit\":\"0x0\",\"preVerificationGas\":\"0x0\",\"maxFeePerGas\":\"0x0\",\"maxPriorityFeePerGas\":\"0x0\",\"signature\":\"0x0\",\"paymasterAndData\":\"0x0\"},\"0xa70e8dd61c5d32be8058bb8eb970870f07233156\"],"
+                        + "\"params\":[{"
+                        + "\"callData\":\"0x0\","
+                        + "\"callGasLimit\":\"0x0\","
+                        + "\"initCode\":\"0x0\","
+                        + "\"maxFeePerGas\":\"0x0\","
+                        + "\"maxPriorityFeePerGas\":\"0x0\","
+                        + "\"nonce\":\"0x1\","
+                        + "\"paymasterAndData\":\"0x0\","
+                        + "\"preVerificationGas\":\"0x0\","
+                        + "\"sender\":\"0xa70e8dd61c5d32be8058bb8eb970870f07233155\","
+                        + "\"signature\":\"0x0\","
+                        + "\"verificationGasLimit\":\"0x0\""
+                        + "},\"0xa70e8dd61c5d32be8058bb8eb970870f07233156\"],"
                         + "\"id\":1}");
     }
 
@@ -405,7 +417,19 @@ class RequestTest extends RequestTester {
 
         verifyResult(
                 "{\"jsonrpc\":\"2.0\",\"method\":\"eth_estimateUserOperationGas\","
-                        + "\"params\":[{\"sender\":\"0xa70e8dd61c5d32be8058bb8eb970870f07233155\",\"nonce\":\"0x1\",\"initCode\":\"0x0\",\"callData\":\"0x0\",\"callGasLimit\":\"0x0\",\"verificationGasLimit\":\"0x0\",\"preVerificationGas\":\"0x0\",\"maxFeePerGas\":\"0x0\",\"maxPriorityFeePerGas\":\"0x0\",\"signature\":\"0x0\",\"paymasterAndData\":\"0x0\"},\"0xa70e8dd61c5d32be8058bb8eb970870f07233156\"],"
+                        + "\"params\":[{"
+                        + "\"callData\":\"0x0\","
+                        + "\"callGasLimit\":\"0x0\","
+                        + "\"initCode\":\"0x0\","
+                        + "\"maxFeePerGas\":\"0x0\","
+                        + "\"maxPriorityFeePerGas\":\"0x0\","
+                        + "\"nonce\":\"0x1\","
+                        + "\"paymasterAndData\":\"0x0\","
+                        + "\"preVerificationGas\":\"0x0\","
+                        + "\"sender\":\"0xa70e8dd61c5d32be8058bb8eb970870f07233155\","
+                        + "\"signature\":\"0x0\","
+                        + "\"verificationGasLimit\":\"0x0\"},"
+                        + "\"0xa70e8dd61c5d32be8058bb8eb970870f07233156\"],"
                         + "\"id\":1}");
     }
 
@@ -678,8 +702,12 @@ class RequestTest extends RequestTester {
 
         verifyResult(
                 "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getLogs\","
-                        + "\"params\":[{\"topics\":[],\"fromBlock\":\"0xe8\","
-                        + "\"toBlock\":\"latest\",\"address\":[\"\"]}],\"id\":1}");
+                        + "\"params\":[{"
+                        + "\"address\":[\"\"],"
+                        + "\"fromBlock\":\"0xe8\","
+                        + "\"toBlock\":\"latest\","
+                        + "\"topics\":[]"
+                        + "}],\"id\":1}");
     }
 
     @Test
@@ -692,9 +720,11 @@ class RequestTest extends RequestTester {
 
         verifyResult(
                 "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getLogs\","
-                        + "\"params\":[{\"topics\":[],"
+                        + "\"params\":[{"
+                        + "\"address\":[\"\"],"
                         + "\"blockHash\":\"0xe670ec64341771606e55d6b4ca35a1a6b75ee3d5145a99d05921026d1527331\","
-                        + "\"address\":[\"\"]}],\"id\":<generatedValue>}");
+                        + "\"topics\":[]"
+                        + "}],\"id\":<generatedValue>}");
     }
 
     @Test

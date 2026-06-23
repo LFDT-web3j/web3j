@@ -17,12 +17,14 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import org.web3j.protocol.core.DefaultBlockParameter;
 
 /**
  * Filter implementation as per <a
  * href="https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_newfilter">docs</a>.
  */
+@JsonPropertyOrder({"address", "blockHash", "fromBlock", "toBlock", "topics"})
 public class EthFilter extends Filter<EthFilter> {
     private DefaultBlockParameter fromBlock; // optional, params - defaults to latest for both
     private DefaultBlockParameter toBlock;

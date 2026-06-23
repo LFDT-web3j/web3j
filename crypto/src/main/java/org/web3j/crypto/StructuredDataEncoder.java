@@ -30,8 +30,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import org.web3j.abi.TypeEncoder;
 import org.web3j.abi.datatypes.AbiTypes;
@@ -43,8 +42,7 @@ import static org.web3j.crypto.Hash.sha3;
 import static org.web3j.crypto.Hash.sha3String;
 
 public class StructuredDataEncoder {
-    public static ObjectMapper mapper =
-            new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    public static ObjectMapper mapper = new ObjectMapper();
     public final StructuredData.EIP712Message jsonMessageObject;
 
     // Matches array declarations like arr[5][10], arr[][], arr[][34][], etc.

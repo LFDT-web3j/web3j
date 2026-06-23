@@ -12,7 +12,7 @@
  */
 package org.web3j.protocol.core.methods.response;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonDeserialize;
 
 import org.web3j.protocol.core.Response;
 

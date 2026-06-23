@@ -21,6 +21,7 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import ethereum.ckzg4844.CKZG4844JNI;
@@ -28,10 +29,12 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.junit.jupiter.api.Test;
 
+import org.web3j.crypto.transaction.type.Transaction4844;
 import org.web3j.utils.Numeric;
 
 import static java.util.stream.IntStream.range;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BlobUtilsTest {
@@ -39,25 +42,22 @@ public class BlobUtilsTest {
 
     @Test
     public void testBlobToCommitmentProofVersionedHashes() throws Exception {
-        CKZG4844JNI.loadNativeLibrary();
-        CKZG4844JNI.loadTrustedSetupFromResource("/trusted_setup.txt", BlobUtils.class, 0);
-
+        // Use the shared trusted setup loaded once by BlobUtils' static initializer (do not
+        // manually load/free it here — that conflicts with every other BlobUtils-based test).
         Blob blob =
                 new Blob(
                         Numeric.hexStringToByteArray(
                                 loadResourceAsString("blob_data/blob_data_1.txt")));
-        byte[] commitment = CKZG4844JNI.blobToKzgCommitment(blob.getData().toArray());
-        byte[] proofs = CKZG4844JNI.computeBlobKzgProof(blob.getData().toArray(), commitment);
+        Bytes commitment = BlobUtils.getCommitment(blob);
+        Bytes proofs = BlobUtils.getProof(blob, commitment);
 
-        assertTrue(CKZG4844JNI.verifyBlobKzgProof(blob.data.toArray(), commitment, proofs));
+        assertTrue(BlobUtils.checkProofValidity(blob, commitment, proofs));
         assertEquals(
                 "0xc00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                Numeric.toHexString(commitment));
+                commitment.toHexString());
         assertEquals(
                 "0xc00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                Numeric.toHexString(proofs));
-
-        CKZG4844JNI.freeTrustedSetup();
+                proofs.toHexString());
     }
 
     @Test
@@ -80,6 +80,90 @@ public class BlobUtilsTest {
         assertEquals(
                 "0x018ef96865998238a5e1783b6cafbc1253235d636f15d318f1fb50ef6a5b8f6a",
                 versionedHashes.toHexString());
+    }
+
+    @Test
+    public void testGetCellProofsSingleBlob() throws Exception {
+        Blob blob =
+                new Blob(
+                        Numeric.hexStringToByteArray(
+                                loadResourceAsString("blob_data/blob_data_1.txt")));
+
+        List<Bytes> cellProofs = BlobUtils.getCellProofs(blob);
+
+        assertEquals(
+                Transaction4844.CELLS_PER_EXT_BLOB,
+                cellProofs.size(),
+                "a single blob must yield CELLS_PER_EXT_BLOB (128) cell proofs");
+        for (Bytes proof : cellProofs) {
+            assertEquals(
+                    Transaction4844.KZG_PROOF_BYTE_LENGTH,
+                    proof.size(),
+                    "each cell proof must be 48 bytes");
+        }
+    }
+
+    @Test
+    public void testCheckCellProofsValidity() throws Exception {
+        // Use the non-trivial blob (blob_data_2) so its 128 cell proofs are distinct — a zero blob
+        // would have identical proofs, making the mis-assignment negative case a no-op.
+        Blob blob =
+                new Blob(
+                        Numeric.hexStringToByteArray(
+                                loadResourceAsString("blob_data/blob_data_2.txt")));
+        Bytes commitment = BlobUtils.getCommitment(blob);
+        List<Bytes> cellProofs = BlobUtils.getCellProofs(blob);
+
+        assertTrue(
+                BlobUtils.checkCellProofsValidity(
+                        java.util.Collections.singletonList(blob),
+                        java.util.Collections.singletonList(commitment),
+                        cellProofs),
+                "freshly generated cell proofs must verify");
+
+        // Mis-assign two proofs (both still valid G1 points, but for the wrong cells): the batch
+        // must now fail verification cleanly (rather than throwing on a malformed point).
+        Bytes p0 = cellProofs.get(0);
+        cellProofs.set(0, cellProofs.get(1));
+        cellProofs.set(1, p0);
+        assertFalse(
+                BlobUtils.checkCellProofsValidity(
+                        java.util.Collections.singletonList(blob),
+                        java.util.Collections.singletonList(commitment),
+                        cellProofs),
+                "mis-assigned cell proofs must fail verification");
+    }
+
+    @Test
+    public void testGetCellProofsMultiBlobOrdering() throws Exception {
+        Blob blobA =
+                new Blob(
+                        Numeric.hexStringToByteArray(
+                                loadResourceAsString("blob_data/blob_data_1.txt")));
+        Blob blobB =
+                new Blob(
+                        Numeric.hexStringToByteArray(
+                                loadResourceAsString("blob_data/blob_data_2.txt")));
+
+        List<Bytes> proofsA = BlobUtils.getCellProofs(blobA);
+        List<Bytes> proofsB = BlobUtils.getCellProofs(blobB);
+        List<Bytes> combined = BlobUtils.getCellProofs(Arrays.asList(blobA, blobB));
+
+        int cells = Transaction4844.CELLS_PER_EXT_BLOB;
+        assertEquals(2 * cells, combined.size(), "two blobs must yield 256 cell proofs");
+        // Blob-major order: first 128 == blobA's proofs, next 128 == blobB's proofs.
+        assertEquals(proofsA, combined.subList(0, cells));
+        assertEquals(proofsB, combined.subList(cells, 2 * cells));
+
+        // Cross-check the combined flat list verifies as a batch.
+        Bytes commitmentA = BlobUtils.getCommitment(blobA);
+        Bytes commitmentB = BlobUtils.getCommitment(blobB);
+        assertTrue(
+                BlobUtils.checkCellProofsValidity(
+                        Arrays.asList(blobA, blobB),
+                        Arrays.asList(commitmentA, commitmentB),
+                        combined),
+                "blob-major batch of cell proofs must verify");
     }
 
     public static String loadResourceAsString(String filePath) throws Exception {
