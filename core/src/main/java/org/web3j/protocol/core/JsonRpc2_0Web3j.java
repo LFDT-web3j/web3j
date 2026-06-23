@@ -25,6 +25,7 @@ import io.reactivex.Flowable;
 
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.Web3jService;
+import org.web3j.protocol.core.filters.FilterException;
 import org.web3j.protocol.core.methods.request.ShhFilter;
 import org.web3j.protocol.core.methods.request.ShhPost;
 import org.web3j.protocol.core.methods.request.Transaction;
@@ -99,8 +100,10 @@ import org.web3j.protocol.core.methods.response.admin.AdminDataDir;
 import org.web3j.protocol.core.methods.response.admin.AdminNodeInfo;
 import org.web3j.protocol.core.methods.response.admin.AdminPeers;
 import org.web3j.protocol.rx.JsonRpc2_0Rx;
+import org.web3j.protocol.websocket.WebSocketService;
 import org.web3j.protocol.websocket.events.LogNotification;
 import org.web3j.protocol.websocket.events.NewHeadsNotification;
+import org.web3j.protocol.websocket.events.PendingTransactionNotification;
 import org.web3j.utils.Async;
 import org.web3j.utils.Numeric;
 
@@ -822,6 +825,18 @@ public class JsonRpc2_0Web3j implements Web3j {
     }
 
     @Override
+    public Flowable<PendingTransactionNotification> newPendingTransactionsNotifications() {
+        return web3jService.subscribe(
+                new Request<>(
+                        "eth_subscribe",
+                        Collections.singletonList("newPendingTransactions"),
+                        web3jService,
+                        EthSubscribe.class),
+                "eth_unsubscribe",
+                PendingTransactionNotification.class);
+    }
+
+    @Override
     public Flowable<LogNotification> logsNotifications(
             List<String> addresses, List<String> topics) {
 
@@ -865,7 +880,40 @@ public class JsonRpc2_0Web3j implements Web3j {
 
     @Override
     public Flowable<String> ethPendingTransactionHashFlowable() {
+        if (web3jService instanceof WebSocketService) {
+            return web3jRx.ethPendingTransactionHashFlowable(blockTime)
+                    .onErrorResumeNext(
+                            throwable -> {
+                                if (isMethodNotSupportedException(throwable)) {
+                                    return newPendingTransactionsNotifications()
+                                            .map(
+                                                    notification ->
+                                                            notification.getParams().getResult());
+                                }
+                                return Flowable.error(throwable);
+                            });
+        }
         return web3jRx.ethPendingTransactionHashFlowable(blockTime);
+    }
+
+    @Override
+    public Flowable<org.web3j.protocol.core.methods.response.Transaction>
+            pendingTransactionFlowable() {
+        if (web3jService instanceof WebSocketService) {
+            return ethPendingTransactionHashFlowable()
+                    .flatMap(transactionHash -> ethGetTransactionByHash(transactionHash).flowable())
+                    .filter(ethTransaction -> ethTransaction.getTransaction().isPresent())
+                    .map(ethTransaction -> ethTransaction.getTransaction().get());
+        }
+        return web3jRx.pendingTransactionFlowable(blockTime);
+    }
+
+    private boolean isMethodNotSupportedException(Throwable throwable) {
+        return throwable instanceof FilterException
+                && (throwable.getMessage().contains("Method not found")
+                        || throwable.getMessage().contains("not available")
+                        || throwable.getMessage().contains("not supported")
+                        || throwable.getMessage().contains("Unexpected result type"));
     }
 
     @Override
@@ -877,12 +925,6 @@ public class JsonRpc2_0Web3j implements Web3j {
     @Override
     public Flowable<org.web3j.protocol.core.methods.response.Transaction> transactionFlowable() {
         return web3jRx.transactionFlowable(blockTime);
-    }
-
-    @Override
-    public Flowable<org.web3j.protocol.core.methods.response.Transaction>
-            pendingTransactionFlowable() {
-        return web3jRx.pendingTransactionFlowable(blockTime);
     }
 
     @Override
