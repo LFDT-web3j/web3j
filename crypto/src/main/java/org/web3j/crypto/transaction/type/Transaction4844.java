@@ -482,7 +482,6 @@ public class Transaction4844 extends Transaction1559 implements ITransaction {
         return asRlpValues(signatureData);
     }
 
-
     /**
      * Builds tx_payload_body: the 11 unsigned fields (+ optional v/r/s when signing). This is also
      * the hash-signing input when signatureData is null.

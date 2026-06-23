@@ -38,8 +38,7 @@ public class TransactionEncoder {
      * @return signature
      */
     public static byte[] signMessage(RawTransaction rawTransaction, Credentials credentials) {
-        Sign.SignatureData signatureData =
-                signMessageToSignatureData(rawTransaction, credentials);
+        Sign.SignatureData signatureData = signMessageToSignatureData(rawTransaction, credentials);
 
         return encodeNetwork(rawTransaction, signatureData);
     }

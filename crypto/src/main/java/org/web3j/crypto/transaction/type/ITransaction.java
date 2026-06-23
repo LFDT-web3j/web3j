@@ -26,7 +26,6 @@ public interface ITransaction {
         return asRlpValues(signatureData);
     }
 
-
     BigInteger getNonce();
 
     BigInteger getGasPrice();

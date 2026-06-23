@@ -42,7 +42,6 @@ public class TransactionUtils {
         return Hash.sha3(TransactionEncoder.encode(rawTransaction, signatureData));
     }
 
-
     /**
      * Utility method to provide the transaction hash for a given transaction.
      *
