@@ -20,6 +20,7 @@ import org.web3j.utils.Numeric;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.web3j.crypto.Bip32ECKeyPair.HARDENED_BIT;
 import static org.web3j.crypto.Hash.sha256;
 
@@ -135,6 +136,47 @@ public class Bip32Test {
                 "xprv9uPDJpEQgRQfDcW7BkF7eTya6RPxXeJCqCJGHuCJ4GiRVLzkTXBAJMu2qaMWPrS7AANYqdq6vcBcBUdJCVVFceUvJFjaPdGZ2y9WACViL4L",
                 "xpub68NZiKmJWnxxS6aaHmn81bvJeTESw724CRDs6HbuccFQN9Ku14VQrADWgqbhhTHBaohPX4CjNLf9fq9MYo6oDaPPLPxSb7gwQN3ih19Zm4Y",
                 new int[] {0 | HARDENED_BIT});
+    }
+
+    @Test
+    public void testDeriveChildKeyFromPublicKeyOnly() {
+        String mnemonic =
+                "yard impulse luxury drive today throw farm pepper survey wreck glass federal";
+        byte[] seed = MnemonicUtils.generateSeed(mnemonic, null);
+        Bip32ECKeyPair masterKeypair = Bip32ECKeyPair.generateKeyPair(seed);
+        final int[] path = {44 | HARDENED_BIT, 60 | HARDENED_BIT, 0 | HARDENED_BIT, 0, 0};
+        Bip32ECKeyPair bip44Keypair = Bip32ECKeyPair.deriveKeyPair(masterKeypair, path);
+
+        Bip32ECKeyPair bip44KeypairAsMaster =
+                new Bip32ECKeyPair(
+                        null, bip44Keypair.getPublicKey(), 0, bip44Keypair.getChainCode(), null);
+
+        Bip32ECKeyPair bip44KeypairChild = Bip32ECKeyPair.deriveKeyPair(bip44KeypairAsMaster, null);
+        // Explicitly reproduce exactly as in issue report #1927
+        Bip32ECKeyPair bip44KeypairChildExplicit =
+                Bip32ECKeyPair.deriveKeyPair(bip44KeypairAsMaster, new int[] {0});
+
+        assertNotNull(bip44KeypairChildExplicit);
+    }
+
+    @Test
+    public void testDeriveHardenedChildKeyFromPublicKeyOnlyThrowsException() {
+        String mnemonic =
+                "yard impulse luxury drive today throw farm pepper survey wreck glass federal";
+        byte[] seed = MnemonicUtils.generateSeed(mnemonic, null);
+        Bip32ECKeyPair masterKeypair = Bip32ECKeyPair.generateKeyPair(seed);
+        final int[] path = {44 | HARDENED_BIT, 60 | HARDENED_BIT, 0 | HARDENED_BIT, 0, 0};
+        Bip32ECKeyPair bip44Keypair = Bip32ECKeyPair.deriveKeyPair(masterKeypair, path);
+
+        Bip32ECKeyPair bip44KeypairAsMaster =
+                new Bip32ECKeyPair(
+                        null, bip44Keypair.getPublicKey(), 0, bip44Keypair.getChainCode(), null);
+
+        assertThrows(
+                UnsupportedOperationException.class,
+                () ->
+                        Bip32ECKeyPair.deriveKeyPair(
+                                bip44KeypairAsMaster, new int[] {0 | HARDENED_BIT}));
     }
 
     private void testGenerated(String seed, String expectedPriv, String expectedPub, int[] path) {
