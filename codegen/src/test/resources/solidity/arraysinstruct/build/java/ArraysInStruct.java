@@ -271,5 +271,10 @@ public class ArraysInStruct extends Contract {
             this.intArrayFieldStatic = intArrayFieldStatic.getValue().stream().map(v -> v.getValue()).collect(Collectors.toList());
             this.addressArrayFieldStatic = addressArrayFieldStatic.getValue().stream().map(v -> v.getValue()).collect(Collectors.toList());
         }
+
+        @Override
+        public String toString() {
+            return "{ bytesField='" + bytesField + "', extraData='" + extraData + "', stringArrayField='" + stringArrayField + "', bytesArrayField='" + bytesArrayField + "', bytes2ArrayField='" + bytes2ArrayField + "', bytes32ArrayField='" + bytes32ArrayField + "', unitArrayField='" + unitArrayField + "', unit256ArrayField='" + unit256ArrayField + "', boolField='" + boolField + "', intArrayField='" + intArrayField + "', addressArrayField='" + addressArrayField + "', stringArrayFieldStatic='" + stringArrayFieldStatic + "', bytesArrayFieldStatic='" + bytesArrayFieldStatic + "', bytes2ArrayFieldStatic='" + bytes2ArrayFieldStatic + "', bytes32ArrayFieldStatic='" + bytes32ArrayFieldStatic + "', unitArrayFieldStatic='" + unitArrayFieldStatic + "', unit256ArrayFieldStatic='" + unit256ArrayFieldStatic + "', boolFieldStatic='" + boolFieldStatic + "', intArrayFieldStatic='" + intArrayFieldStatic + "', addressArrayFieldStatic='" + addressArrayFieldStatic + "', }";
+        }
     }
 }

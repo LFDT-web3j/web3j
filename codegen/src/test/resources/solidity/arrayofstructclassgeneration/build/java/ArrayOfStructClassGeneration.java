@@ -135,6 +135,11 @@ public class ArrayOfStructClassGeneration extends Contract {
             super(dummy);
             this.dummy = dummy.getValue();
         }
+
+        @Override
+        public String toString() {
+            return "{ dummy='" + dummy + "', }";
+        }
     }
 }
 
