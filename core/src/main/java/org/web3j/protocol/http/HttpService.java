@@ -15,6 +15,11 @@ package org.web3j.protocol.http;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Instant;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -33,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import org.web3j.protocol.Service;
 import org.web3j.protocol.exceptions.ClientConnectionException;
+import org.web3j.protocol.exceptions.RateLimitException;
 
 import static okhttp3.ConnectionSpec.CLEARTEXT;
 
@@ -85,6 +91,16 @@ public class HttpService extends Service {
             MediaType.parse("application/json; charset=utf-8");
 
     public static final String DEFAULT_URL = "http://localhost:8545/";
+
+    private static final int HTTP_TOO_MANY_REQUESTS = 429;
+
+    private static final String RETRY_AFTER_HEADER = "Retry-After";
+
+    /**
+     * Upper bound applied to parsed {@code Retry-After} values to guard against
+     * buggy or adversarial servers stalling callers indefinitely.
+     */
+    static final long MAX_RETRY_AFTER_SECONDS = 86_400L;
 
     private static final Logger log = LoggerFactory.getLogger(HttpService.class);
 
@@ -169,6 +185,16 @@ public class HttpService extends Service {
                 int code = response.code();
                 String text = responseBody == null ? "N/A" : responseBody.string();
 
+                if (code == HTTP_TOO_MANY_REQUESTS) {
+                    long retryAfterSeconds =
+                            parseRetryAfterSeconds(
+                                    response.headers().get(RETRY_AFTER_HEADER));
+                    throw new RateLimitException(
+                            "Too many requests (429); " + text,
+                            retryAfterSeconds,
+                            text);
+                }
+
                 throw new ClientConnectionException(
                         code,
                         "Invalid response received: " + code + "; " + text);
@@ -178,6 +204,53 @@ public class HttpService extends Service {
 
     protected void processHeaders(Headers headers) {
         // Default implementation is empty
+    }
+
+    /**
+     * Parses the {@code Retry-After} header per
+     * <a href="https://www.rfc-editor.org/rfc/rfc7231#section-7.1.3">RFC 7231 Section 7.1.3</a>.
+     *
+     * <p>The header value is interpreted as either:
+     * <ul>
+     *   <li>a non-negative number of seconds ({@code delay-seconds}), or</li>
+     *   <li>an HTTP-date (RFC 1123 format), converted to a relative delta from now.</li>
+     * </ul>
+     *
+     * <p>Returns {@code 0} when the header is {@code null}, blank, negative, or unparseable.
+     * The result is capped at {@link #MAX_RETRY_AFTER_SECONDS} to prevent stalling on
+     * adversarial or misconfigured servers.
+     *
+     * @param retryAfterValue the raw header value, may be {@code null}
+     * @return seconds to wait before retrying, in the range {@code [0, MAX_RETRY_AFTER_SECONDS]}
+     */
+    static long parseRetryAfterSeconds(String retryAfterValue) {
+        if (retryAfterValue == null) {
+            return 0L;
+        }
+        String trimmed = retryAfterValue.trim();
+        if (trimmed.isEmpty()) {
+            return 0L;
+        }
+
+        try {
+            double seconds = Double.parseDouble(trimmed);
+            if (seconds >= 0 && !Double.isInfinite(seconds) && !Double.isNaN(seconds)) {
+                return Math.min(MAX_RETRY_AFTER_SECONDS, (long) Math.ceil(seconds));
+            }
+            return 0L;
+        } catch (NumberFormatException ignored) {
+            // Not numeric — fall through to HTTP-date parsing
+        }
+
+        try {
+            ZonedDateTime retryAt =
+                    ZonedDateTime.parse(trimmed, DateTimeFormatter.RFC_1123_DATE_TIME);
+            long seconds = ChronoUnit.SECONDS.between(Instant.now(), retryAt.toInstant());
+            return Math.min(MAX_RETRY_AFTER_SECONDS, Math.max(0L, seconds));
+        } catch (DateTimeParseException e) {
+            log.debug("Unparseable Retry-After header value: {}", trimmed);
+            return 0L;
+        }
     }
 
     private InputStream buildInputStream(ResponseBody responseBody) throws IOException {
