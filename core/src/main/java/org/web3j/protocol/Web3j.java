@@ -51,4 +51,9 @@ public interface Web3j extends Ethereum, Web3jRx, Batcher, BlobFee, AutoCloseabl
 
     /** Shutdowns a Web3j instance and closes opened resources. */
     void shutdown();
+
+    @Override
+    default void close() {
+        shutdown();
+    }
 }

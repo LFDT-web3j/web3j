@@ -72,7 +72,10 @@ class NameHashTest {
         assertEquals(normalise("Obb.at"), ("obb.at"));
         assertEquals(normalise("TESTER.eth"), ("tester.eth"));
         assertEquals(normalise("test\u200btest.com"), ("testtest.com"));
-        assertEquals(normalise("hyph-‐‑‒–—―⁃−⎯⏤﹘e⸺n⸻s.eth"), ("hyph------------e--n---s.eth"));
+        assertEquals(
+                normalise(
+                        "hyph-\u2010\u2011\u2012\u2013\u2014\u2015\u2043\u2212\u23af\u23e4\ufe58e\u2e3an\u2e3bs.eth"),
+                ("hyph------------e--n---s.eth"));
     }
 
     @Test

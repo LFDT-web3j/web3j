@@ -952,11 +952,7 @@ public class JsonRpc2_0Web3j implements Web3j {
     @Override
     public void shutdown() {
         scheduledExecutorService.shutdown();
-        try {
-            web3jService.close();
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to close web3j service", e);
-        }
+        web3jService.close();
     }
 
     @Override
@@ -990,10 +986,5 @@ public class JsonRpc2_0Web3j implements Web3j {
             i = i.add(BigInteger.ONE);
         }
         return output.divide(BLOB_BASE_FEE_UPDATE_FRACTION);
-    }
-
-    @Override
-    public void close() throws Exception {
-        this.shutdown();
     }
 }

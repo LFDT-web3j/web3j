@@ -11,12 +11,9 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 - Fix Transaction serialization failure when fee fields are null [#2293](https://github.com/LFDT-web3j/web3j/pull/2293)
 - Fix NullPointerException when deriving child keys from public-only Bip32ECKeyPair [#2284](https://github.com/LFDT-web3j/web3j/pull/2284)
 
-
 ### Features
 
-- Add support for EIP-7594 blob transaction wrapper [#2263](https://github.com/LFDT-web3j/web3j/pull/2263)
-- Full EIP-7594 tx and Kzg cell proof generation [#2296](https://github.com/LFDT-web3j/web3j/pull/2296)
-- Bump snapshot version to 5.0.4 [#2297](https://github.com/LFDT-web3j/web3j/pull/2297)
+- Make Web3jService implement AutoCloseable and add close() support to Web3j [#2266](https://github.com/LFDT-web3j/web3j/pull/2266)
 
 ### BREAKING CHANGES
 

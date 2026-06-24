@@ -24,7 +24,7 @@ import org.web3j.protocol.core.Response;
 import org.web3j.protocol.websocket.events.Notification;
 
 /** Services API. */
-public interface Web3jService {
+public interface Web3jService extends AutoCloseable {
 
     /**
      * Perform a synchronous JSON-RPC request.
@@ -85,10 +85,7 @@ public interface Web3jService {
     <T extends Notification<?>> Flowable<T> subscribe(
             Request request, String unsubscribeMethod, Class<T> responseType);
 
-    /**
-     * Closes resources used by the service.
-     *
-     * @throws IOException thrown if a service failed to close all resources
-     */
-    void close() throws IOException;
+    /** Closes resources used by the service. */
+    @Override
+    void close();
 }
