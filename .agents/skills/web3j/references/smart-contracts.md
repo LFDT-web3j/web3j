@@ -6,6 +6,7 @@ Use this file for prompts like:
 - `using web3j, deploy a contract & call a function`
 - `generate wrappers for this solidity contract`
 - `call this contract method with web3j`
+- `how do i subscribe to contract events with web3j`
 
 Prefer generated wrappers first. Use raw transaction and ABI flows only when the user explicitly wants lower-level control or does not have generated wrappers.
 
@@ -93,6 +94,53 @@ Repo grounding:
 - `integration-tests/.../SimpleStorageContractIT.java` shows deploy, `set(...)`, and `get()`
 - `integration-tests/.../FunctionWrappersIT.java` shows deploy, load, return-value calls, and event extraction
 
+## Subscribe to contract events
+
+For smart-contract event listening, prefer generated wrapper flowables before building raw log filters yourself.
+
+Generated wrappers expose event helpers shaped like:
+
+- `transferEventFlowable(EthFilter filter)`
+- `transferEventFlowable(startBlock, endBlock)`
+
+The generator code in this repo confirms that wrapper generation emits `...EventFlowable(...)` methods backed by `web3j.ethLogFlowable(filter)`.
+
+Typical pattern:
+
+```java
+Disposable subscription =
+        myContract.someEventFlowable(
+                        DefaultBlockParameterName.EARLIEST,
+                        DefaultBlockParameterName.LATEST)
+                .subscribe(event -> {
+                    // use typed event fields from the generated response
+                });
+```
+
+If you need tighter filtering, build the filter yourself and pass it to the wrapper:
+
+```java
+EthFilter filter =
+        new EthFilter(
+                DefaultBlockParameterName.EARLIEST,
+                DefaultBlockParameterName.LATEST,
+                myContract.getContractAddress());
+
+Disposable subscription =
+        myContract.someEventFlowable(filter)
+                .subscribe(event -> {
+                    // handle event
+                });
+```
+
+Always dispose the subscription when you no longer need it.
+
+Repo grounding:
+
+- generated wrappers in `contracts/src/main/java/org/web3j/contracts/eip20/generated/ERC20.java`
+- generated wrappers in `contracts/src/main/java/org/web3j/contracts/eip721/generated/ERC721.java`
+- wrapper-generation logic in `codegen/src/main/java/org/web3j/codegen/SolidityFunctionWrapper.java`
+
 ## Lower-level raw deployment and ABI calls
 
 Use this when the user wants raw JSON-RPC style control or no wrapper exists.
@@ -158,3 +206,15 @@ BigInteger result = contract.someViewMethod(BigInteger.TEN).send();
 ```
 
 If the user explicitly says they do not want wrapper generation, switch to the raw deployment and ABI-call pattern from `DeployContractIT`.
+
+### `how do i subscribe to contract events with web3j`
+
+Default answer shape:
+
+1. generate or use the contract wrapper
+2. load the deployed contract
+3. call the generated `...EventFlowable(...)` helper
+4. subscribe to the returned RxJava `Flowable`
+5. dispose the subscription when done
+
+If the user does not have wrappers, switch to the lower-level `EthFilter` plus `web3j.ethLogFlowable(...)` pattern from `references/transactions.md`.

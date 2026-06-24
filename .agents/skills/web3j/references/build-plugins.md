@@ -24,6 +24,8 @@ The root `README.md` also points users to:
 
 Use these when the user wants code generation integrated into a build rather than run manually from the CLI.
 
+The `v5.0.3` docs also document generated-project build tasks around the CLI and OpenAPI flows. Treat those as generated-project tasks, not as proof that every task is a generic plugin feature.
+
 ## When to recommend plugins
 
 Prefer a build plugin when the user wants:
@@ -49,6 +51,14 @@ The functional goal of these plugins is the same as the CLI wrapper flow:
 If the user already has a Gradle or Maven project, recommend the plugin that matches their build tool first.
 
 If the user is not tied to a build tool yet, the CLI path is simpler to explain and is covered in `references/smart-contracts.md`.
+
+For generated OpenAPI projects, the documented Gradle tasks include:
+
+- `generateContractWrappers`
+- `generateWeb3jOpenApi`
+- `generateWeb3jSwaggerUi`
+
+Use those only in the context of the generated project layout shown by the CLI/OpenAPI docs.
 
 ## Repo-grounded context
 
@@ -82,3 +92,11 @@ Default answer shape:
 2. recommend the matching Web3j plugin
 3. explain that it automates the same ABI/BIN-to-wrapper flow as `web3j generate solidity`
 4. if exact plugin DSL is needed, consult the plugin docs or plugin repo because that configuration lives outside this repo
+
+### `how do i generate openapi outputs during build`
+
+Default answer shape:
+
+1. clarify whether they mean a CLI-generated OpenAPI project or a normal Gradle/Maven build
+2. if it is the generated project, point to the documented generated Gradle tasks
+3. if they want generic build-plugin DSL, do not invent it from this repo alone
