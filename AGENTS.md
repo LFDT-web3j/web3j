@@ -55,6 +55,8 @@ Use these files first when you need working examples:
 - `integration-tests/src/test/java/org/web3j/protocol/scenarios/SimpleStorageContractIT.java`: simple deploy/write/read wrapper usage
 - `integration-tests/src/test/java/org/web3j/protocol/scenarios/DeployContractIT.java`: lower-level raw contract deployment and ABI calls
 - `integration-tests/src/test/java/org/web3j/protocol/scenarios/SendEtherIT.java`: ETH transfers and `Transfer.sendFunds`
+- `integration-tests/src/test/java/org/web3j/protocol/core/FlowableIT.java`: block, transaction, pending-transaction, log, and replay flowables
+- `integration-tests/src/test/java/org/web3j/protocol/scenarios/EventFilterIT.java`: manual `EthFilter` event filtering and log decoding
 - `core/src/main/java/org/web3j/tx/RawTransactionManager.java`: local signing and raw transaction broadcast
 - `core/src/main/java/org/web3j/crypto/WalletUtils.java`: wallet creation and credential loading
 - `integration-tests/src/test/java/org/web3j/protocol/besu/BesuPrivacyQuickstartIntegrationTest.java`: privacy groups and private transaction flows
@@ -72,14 +74,30 @@ When working in this repo:
 
 - Prefer library APIs for code examples inside Java applications.
 - Prefer generated wrappers before raw ABI or raw transaction examples.
+- For event listening, prefer generated wrapper `...EventFlowable(...)` helpers before manual log decoding.
 - Make it explicit when a user request refers to external CLI behavior such as:
   - `web3j new`
+  - `web3j import`
+  - `web3j run`
+  - `web3j docker run`
+  - `web3j openapi new`
+  - `web3j openapi import`
+  - `web3j openapi jar`
+  - `web3j openapi generate`
   - `web3j wallet create`
   - `web3j wallet update`
   - `web3j wallet send`
   - `web3j audit`
 
 Do not claim those end-user CLI workflows are fully implemented in this repo unless you have verified the exact command path in local source.
+
+The published `v5.0.3` docs also treat these as separately documented ecosystem surfaces rather than core repo modules:
+
+- `web3j_eth2_client`
+- `web3j_openapi`
+- `web3j_unit`
+- `web3j_evm`
+- `web3j_sokt`
 
 ## Testing guidance
 
@@ -99,6 +117,9 @@ Do not claim those end-user CLI workflows are fully implemented in this repo unl
 
 - If you change user-facing usage patterns substantially, update `README.md` when appropriate.
 - This repo also contains AI-facing skill docs under `.agents/skills/web3j/`. If you materially change supported workflows or recommended usage, keep those references aligned.
+- Prefer `README.md` for released coordinates such as `org.web3j:core:5.0.3`, and use the published docs when the task is about companion tooling that is versioned or documented separately from the core SDK repo.
+- For AI-facing runnable examples, prefer reusing the starter assets under `.agents/skills/web3j/assets/` when they exist instead of rebuilding the same sample from scratch.
+- For repo-contribution guidance, keep `.agents/skills/web3j/references/contributing.md` aligned with `CONTRIBUTING.md`, especially around issue triage, Discord-first feature proposals, PR expectations, and Spotless formatting.
 
 ## Safe defaults for coding assistants
 

@@ -9,6 +9,8 @@ Use this file for prompts like:
 
 ## Scope
 
+The published `v5.0.3` docs group these topics under `Privacy & Permissioning`.
+
 In this repo, privacy support is strongly represented by:
 
 - the `besu` module
@@ -45,6 +47,8 @@ If the user wants application-level private transactions on Besu, start from:
 - a `PrivateTransactionManager`
 - either a generated wrapper or a manually built `RawPrivateTransaction`
 
+The `v5.0.3` docs also show on-chain privacy-group management and private smart-contract flows as first-class privacy tasks.
+
 ## Repo-grounded examples
 
 Strongest examples:
@@ -63,6 +67,18 @@ The privacy quickstart test demonstrates:
 4. sending it with `eeaSendRawTransaction`
 5. retrieving a private receipt
 6. using `PrivateTransactionManager` with generated wrappers
+
+The `v5.0.3` privacy docs also show privacy-group operations such as:
+
+- `privOnChainCreatePrivacyGroup(...)`
+- `privOnChainFindPrivacyGroup(...)`
+- `privOnChainAddToPrivacyGroup(...)`
+- `privOnChainRemoveFromPrivacyGroup(...)`
+
+And they show private contract interaction through:
+
+- `BesuPrivateTransactionManager`
+- generated wrappers loaded or deployed against a privacy group
 
 ## Permissioning context
 
@@ -84,12 +100,21 @@ Use this as environment context, not as proof of a higher-level Web3j Java abstr
 Default answer shape:
 
 1. connect with a `Besu` client
-2. construct a `PrivateTransactionManager` or `RawPrivateTransaction`
-3. supply enclave keys / privacy group details
-4. sign using privacy-specific encoding
-5. send and wait for a private receipt
+2. create or identify the target privacy group if needed
+3. construct a `PrivateTransactionManager` or `RawPrivateTransaction`
+4. supply enclave keys / privacy group details
+5. sign using privacy-specific encoding
+6. send and wait for a private receipt
 
-If the user wants the exact code pattern, mirror the flow from `BesuPrivacyQuickstartIntegrationTest`.
+If the user wants private smart-contract deployment, prefer the wrapper-based `BesuPrivateTransactionManager` flow after the privacy group is ready.
+
+### `how do privacy groups work`
+
+Default answer shape:
+
+1. privacy groups define which participants can view the private state and transactions
+2. use the Besu privacy APIs to create, find, add members, or remove members
+3. once the group exists, deploy or load contracts against that group with a private transaction manager
 
 ### `what about permissioning`
 
@@ -97,4 +122,6 @@ Clarify:
 
 - privacy and permissioning are related but different concerns
 - this repo provides substantial privacy APIs
-- permissioning is more visible here as node/network configuration context than as a dedicated convenience layer
+- permissioning is more visible here as Besu node/network configuration context than as a dedicated convenience layer
+
+Use the local Besu config under `integration-tests` as environment grounding, not as proof of a high-level Web3j permissioning API.
