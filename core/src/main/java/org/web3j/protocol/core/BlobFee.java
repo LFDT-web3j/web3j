@@ -14,6 +14,23 @@ package org.web3j.protocol.core;
 
 import java.math.BigInteger;
 
+/**
+ * Blob base-fee helpers.
+ *
+ * <p>web3j offers two ways to obtain the base fee per blob gas:
+ *
+ * <ul>
+ *   <li><b>Preferred:</b> {@link Ethereum#ethBlobBaseFee()} — the {@code eth_blobBaseFee} JSON-RPC
+ *       method. The node computes the value using the chain's active fork rules (EIP-4844, EIP-7691
+ *       and EIP-7918, plus any future blob-parameter forks), so it never goes stale and needs no
+ *       client-side constants. Use this whenever the node supports it.
+ *   <li><b>Fallback:</b> the {@code ethGetBaseFeePerBlobGas} methods below — a client-side
+ *       computation from the latest block's {@code excessBlobGas}. Useful when the node does not
+ *       expose {@code eth_blobBaseFee}, when you only have block headers, or when you need the fee
+ *       for a specific fork's update fraction (e.g. a historical or custom chain). The caller is
+ *       responsible for supplying the correct update fraction for the target fork.
+ * </ul>
+ */
 public interface BlobFee {
 
     /** Blob base-fee update fraction prior to Pectra (Cancun, EIP-4844). */
@@ -29,6 +46,10 @@ public interface BlobFee {
      *
      * <p>For a chain that has not yet activated Pectra, call {@link
      * #ethGetBaseFeePerBlobGas(BigInteger)} with {@link #BLOB_BASE_FEE_UPDATE_FRACTION_CANCUN}.
+     *
+     * <p>Prefer {@link Ethereum#ethBlobBaseFee()} ({@code eth_blobBaseFee}) when the node supports
+     * it: it stays correct across all current and future blob forks without relying on a hardcoded
+     * client-side fraction. Use this method as a fallback for nodes that don't expose that RPC.
      *
      * @return baseFee per blob gas value.
      */
