@@ -36,6 +36,7 @@ import org.web3j.protocol.core.methods.response.DbPutHex;
 import org.web3j.protocol.core.methods.response.DbPutString;
 import org.web3j.protocol.core.methods.response.EthAccounts;
 import org.web3j.protocol.core.methods.response.EthBaseFee;
+import org.web3j.protocol.core.methods.response.EthBlobBaseFee;
 import org.web3j.protocol.core.methods.response.EthBlock;
 import org.web3j.protocol.core.methods.response.EthBlockNumber;
 import org.web3j.protocol.core.methods.response.EthChainId;
@@ -243,6 +244,15 @@ public class JsonRpc2_0Web3j implements Web3j {
                 Collections.<String>emptyList(),
                 web3jService,
                 EthMaxPriorityFeePerGas.class);
+    }
+
+    @Override
+    public Request<?, EthBlobBaseFee> ethBlobBaseFee() {
+        return new Request<>(
+                "eth_blobBaseFee",
+                Collections.<String>emptyList(),
+                web3jService,
+                EthBlobBaseFee.class);
     }
 
     @Override
