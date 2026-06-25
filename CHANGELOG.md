@@ -16,6 +16,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 - Add support for EIP-7594 blob transaction wrapper [#2263](https://github.com/LFDT-web3j/web3j/pull/2263)
 - Full EIP-7594 tx and Kzg cell proof generation [#2296](https://github.com/LFDT-web3j/web3j/pull/2296)
+- Add EIP-7702 authorization signing and recovery (`Sign.signAuthorization` / `Sign.authorizationHash` / `Sign.recoverAuthorizationSigner`, `AuthorizationTuple.from`) [#2298](https://github.com/LFDT-web3j/web3j/pull/2298)
 - Bump snapshot version to 5.0.4 [#2297](https://github.com/LFDT-web3j/web3j/pull/2297)
 
 ### BREAKING CHANGES
