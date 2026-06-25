@@ -949,7 +949,8 @@ class RequestTest extends RequestTester {
         BigInteger resultPrague = jsonRpc20Web3j.ethGetBaseFeePerBlobGas();
         assertEquals(BigInteger.valueOf(7736415L), resultPrague);
 
-        // The pre-Pectra Cancun fraction 3338477 still reproduces the legacy value via the overload.
+        // The pre-Pectra Cancun fraction 3338477 still reproduces the legacy value via the
+        // overload.
         BigInteger resultCancun =
                 jsonRpc20Web3j.ethGetBaseFeePerBlobGas(
                         BlobFee.BLOB_BASE_FEE_UPDATE_FRACTION_CANCUN);
