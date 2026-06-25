@@ -45,6 +45,7 @@ import org.web3j.protocol.core.methods.response.EthCompileSolidity;
 import org.web3j.protocol.core.methods.response.EthEstimateGas;
 import org.web3j.protocol.core.methods.response.EthEstimateUserOperationGas;
 import org.web3j.protocol.core.methods.response.EthFilter;
+import org.web3j.protocol.core.methods.response.EthBlobBaseFee;
 import org.web3j.protocol.core.methods.response.EthGasPrice;
 import org.web3j.protocol.core.methods.response.EthGetBalance;
 import org.web3j.protocol.core.methods.response.EthGetBlockReceipts;
@@ -357,6 +358,19 @@ class ResponseTest extends ResponseTester {
 
         EthGasPrice ethGasPrice = deserialiseResponse(EthGasPrice.class);
         assertEquals(ethGasPrice.getGasPrice(), (BigInteger.valueOf(10000000000000L)));
+    }
+
+    @Test
+    void testEthBlobBaseFee() {
+        buildResponse(
+                "{\n"
+                        + "  \"id\":73,\n"
+                        + "  \"jsonrpc\": \"2.0\",\n"
+                        + "  \"result\": \"0x9184e72a000\"\n"
+                        + "}");
+
+        EthBlobBaseFee ethBlobBaseFee = deserialiseResponse(EthBlobBaseFee.class);
+        assertEquals(ethBlobBaseFee.getBaseFeePerBlobGas(), (BigInteger.valueOf(10000000000000L)));
     }
 
     @Test
