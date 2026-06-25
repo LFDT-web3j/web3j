@@ -24,16 +24,15 @@ public interface BlobFee {
 
     /**
      * Calculates the base fee per blob gas from the latest block's {@code excessBlobGas}, using the
-     * post-Pectra (Prague, EIP-7691) update fraction — the value live on Ethereum mainnet.
+     * post-Pectra (Prague, EIP-7691) update fraction — the value live on Ethereum mainnet. Existing
+     * callers can keep using this no-arg method unchanged; it now defaults to the Prague fraction.
      *
      * <p>For a chain that has not yet activated Pectra, call {@link
      * #ethGetBaseFeePerBlobGas(BigInteger)} with {@link #BLOB_BASE_FEE_UPDATE_FRACTION_CANCUN}.
      *
      * @return baseFee per blob gas value.
      */
-    default BigInteger ethGetBaseFeePerBlobGas() {
-        return ethGetBaseFeePerBlobGas(BLOB_BASE_FEE_UPDATE_FRACTION_PRAGUE);
-    }
+    BigInteger ethGetBaseFeePerBlobGas();
 
     /**
      * Calculates the base fee per blob gas from the latest block's {@code excessBlobGas}, using the

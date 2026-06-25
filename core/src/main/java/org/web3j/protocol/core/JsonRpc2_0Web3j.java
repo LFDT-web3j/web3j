@@ -964,6 +964,13 @@ public class JsonRpc2_0Web3j implements Web3j {
     }
 
     @Override
+    public BigInteger ethGetBaseFeePerBlobGas() {
+        // Default to the Prague (EIP-7691) update fraction, live on Ethereum mainnet, so existing
+        // no-arg callers get correct values without passing a fraction.
+        return ethGetBaseFeePerBlobGas(BlobFee.BLOB_BASE_FEE_UPDATE_FRACTION_PRAGUE);
+    }
+
+    @Override
     public BigInteger ethGetBaseFeePerBlobGas(BigInteger blobBaseFeeUpdateFraction) {
         try {
             EthBlock ethBlock =
