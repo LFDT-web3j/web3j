@@ -15,10 +15,33 @@ package org.web3j.protocol.core;
 import java.math.BigInteger;
 
 public interface BlobFee {
+
+    /** Blob base-fee update fraction prior to Pectra (Cancun, EIP-4844). */
+    BigInteger BLOB_BASE_FEE_UPDATE_FRACTION_CANCUN = BigInteger.valueOf(3338477);
+
+    /** Blob base-fee update fraction from Pectra onward (Prague, EIP-7691). */
+    BigInteger BLOB_BASE_FEE_UPDATE_FRACTION_PRAGUE = BigInteger.valueOf(5007716);
+
     /**
-     * Calculating Base Fee per Blob Gas
+     * Calculates the base fee per blob gas from the latest block's {@code excessBlobGas}, using the
+     * post-Pectra (Prague, EIP-7691) update fraction — the value live on Ethereum mainnet.
      *
-     * @return baseFee value.
+     * <p>For a chain that has not yet activated Pectra, call {@link
+     * #ethGetBaseFeePerBlobGas(BigInteger)} with {@link #BLOB_BASE_FEE_UPDATE_FRACTION_CANCUN}.
+     *
+     * @return baseFee per blob gas value.
      */
-    BigInteger ethGetBaseFeePerBlobGas();
+    default BigInteger ethGetBaseFeePerBlobGas() {
+        return ethGetBaseFeePerBlobGas(BLOB_BASE_FEE_UPDATE_FRACTION_PRAGUE);
+    }
+
+    /**
+     * Calculates the base fee per blob gas from the latest block's {@code excessBlobGas}, using the
+     * given blob base-fee update fraction (see {@link #BLOB_BASE_FEE_UPDATE_FRACTION_PRAGUE} /
+     * {@link #BLOB_BASE_FEE_UPDATE_FRACTION_CANCUN}).
+     *
+     * @param blobBaseFeeUpdateFraction the EIP-4844/EIP-7691 update fraction for the target fork
+     * @return baseFee per blob gas value.
+     */
+    BigInteger ethGetBaseFeePerBlobGas(BigInteger blobBaseFeeUpdateFraction);
 }
