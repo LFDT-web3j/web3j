@@ -22,6 +22,10 @@ public interface ITransaction {
 
     List<RlpType> asRlpValues(Sign.SignatureData signatureData);
 
+    default List<RlpType> asNetworkRlpValues(Sign.SignatureData signatureData) {
+        return asRlpValues(signatureData);
+    }
+
     BigInteger getNonce();
 
     BigInteger getGasPrice();

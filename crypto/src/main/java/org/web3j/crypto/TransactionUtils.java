@@ -19,17 +19,11 @@ public class TransactionUtils {
     private static final int CHAIN_ID_INC = 35;
     private static final int LOWER_REAL_V = 27;
 
-    /**
-     * Utility method to provide the transaction hash for a given transaction.
-     *
-     * @param rawTransaction we wish to send
-     * @param credentials of the sender
-     * @return encoded transaction hash
-     */
     public static byte[] generateTransactionHash(
             RawTransaction rawTransaction, Credentials credentials) {
-        byte[] signedMessage = TransactionEncoder.signMessage(rawTransaction, credentials);
-        return Hash.sha3(signedMessage);
+        Sign.SignatureData signatureData =
+                TransactionEncoder.signMessageToSignatureData(rawTransaction, credentials);
+        return Hash.sha3(TransactionEncoder.encode(rawTransaction, signatureData));
     }
 
     /**
@@ -42,8 +36,10 @@ public class TransactionUtils {
      */
     public static byte[] generateTransactionHash(
             RawTransaction rawTransaction, byte chainId, Credentials credentials) {
-        byte[] signedMessage = TransactionEncoder.signMessage(rawTransaction, chainId, credentials);
-        return Hash.sha3(signedMessage);
+        Sign.SignatureData signatureData =
+                TransactionEncoder.signMessageToSignatureData(
+                        rawTransaction, (long) chainId, credentials);
+        return Hash.sha3(TransactionEncoder.encode(rawTransaction, signatureData));
     }
 
     /**
