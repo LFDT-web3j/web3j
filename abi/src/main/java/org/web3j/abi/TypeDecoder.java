@@ -935,9 +935,7 @@ public class TypeDecoder {
                                                 offset
                                                         + getDataOffset(
                                                                 input, currOffset, typeReference),
-                                                Utils.getDynamicArrayTypeReference(
-                                                        Utils.getFullParameterizedTypeFromArray(
-                                                                typeReference)));
+                                                typeReference.getSubTypeReference());
                         currOffset +=
                                 getSingleElementLength(input, currOffset, cls)
                                         * MAX_BYTE_LENGTH_FOR_HEX_STRING;
@@ -947,9 +945,7 @@ public class TypeDecoder {
                                 typeName.substring(typeName.replaceAll("[0-9]+$", "").length());
                         int staticLength =
                                 extractedLength.isEmpty() ? 0 : Integer.parseInt(extractedLength);
-                        TypeReference innerType =
-                                TypeReference.create(
-                                        Utils.getFullParameterizedTypeFromArray(typeReference));
+                        TypeReference innerType = typeReference.getSubTypeReference();
 
                         TypeReference.StaticArrayTypeReference staticReference =
                                 new TypeReference.StaticArrayTypeReference<StaticArray>(
@@ -957,7 +953,7 @@ public class TypeDecoder {
 
                                     @Override
                                     public TypeReference getSubTypeReference() {
-                                        return innerType;
+                                        return innerType.getSubTypeReference();
                                     }
 
                                     @Override
@@ -972,7 +968,7 @@ public class TypeDecoder {
                                             public java.lang.reflect.Type[]
                                                     getActualTypeArguments() {
                                                 return new java.lang.reflect.Type[] {
-                                                    innerType.getType()
+                                                    innerType.getSubTypeReference().getType()
                                                 };
                                             }
 
