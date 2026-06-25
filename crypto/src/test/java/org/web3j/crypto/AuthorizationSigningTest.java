@@ -27,8 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /** Tests for EIP-7702 authorization signing and recovery ({@link Sign}). */
 public class AuthorizationSigningTest {
 
-    private static final String DELEGATION_TARGET =
-            "0x5ce9454909639d2d17a3f753ce7d93fa0b9ab12e";
+    private static final String DELEGATION_TARGET = "0x5ce9454909639d2d17a3f753ce7d93fa0b9ab12e";
 
     @Test
     public void testRoundTripRecoversSigner() throws Exception {
@@ -118,9 +117,9 @@ public class AuthorizationSigningTest {
     }
 
     /**
-     * Cross-implementation vector from eth-account (Python) {@code sign_authorization} docs: private
-     * key 0xaa..aa, chainId 1337, address 0x5ce9..b12e, nonce 1. web3j must match the authorization
-     * hash and (yParity, r, s) byte-for-byte.
+     * Cross-implementation vector from eth-account (Python) {@code sign_authorization} docs:
+     * private key 0xaa..aa, chainId 1337, address 0x5ce9..b12e, nonce 1. web3j must match the
+     * authorization hash and (yParity, r, s) byte-for-byte.
      */
     @Test
     public void testCrossImplVectorEthAccount() throws Exception {
@@ -154,16 +153,23 @@ public class AuthorizationSigningTest {
     public void testAuthorizationTupleFromFactory() {
         AuthorizationTuple viaSign =
                 Sign.signAuthorization(
-                        BigInteger.valueOf(5), DELEGATION_TARGET, BigInteger.TWO, SampleKeys.KEY_PAIR);
+                        BigInteger.valueOf(5),
+                        DELEGATION_TARGET,
+                        BigInteger.TWO,
+                        SampleKeys.KEY_PAIR);
         AuthorizationTuple viaFactory =
                 AuthorizationTuple.from(
-                        BigInteger.valueOf(5), DELEGATION_TARGET, BigInteger.TWO, SampleKeys.KEY_PAIR);
+                        BigInteger.valueOf(5),
+                        DELEGATION_TARGET,
+                        BigInteger.TWO,
+                        SampleKeys.KEY_PAIR);
         assertEquals(viaSign, viaFactory);
     }
 
     /**
-     * End-to-end: sign an authorization, embed it in a full EIP-7702 transaction, encode + decode the
-     * transaction, and recover the authority from the decoded tuple — proving the whole pipeline.
+     * End-to-end: sign an authorization, embed it in a full EIP-7702 transaction, encode + decode
+     * the transaction, and recover the authority from the decoded tuple — proving the whole
+     * pipeline.
      */
     @Test
     public void testEndToEndSetCodeTransaction() throws Exception {

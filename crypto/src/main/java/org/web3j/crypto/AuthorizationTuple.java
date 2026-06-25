@@ -40,8 +40,8 @@ public class AuthorizationTuple {
 
     /**
      * Signs an EIP-7702 authorization with the given key pair and returns the populated (signed)
-     * tuple. Convenience wrapper around {@link Sign#signAuthorization(BigInteger, String, BigInteger,
-     * ECKeyPair)}.
+     * tuple. Convenience wrapper around {@link Sign#signAuthorization(BigInteger, String,
+     * BigInteger, ECKeyPair)}.
      *
      * @param chainId chain id the authorization is bound to ({@code 0} = valid on any chain)
      * @param address 20-byte delegation target address (0x-prefixed)

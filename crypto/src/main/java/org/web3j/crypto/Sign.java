@@ -416,7 +416,8 @@ public class Sign {
     public static final byte EIP7702_MAGIC = 0x05;
 
     private static final BigInteger NONCE_MAX = BigInteger.ONE.shiftLeft(64); // 2^64, exclusive
-    private static final BigInteger CHAIN_ID_MAX = BigInteger.ONE.shiftLeft(256); // 2^256, exclusive
+    private static final BigInteger CHAIN_ID_MAX =
+            BigInteger.ONE.shiftLeft(256); // 2^256, exclusive
     private static final int ADDRESS_LENGTH_IN_BYTES = 20;
 
     /**
