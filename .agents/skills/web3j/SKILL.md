@@ -18,6 +18,7 @@ Do not blur these together. If the user asks for code inside a Java project, ans
 
 - For contributing to the Web3j library itself, including bug reports, fixes, feature proposals, formatting, PR expectations, and community discussion paths, read [references/contributing.md](references/contributing.md).
 - For project setup, dependency selection, module guidance, and "how do I use this library", read [references/getting-started.md](references/getting-started.md).
+- For end-to-end ERC20 examples that show how CLI scaffolding, wrapper generation, interaction, tests, and events fit together, read [references/erc20-example.md](references/erc20-example.md).
 - For event subscriptions, filters, flowables, WebSocket pub/sub, and runnable starter examples, read [references/events.md](references/events.md).
 - For smart contract wrapper generation, deployment, loading, calling, sending transactions, contract event subscriptions, and raw transaction fallbacks, read [references/smart-contracts.md](references/smart-contracts.md).
 - For `web3j new`, `web3j import`, `web3j run`, `web3j docker run`, `web3j wallet create`, `web3j wallet update`, `web3j wallet send`, `web3j audit`, and OpenAPI-oriented CLI scaffolding, read [references/cli.md](references/cli.md).
@@ -64,6 +65,7 @@ When you need canonical implementation patterns, prefer these local sources:
 - For dependency coordinates and install steps, prefer official published usage from the docs and `README.md`.
 - For implementation details, prefer this repo's source and integration tests.
 - When showing smart contract usage, default to generated wrappers first and raw ABI / raw transaction flows second.
+- When the user asks for a basic ERC20 example or how Web3j pieces fit together across wrappers, tests, and events, prefer the starter assets under `assets/erc20-example/`.
 - When the user asks for a runnable event-listening example, prefer the starter assets under `assets/event-subscriptions/` and adapt the closest template instead of writing one from scratch.
 - When answering audit questions, make clear that `web3j audit` is static analysis from the CLI toolchain, not a Java runtime API.
 - When answering OpenAPI, Unit, EVM, Sokt, or Eth2 questions, be explicit when the docs describe a companion library or generated project rather than a package implemented in this repo's main modules.
