@@ -141,6 +141,8 @@ Repo grounding:
 - generated wrappers in `contracts/src/main/java/org/web3j/contracts/eip721/generated/ERC721.java`
 - wrapper-generation logic in `codegen/src/main/java/org/web3j/codegen/SolidityFunctionWrapper.java`
 
+If the user wants a single runnable example that combines wrapper generation, deployment, calls, tests, and event subscriptions, route them to `references/erc20-example.md` and the starter asset under `assets/erc20-example/basic-erc20-app/`.
+
 ## Lower-level raw deployment and ABI calls
 
 Use this when the user wants raw JSON-RPC style control or no wrapper exists.

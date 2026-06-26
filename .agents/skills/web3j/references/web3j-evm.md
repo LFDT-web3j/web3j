@@ -8,9 +8,18 @@ Use this file for prompts like:
 
 ## Positioning
 
-`web3j_evm` appears in the official Web3j docs sitemap as a separate documentation area.
+`web3j_evm` appears in the official `v5.0.3` docs sitemap as a separate documentation area.
 
 Treat it as companion tooling in the broader Web3j ecosystem, not as a core module implemented in this repo.
+
+## Practical routing
+
+For most users asking how to run or test contracts against a local EVM, the most useful runnable path in this repo context is:
+
+- `references/web3j-unit.md`
+- `assets/erc20-example/basic-erc20-app/`
+
+That path gives them a concrete `@EVMTest` example without inventing a separate local `web3j-evm` API surface.
 
 ## Safe boundaries
 
@@ -37,6 +46,7 @@ Then connect it back to the main repo concepts they will still use:
 - credentials
 - transaction flows
 - generated wrappers
+- `@EVMTest` or `@EVMComposeTest` when the actual goal is testing
 
 ## Safe default response
 

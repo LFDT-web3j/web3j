@@ -65,6 +65,10 @@ The best local examples for contract and transaction behavior are still:
 - `DeployContractIT`
 - `SendEtherIT`
 
+For an AI-facing starter that combines wrappers, events, and `@EVMTest` in one place, prefer:
+
+- `assets/erc20-example/basic-erc20-app/`
+
 ## Concrete usage shape
 
 For `@EVMTest`, the docs show this pattern:

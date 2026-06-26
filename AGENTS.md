@@ -53,6 +53,8 @@ Use these files first when you need working examples:
 - `README.md`: published dependency coordinates, Java version note, high-level usage
 - `integration-tests/src/test/java/org/web3j/protocol/scenarios/FunctionWrappersIT.java`: generated wrapper deploy/load/call flow
 - `integration-tests/src/test/java/org/web3j/protocol/scenarios/SimpleStorageContractIT.java`: simple deploy/write/read wrapper usage
+- `integration-tests/src/test/java/org/web3j/protocol/scenarios/HumanStandardTokenGeneratedIT.java`: generated ERC20 deploy, transfer, allowance, and event-flowable usage
+- `integration-tests/src/test/java/org/web3j/protocol/scenarios/HumanStandardTokenIT.java`: lower-level ERC20 deployment and ABI-driven interaction without wrappers
 - `integration-tests/src/test/java/org/web3j/protocol/scenarios/DeployContractIT.java`: lower-level raw contract deployment and ABI calls
 - `integration-tests/src/test/java/org/web3j/protocol/scenarios/SendEtherIT.java`: ETH transfers and `Transfer.sendFunds`
 - `integration-tests/src/test/java/org/web3j/protocol/core/FlowableIT.java`: block, transaction, pending-transaction, log, and replay flowables
@@ -119,6 +121,7 @@ The published `v5.0.3` docs also treat these as separately documented ecosystem 
 - This repo also contains AI-facing skill docs under `.agents/skills/web3j/`. If you materially change supported workflows or recommended usage, keep those references aligned.
 - Prefer `README.md` for released coordinates such as `org.web3j:core:5.0.3`, and use the published docs when the task is about companion tooling that is versioned or documented separately from the core SDK repo.
 - For AI-facing runnable examples, prefer reusing the starter assets under `.agents/skills/web3j/assets/` when they exist instead of rebuilding the same sample from scratch.
+- For AI-facing end-to-end ERC20 scaffolds, prefer `.agents/skills/web3j/assets/erc20-example/basic-erc20-app/` and `.agents/skills/web3j/references/erc20-example.md`.
 - For repo-contribution guidance, keep `.agents/skills/web3j/references/contributing.md` aligned with `CONTRIBUTING.md`, especially around issue triage, Discord-first feature proposals, PR expectations, and Spotless formatting.
 
 ## Safe defaults for coding assistants
