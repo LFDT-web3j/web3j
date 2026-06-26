@@ -18,8 +18,8 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 - Add support for EIP-7594 blob transaction wrapper [#2263](https://github.com/LFDT-web3j/web3j/pull/2263)
 - Add http code to the ClientConnectionException [#2295](https://github.com/LFDT-web3j/web3j/pull/2295)
 - Full EIP-7594 tx and Kzg cell proof generation [#2296](https://github.com/LFDT-web3j/web3j/pull/2296)
-- Bump snapshot version to 5.0.4 [#2297](https://github.com/LFDT-web3j/web3j/pull/2297)
 - Adds context7 json file [#2301](https://github.com/LFDT-web3j/web3j/pull/2301)
+- Bump snapshot version to 6.0.0 [#2302](https://github.com/LFDT-web3j/web3j/pull/2302)
 
 ### BREAKING CHANGES
 
