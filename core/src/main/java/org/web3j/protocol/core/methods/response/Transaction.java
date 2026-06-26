@@ -16,13 +16,39 @@ import java.math.BigInteger;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
 import org.web3j.crypto.TransactionUtils;
 import org.web3j.utils.Numeric;
 
 /** Transaction object used by both {@link EthTransaction} and {@link EthBlock}. */
-@JsonPropertyOrder({"hash", "nonce", "blockHash", "blockNumber", "chainId", "transactionIndex", "from", "to", "value", "gas", "gasPrice",
-        "input", "creates", "publicKey", "raw", "r", "s", "v", "yParity", "accessList", "type", "maxFeePerGas",
-        "maxPriorityFeePerGas", "maxFeePerBlobGas", "blobVersionedHashes", "authorizationList"})
+@JsonPropertyOrder({
+    "hash",
+    "nonce",
+    "blockHash",
+    "blockNumber",
+    "chainId",
+    "transactionIndex",
+    "from",
+    "to",
+    "value",
+    "gas",
+    "gasPrice",
+    "input",
+    "creates",
+    "publicKey",
+    "raw",
+    "r",
+    "s",
+    "v",
+    "yParity",
+    "accessList",
+    "type",
+    "maxFeePerGas",
+    "maxPriorityFeePerGas",
+    "maxFeePerBlobGas",
+    "blobVersionedHashes",
+    "authorizationList"
+})
 public class Transaction {
     private String hash;
     private String nonce;
@@ -286,7 +312,6 @@ public class Transaction {
         return Numeric.decodeQuantity(nonce);
     }
 
-
     public void setNonce(String nonce) {
         this.nonce = nonce;
     }
@@ -308,7 +333,6 @@ public class Transaction {
         return Numeric.decodeQuantity(blockNumber);
     }
 
-
     public void setBlockNumber(String blockNumber) {
         this.blockNumber = blockNumber;
     }
@@ -321,7 +345,6 @@ public class Transaction {
         if (transactionIndex == null) return null;
         return Numeric.decodeQuantity(transactionIndex);
     }
-
 
     public void setTransactionIndex(String transactionIndex) {
         this.transactionIndex = transactionIndex;
@@ -352,7 +375,6 @@ public class Transaction {
         return Numeric.decodeQuantity(value);
     }
 
-
     public void setValue(String value) {
         this.value = value;
     }
@@ -366,7 +388,6 @@ public class Transaction {
         return Numeric.decodeQuantity(gasPrice);
     }
 
-
     public void setGasPrice(String gasPrice) {
         this.gasPrice = gasPrice;
     }
@@ -379,7 +400,6 @@ public class Transaction {
         if (gas == null) return null;
         return Numeric.decodeQuantity(gas);
     }
-
 
     public void setGas(String gas) {
         this.gas = gas;
@@ -510,7 +530,6 @@ public class Transaction {
         return Numeric.decodeQuantity(maxPriorityFeePerGas);
     }
 
-
     public void setMaxPriorityFeePerGas(String maxPriorityFeePerGas) {
         this.maxPriorityFeePerGas = maxPriorityFeePerGas;
     }
@@ -531,7 +550,6 @@ public class Transaction {
         if (maxFeePerBlobGas == null) return null;
         return Numeric.decodeQuantity(maxFeePerBlobGas);
     }
-
 
     public void setMaxFeePerBlobGas(String maxFeePerBlobGas) {
         this.maxFeePerBlobGas = maxFeePerBlobGas;
