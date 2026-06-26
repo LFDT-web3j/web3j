@@ -30,7 +30,6 @@ public class DynamicEIP1559GasProvider implements ContractEIP1559GasProvider, Pr
     private final Priority priority;
     private final BigDecimal customMultiplier;
     private BigInteger maxGasLimit = BigInteger.valueOf(9_000_000);
-    private BigInteger lastMaxPriorityFeePerGas = BigInteger.ZERO;
 
     public DynamicEIP1559GasProvider(Web3j web3j, long chainId) {
         this(web3j, chainId, Priority.NORMAL);
@@ -66,12 +65,7 @@ public class DynamicEIP1559GasProvider implements ContractEIP1559GasProvider, Pr
             BigInteger baseFee = ethBlock.getBlock().getBaseFeePerGas();
 
             BigInteger maxPriorityFeePerGas = getMaxPriorityFeePerGas();
-            BigInteger maxFee =
-                    baseFee.multiply(BigInteger.valueOf(2))
-                            .add(maxPriorityFeePerGas)
-                            .max(lastMaxPriorityFeePerGas)
-                            .max(BigInteger.ZERO);
-            return maxFee;
+            return baseFee.multiply(BigInteger.valueOf(2)).add(maxPriorityFeePerGas);
         } catch (Exception e) {
             throw new RuntimeException("Failed to get ethMaxFeePerGas", e);
         }
@@ -79,20 +73,6 @@ public class DynamicEIP1559GasProvider implements ContractEIP1559GasProvider, Pr
 
     @Override
     public BigInteger getMaxPriorityFeePerGas() {
-        BigInteger currentPriorityFee =
-                applyPriority(fetchMaxPriorityFeePerGas(), priority, customMultiplier);
-
-        if (currentPriorityFee.compareTo(BigInteger.ZERO) < 0) {
-            currentPriorityFee = BigInteger.ZERO;
-        }
-
-        if (currentPriorityFee.compareTo(lastMaxPriorityFeePerGas) > 0) {
-            lastMaxPriorityFeePerGas = currentPriorityFee;
-        }
-        return currentPriorityFee;
-    }
-
-    private BigInteger fetchMaxPriorityFeePerGas() {
         try {
             EthMaxPriorityFeePerGas ethMaxPriorityFeePerGas =
                     web3j.ethMaxPriorityFeePerGas().send();
@@ -101,7 +81,8 @@ public class DynamicEIP1559GasProvider implements ContractEIP1559GasProvider, Pr
                         "Error fetching ethMaxPriorityFeePerGas: "
                                 + ethMaxPriorityFeePerGas.getError().getMessage());
             }
-            return ethMaxPriorityFeePerGas.getMaxPriorityFeePerGas();
+            return applyPriority(
+                    ethMaxPriorityFeePerGas.getMaxPriorityFeePerGas(), priority, customMultiplier);
         } catch (IOException e) {
             throw new RuntimeException("Failed to get ethMaxPriorityFeePerGas", e);
         }
