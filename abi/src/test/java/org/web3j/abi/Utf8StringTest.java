@@ -12,7 +12,6 @@
  */
 package org.web3j.abi;
 
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -20,7 +19,6 @@ import org.junit.jupiter.api.Test;
 
 import org.web3j.abi.datatypes.DynamicArray;
 import org.web3j.abi.datatypes.DynamicStruct;
-import org.web3j.abi.datatypes.Uint;
 import org.web3j.abi.datatypes.Utf8String;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,31 +32,37 @@ public class Utf8StringTest {
         // "世界" is 2 Chinese characters. Each is 3 bytes in UTF-8. Total 6 bytes.
         Utf8String s2 = new Utf8String("\u4e16\u754c");
 
-        DynamicArray<Utf8String> array = new DynamicArray<>(Utf8String.class, Arrays.asList(s1, s2));
+        DynamicArray<Utf8String> array =
+                new DynamicArray<>(Utf8String.class, Arrays.asList(s1, s2));
 
         String encoded = TypeEncoder.encode(array);
-        
+
         String expectedLength = "0000000000000000000000000000000000000000000000000000000000000002";
         String expectedOffset1 = "0000000000000000000000000000000000000000000000000000000000000040";
         String expectedOffset2 = "0000000000000000000000000000000000000000000000000000000000000080";
-        
-        assertEquals(expectedLength + expectedOffset1 + expectedOffset2, encoded.substring(0, 64 * 3));
+
+        assertEquals(
+                expectedLength + expectedOffset1 + expectedOffset2, encoded.substring(0, 64 * 3));
     }
 
     @Test
     public void testUtf8StringLongChinese() {
         // 14 characters * 3 bytes = 42 bytes.
-        String longString = "\u4f60\u597d\u4e16\u754c\u4f60\u597d\u4e16\u754c\u4f60\u597d\u4e16\u754c\u4f60\u597d"; 
+        String longString =
+                "\u4f60\u597d\u4e16\u754c\u4f60\u597d\u4e16\u754c\u4f60\u597d\u4e16\u754c\u4f60\u597d";
         Utf8String s1 = new Utf8String(longString);
-        
-        DynamicArray<Utf8String> array = new DynamicArray<>(Utf8String.class, Collections.singletonList(s1));
+
+        DynamicArray<Utf8String> array =
+                new DynamicArray<>(Utf8String.class, Collections.singletonList(s1));
         String encoded = TypeEncoder.encode(array);
-        
+
         String expectedLength = "0000000000000000000000000000000000000000000000000000000000000001";
         String expectedOffset1 = "0000000000000000000000000000000000000000000000000000000000000020";
-        String expectedS1Length = "000000000000000000000000000000000000000000000000000000000000002a";
-        
-        assertEquals(expectedLength + expectedOffset1 + expectedS1Length, encoded.substring(0, 64 * 3));
+        String expectedS1Length =
+                "000000000000000000000000000000000000000000000000000000000000002a";
+
+        assertEquals(
+                expectedLength + expectedOffset1 + expectedS1Length, encoded.substring(0, 64 * 3));
     }
 
     @Test
@@ -67,7 +71,7 @@ public class Utf8StringTest {
         String s33 = "\u4f60\u597d\u4e16\u754c\u4f60\u597d\u4e16\u754c\u4f60\u597d" + "aaa";
         Utf8String string33 = new Utf8String(s33);
         assertEquals(33, s33.getBytes(java.nio.charset.StandardCharsets.UTF_8).length);
-        
+
         assertEquals(96, string33.bytes32PaddedLength());
     }
 
@@ -82,14 +86,14 @@ public class Utf8StringTest {
         Utf8String s1 = new Utf8String("a");
         Utf8String s2 = new Utf8String("b");
 
-        org.web3j.abi.datatypes.generated.StaticArray2<Utf8String> array = 
-            new org.web3j.abi.datatypes.generated.StaticArray2<>(Utf8String.class, s1, s2);
+        org.web3j.abi.datatypes.generated.StaticArray2<Utf8String> array =
+                new org.web3j.abi.datatypes.generated.StaticArray2<>(Utf8String.class, s1, s2);
 
         String encoded = TypeEncoder.encode(array);
-        
+
         String expectedOffset1 = "0000000000000000000000000000000000000000000000000000000000000040";
         String expectedOffset2 = "0000000000000000000000000000000000000000000000000000000000000080";
-        
+
         assertEquals(expectedOffset1 + expectedOffset2, encoded.substring(0, 64 * 2));
     }
 
@@ -97,14 +101,15 @@ public class Utf8StringTest {
     public void testStaticUtf8StringArrayInStruct() {
         Utf8String s1 = new Utf8String("a");
         Utf8String s2 = new Utf8String("b");
-        org.web3j.abi.datatypes.generated.StaticArray2<Utf8String> array = 
-            new org.web3j.abi.datatypes.generated.StaticArray2<>(Utf8String.class, s1, s2);
-        
+        org.web3j.abi.datatypes.generated.StaticArray2<Utf8String> array =
+                new org.web3j.abi.datatypes.generated.StaticArray2<>(Utf8String.class, s1, s2);
+
         DynamicStruct struct = new DynamicStruct(array);
-        
+
         String encoded = TypeEncoder.encode(struct);
-        
-        String expectedOffsetArray = "0000000000000000000000000000000000000000000000000000000000000020";
+
+        String expectedOffsetArray =
+                "0000000000000000000000000000000000000000000000000000000000000020";
         assertEquals(expectedOffsetArray, encoded.substring(0, 64));
     }
 }
