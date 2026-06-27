@@ -12,10 +12,11 @@
  */
 package org.web3j.abi.datatypes;
 
-import org.junit.jupiter.api.Test;
-import org.web3j.abi.TypeEncoder;
-
 import java.nio.charset.StandardCharsets;
+
+import org.junit.jupiter.api.Test;
+
+import org.web3j.abi.TypeEncoder;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -24,7 +25,8 @@ public class ChineseUtf8StringTest {
     @Test
     public void testChineseStringEncoding() {
         // Chinese text: Zhong Guo Liu Li Fa Lang Cai Hua Niao Zi Ming Zhong
-        String chineseText = "\u4e2d\u56fd\u7409\u7483\u73d0\u7405\u5f69\u82b1\u9e1f\u81ea\u9e23\u949f";
+        String chineseText =
+                "\u4e2d\u56fd\u7409\u7483\u73d0\u7405\u5f69\u82b1\u9e1f\u81ea\u9e23\u949f";
         Utf8String utf8String = new Utf8String(chineseText);
 
         String encoded = TypeEncoder.encode(utf8String);
