@@ -24,6 +24,7 @@ import org.web3j.protocol.core.methods.response.DbPutHex;
 import org.web3j.protocol.core.methods.response.DbPutString;
 import org.web3j.protocol.core.methods.response.EthAccounts;
 import org.web3j.protocol.core.methods.response.EthBaseFee;
+import org.web3j.protocol.core.methods.response.EthBlobBaseFee;
 import org.web3j.protocol.core.methods.response.EthBlock;
 import org.web3j.protocol.core.methods.response.EthBlockNumber;
 import org.web3j.protocol.core.methods.response.EthChainId;
@@ -122,6 +123,8 @@ public interface Ethereum {
     Request<?, EthGasPrice> ethGasPrice();
 
     Request<?, EthMaxPriorityFeePerGas> ethMaxPriorityFeePerGas();
+
+    Request<?, EthBlobBaseFee> ethBlobBaseFee();
 
     Request<?, EthBaseFee> ethBaseFee();
 

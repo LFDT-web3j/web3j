@@ -11,6 +11,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 - Fix Utf8String encoding + dynamic array for non-ASCII characters [#2289](https://github.com/LFDT-web3j/web3j/pull/2289)
 - Fix pass accessList to parent in Transaction7702 constructor [#2292](https://github.com/LFDT-web3j/web3j/pull/2292)
 - Fix Transaction serialization failure when fee fields are null [#2293](https://github.com/LFDT-web3j/web3j/pull/2293)
+- Fix stale EIP-7691 blob base-fee update fraction [#2300](https://github.com/LFDT-web3j/web3j/pull/2300)
 
 ### Features
 
@@ -21,6 +22,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 - Adds context7 json file [#2301](https://github.com/LFDT-web3j/web3j/pull/2301)
 - Bump snapshot version to 6.0.0 [#2302](https://github.com/LFDT-web3j/web3j/pull/2302)
 - Add EIP-7702 authorization signing and recovery [#2299](https://github.com/LFDT-web3j/web3j/pull/2299)
+- Add `eth_blobBaseFee` RPC (EIP-7918 / Fusaka-correct blob base fee) [#2300](https://github.com/LFDT-web3j/web3j/pull/2300)
 
 ### BREAKING CHANGES
 

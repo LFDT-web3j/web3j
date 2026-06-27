@@ -36,6 +36,7 @@ import org.web3j.protocol.core.methods.response.DbPutHex;
 import org.web3j.protocol.core.methods.response.DbPutString;
 import org.web3j.protocol.core.methods.response.EthAccounts;
 import org.web3j.protocol.core.methods.response.EthBaseFee;
+import org.web3j.protocol.core.methods.response.EthBlobBaseFee;
 import org.web3j.protocol.core.methods.response.EthBlock;
 import org.web3j.protocol.core.methods.response.EthBlockNumber;
 import org.web3j.protocol.core.methods.response.EthChainId;
@@ -109,7 +110,6 @@ public class JsonRpc2_0Web3j implements Web3j {
 
     public static final int DEFAULT_BLOCK_TIME = 15 * 1000;
     private static final BigInteger MIN_BLOB_BASE_FEE = new BigInteger("1");
-    private static final BigInteger BLOB_BASE_FEE_UPDATE_FRACTION = new BigInteger("3338477");
 
     protected final Web3jService web3jService;
     private final JsonRpc2_0Rx web3jRx;
@@ -244,6 +244,15 @@ public class JsonRpc2_0Web3j implements Web3j {
                 Collections.<String>emptyList(),
                 web3jService,
                 EthMaxPriorityFeePerGas.class);
+    }
+
+    @Override
+    public Request<?, EthBlobBaseFee> ethBlobBaseFee() {
+        return new Request<>(
+                "eth_blobBaseFee",
+                Collections.<String>emptyList(),
+                web3jService,
+                EthBlobBaseFee.class);
     }
 
     @Override
@@ -966,30 +975,35 @@ public class JsonRpc2_0Web3j implements Web3j {
 
     @Override
     public BigInteger ethGetBaseFeePerBlobGas() {
+        // Default to the Prague (EIP-7691) update fraction, live on Ethereum mainnet, so existing
+        // no-arg callers get correct values without passing a fraction.
+        return ethGetBaseFeePerBlobGas(BlobFee.BLOB_BASE_FEE_UPDATE_FRACTION_PRAGUE);
+    }
+
+    @Override
+    public BigInteger ethGetBaseFeePerBlobGas(BigInteger blobBaseFeeUpdateFraction) {
         try {
             EthBlock ethBlock =
                     web3jService.send(
                             ethGetBlockByNumber(DefaultBlockParameter.valueOf("latest"), false),
                             EthBlock.class);
-            return fakeExponential(ethBlock.getBlock().getExcessBlobGas());
+            return fakeExponential(
+                    ethBlock.getBlock().getExcessBlobGas(), blobBaseFeeUpdateFraction);
         } catch (Exception e) {
             throw new RuntimeException("Failed to get baseFeePerBlobGas value: ", e);
         }
     }
 
-    private static BigInteger fakeExponential(BigInteger numerator) {
+    private static BigInteger fakeExponential(BigInteger numerator, BigInteger updateFraction) {
         BigInteger i = BigInteger.ONE;
         BigInteger output = BigInteger.ZERO;
-        BigInteger numeratorAccum = MIN_BLOB_BASE_FEE.multiply(BLOB_BASE_FEE_UPDATE_FRACTION);
+        BigInteger numeratorAccum = MIN_BLOB_BASE_FEE.multiply(updateFraction);
         while (numeratorAccum.compareTo(BigInteger.ZERO) > 0) {
             output = output.add(numeratorAccum);
-            numeratorAccum =
-                    numeratorAccum
-                            .multiply(numerator)
-                            .divide(BLOB_BASE_FEE_UPDATE_FRACTION.multiply(i));
+            numeratorAccum = numeratorAccum.multiply(numerator).divide(updateFraction.multiply(i));
             i = i.add(BigInteger.ONE);
         }
-        return output.divide(BLOB_BASE_FEE_UPDATE_FRACTION);
+        return output.divide(updateFraction);
     }
 
     @Override
