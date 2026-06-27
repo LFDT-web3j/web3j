@@ -20,6 +20,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 - Full EIP-7594 tx and Kzg cell proof generation [#2296](https://github.com/LFDT-web3j/web3j/pull/2296)
 - Adds context7 json file [#2301](https://github.com/LFDT-web3j/web3j/pull/2301)
 - Bump snapshot version to 6.0.0 [#2302](https://github.com/LFDT-web3j/web3j/pull/2302)
+- Add EIP-7702 authorization signing and recovery [#2299](https://github.com/LFDT-web3j/web3j/pull/2299)
 
 ### BREAKING CHANGES
 
