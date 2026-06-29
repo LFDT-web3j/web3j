@@ -722,42 +722,42 @@ public class SolidityFunctionWrapper extends Generator {
                 } else if (type.startsWith("tuple") && type.contains("[")) {
                     nativeTypeName = buildStructArrayTypeName(component, false);
                     typeName = buildStructArrayTypeName(component, useNativeJavaTypes);
-
-                    // adding extra annotation for dynamic types
-                    annotationSpec =
-                            AnnotationSpec.builder(Parameterized.class)
-                                    .addMember(
-                                            "type",
-                                            "$T.class",
-                                            ClassName.get("", resolveStructName(component)))
-                                    .build();
                 } else {
                     nativeTypeName = buildTypeName(type, useJavaPrimitiveTypes);
                     typeName = getWrapperType(nativeTypeName);
-                    if (type.contains("[")) {
+                }
+
+                if (nativeTypeName instanceof ParameterizedTypeName) {
+                    ParameterizedTypeName parameterizedTypeName = (ParameterizedTypeName) nativeTypeName;
+                    if (parameterizedTypeName.rawType.equals(ClassName.get(DynamicArray.class))) {
+                        TypeName elementType = parameterizedTypeName.typeArguments.get(0);
+                        while (elementType instanceof ParameterizedTypeName) {
+                            elementType = ((ParameterizedTypeName) elementType).typeArguments.get(0);
+                        }
                         annotationSpec =
                                 AnnotationSpec.builder(Parameterized.class)
-                                        .addMember(
-                                                "type",
-                                                "$T.class",
-                                                TypeReference.makeTypeReference(
-                                                                type.substring(
-                                                                        0, type.indexOf('[')))
-                                                        .getClassType())
+                                        .addMember("type", "$T.class", elementType)
                                         .build();
                     }
                 }
+
                 final String componentName =
                         !SourceVersion.isName(component.getName())
                                 ? "_" + component.getName()
                                 : component.getName();
                 builder.addField(typeName, componentName, Modifier.PUBLIC);
-                constructorBuilder.addParameter(typeName, componentName);
+
+                ParameterSpec.Builder parameterBuilder =
+                        ParameterSpec.builder(typeName, componentName);
                 ParameterSpec.Builder nativeParameterBuilder =
                         ParameterSpec.builder(nativeTypeName, componentName);
+
                 if (annotationSpec != null) {
+                    parameterBuilder.addAnnotation(annotationSpec);
                     nativeParameterBuilder.addAnnotation(annotationSpec);
                 }
+
+                constructorBuilder.addParameter(parameterBuilder.build());
                 nativeConstructorBuilder.addParameter(nativeParameterBuilder.build());
 
                 constructorBuilder.addStatement("this." + componentName + " = " + componentName);
