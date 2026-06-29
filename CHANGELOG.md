@@ -1,4 +1,4 @@
-﻿# Change Log
+# Change Log
 
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
@@ -8,6 +8,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 - Fix NullPointerException when deriving child keys from public-only Bip32ECKeyPair [#2284](https://github.com/LFDT-web3j/web3j/pull/2284)
+- Fix multidimensional array encoding support for 2D arrays [#2287](https://github.com/LFDT-web3j/web3j/pull/2287)
 - Fix Utf8String encoding + dynamic array for non-ASCII characters [#2289](https://github.com/LFDT-web3j/web3j/pull/2289)
 - Fix pass accessList to parent in Transaction7702 constructor [#2292](https://github.com/LFDT-web3j/web3j/pull/2292)
 - Fix Transaction serialization failure when fee fields are null [#2293](https://github.com/LFDT-web3j/web3j/pull/2293)

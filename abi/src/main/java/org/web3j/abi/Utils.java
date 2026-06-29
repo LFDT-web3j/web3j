@@ -195,20 +195,6 @@ public class Utils {
         return (Class<T>) Class.forName(parameterizedTypeName);
     }
 
-    static <T extends Type> Class<T> getFullParameterizedTypeFromArray(TypeReference typeReference)
-            throws ClassNotFoundException {
-
-        java.lang.reflect.Type type = typeReference.getType();
-
-        java.lang.reflect.Type typeArgument =
-                ((ParameterizedType) type).getActualTypeArguments()[0];
-
-        return (Class<T>)
-                Class.forName(
-                        ((ParameterizedType) typeArgument)
-                                .getActualTypeArguments()[0].getTypeName());
-    }
-
     @SuppressWarnings("unchecked")
     public static List<TypeReference<Type>> convert(List<TypeReference<?>> input) {
         List<TypeReference<Type>> result = new ArrayList<>(input.size());
