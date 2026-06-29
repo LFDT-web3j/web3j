@@ -50,12 +50,26 @@ public class TypeEncoder {
     private TypeEncoder() {}
 
     static boolean isDynamic(Type parameter) {
-        return parameter instanceof DynamicBytes
+        if (parameter instanceof DynamicBytes
                 || parameter instanceof Utf8String
-                || parameter instanceof DynamicArray
-                || (parameter instanceof StaticArray
-                        && DynamicStruct.class.isAssignableFrom(
-                                ((StaticArray) parameter).getComponentType()));
+                || parameter instanceof DynamicArray) {
+            return true;
+        }
+
+        if (parameter instanceof StaticArray) {
+            StaticArray staticArray = (StaticArray) parameter;
+            Class componentType = staticArray.getComponentType();
+            return isDynamic(componentType);
+        }
+
+        return false;
+    }
+
+    private static boolean isDynamic(Class componentType) {
+        return DynamicStruct.class.isAssignableFrom(componentType)
+                || DynamicArray.class.isAssignableFrom(componentType)
+                || Utf8String.class.isAssignableFrom(componentType)
+                || DynamicBytes.class.isAssignableFrom(componentType);
     }
 
     @SuppressWarnings("unchecked")
@@ -73,9 +87,8 @@ public class TypeEncoder {
         } else if (parameter instanceof Utf8String) {
             return encodeString((Utf8String) parameter);
         } else if (parameter instanceof StaticArray) {
-            if (DynamicStruct.class.isAssignableFrom(
-                    ((StaticArray) parameter).getComponentType())) {
-                return encodeStaticArrayWithDynamicStruct((StaticArray) parameter);
+            if (isDynamic(((StaticArray) parameter).getComponentType())) {
+                return encodeStaticArrayWithDynamicValues((StaticArray) parameter);
             } else {
                 return encodeArrayValues((StaticArray) parameter);
             }
@@ -163,7 +176,7 @@ public class TypeEncoder {
      * @param
      * @return
      */
-    private static <T extends Type> String encodeStaticArrayWithDynamicStruct(Array<T> value) {
+    private static <T extends Type> String encodeStaticArrayWithDynamicValues(Array<T> value) {
         String valuesOffsets = encodeDynamicsTypesArraysOffsets(value);
         String encodedValues = encodeArrayValues(value);
 
@@ -225,6 +238,10 @@ public class TypeEncoder {
 
     static String encodeBytes(BytesType bytesType) {
         byte[] value = bytesType.getValue();
+        return encodeBytes(value);
+    }
+
+    static String encodeBytes(byte[] value) {
         int length = value.length;
         int mod = length % MAX_BYTE_LENGTH;
 

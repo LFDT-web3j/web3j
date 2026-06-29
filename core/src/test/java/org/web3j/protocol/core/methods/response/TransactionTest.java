@@ -14,17 +14,13 @@ package org.web3j.protocol.core.methods.response;
 
 import java.util.Arrays;
 import java.util.List;
-import tools.jackson.databind.ObjectMapper;
-
 
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
-
 
 public class TransactionTest {
 
@@ -138,6 +134,4 @@ public class TransactionTest {
 
         assertDoesNotThrow(() -> objectMapper.writeValueAsString(transaction));
     }
-
-
 }

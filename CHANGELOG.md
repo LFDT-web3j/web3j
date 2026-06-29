@@ -3,20 +3,28 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
-# [5.0.4]() (Upcoming)
+# [6.0.0]() (Upcoming)
 
 ### Bug Fixes
 
 - Fix dynamic array decoding in generated wrappers for struct types [#2272](https://github.com/LFDT-web3j/web3j/pull/2272)
-- Fix Transaction serialization failure when fee fields are null [#2293](https://github.com/LFDT-web3j/web3j/pull/2293)
 - Fix NullPointerException when deriving child keys from public-only Bip32ECKeyPair [#2284](https://github.com/LFDT-web3j/web3j/pull/2284)
-
+- Fix Utf8String encoding + dynamic array for non-ASCII characters [#2289](https://github.com/LFDT-web3j/web3j/pull/2289)
+- Fix pass accessList to parent in Transaction7702 constructor [#2292](https://github.com/LFDT-web3j/web3j/pull/2292)
+- Fix Transaction serialization failure when fee fields are null [#2293](https://github.com/LFDT-web3j/web3j/pull/2293)
+- Fix stale EIP-7691 blob base-fee update fraction [#2300](https://github.com/LFDT-web3j/web3j/pull/2300)
 
 ### Features
 
+- Add signTypedData address recovery test [#2260](https://github.com/LFDT-web3j/web3j/pull/2260)
 - Add support for EIP-7594 blob transaction wrapper [#2263](https://github.com/LFDT-web3j/web3j/pull/2263)
+- Add http code to the ClientConnectionException [#2295](https://github.com/LFDT-web3j/web3j/pull/2295)
 - Full EIP-7594 tx and Kzg cell proof generation [#2296](https://github.com/LFDT-web3j/web3j/pull/2296)
-- Bump snapshot version to 5.0.4 [#2297](https://github.com/LFDT-web3j/web3j/pull/2297)
+- Added Agent and skills files [#2298](https://github.com/LFDT-web3j/web3j/pull/2298)
+- Add EIP-7702 authorization signing and recovery [#2299](https://github.com/LFDT-web3j/web3j/pull/2299)
+- Add `eth_blobBaseFee` RPC (EIP-7918 / Fusaka-correct blob base fee) [#2300](https://github.com/LFDT-web3j/web3j/pull/2300)
+- Adds context7 json file [#2301](https://github.com/LFDT-web3j/web3j/pull/2301)
+- Bump snapshot version to 6.0.0 [#2302](https://github.com/LFDT-web3j/web3j/pull/2302)
 
 ### BREAKING CHANGES
 
