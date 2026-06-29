@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
-# [6.0.0]() (Upcoming)
+# [6.0.0](https://github.com/LFDT-web3j/web3j/releases/tag/v6.0.0) (2026-06-29)
 
 ### Bug Fixes
 
