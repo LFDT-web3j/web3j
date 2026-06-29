@@ -19,10 +19,11 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 - Add support for EIP-7594 blob transaction wrapper [#2263](https://github.com/LFDT-web3j/web3j/pull/2263)
 - Add http code to the ClientConnectionException [#2295](https://github.com/LFDT-web3j/web3j/pull/2295)
 - Full EIP-7594 tx and Kzg cell proof generation [#2296](https://github.com/LFDT-web3j/web3j/pull/2296)
-- Adds context7 json file [#2301](https://github.com/LFDT-web3j/web3j/pull/2301)
-- Bump snapshot version to 6.0.0 [#2302](https://github.com/LFDT-web3j/web3j/pull/2302)
+- Added Agent and skills files [#2298](https://github.com/LFDT-web3j/web3j/pull/2298)
 - Add EIP-7702 authorization signing and recovery [#2299](https://github.com/LFDT-web3j/web3j/pull/2299)
 - Add `eth_blobBaseFee` RPC (EIP-7918 / Fusaka-correct blob base fee) [#2300](https://github.com/LFDT-web3j/web3j/pull/2300)
+- Adds context7 json file [#2301](https://github.com/LFDT-web3j/web3j/pull/2301)
+- Bump snapshot version to 6.0.0 [#2302](https://github.com/LFDT-web3j/web3j/pull/2302)
 
 ### BREAKING CHANGES
 
