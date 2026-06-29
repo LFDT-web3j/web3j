@@ -16,8 +16,8 @@ import java.util.Collections;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
 import org.web3j.protocol.core.DefaultBlockParameter;
 
 /**
