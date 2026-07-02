@@ -1,0 +1,50 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'org.web3j' version '5.0.3'
+}
+
+group = 'example'
+version = '1.0.0'
+
+repositories {
+    mavenCentral()
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+web3j {
+    generatedPackageName = 'example.contracts'
+}
+
+dependencies {
+    implementation 'org.web3j:core:5.0.3'
+    implementation 'org.web3j:web3j-sokt:0.2.1'
+
+    testImplementation platform('org.junit:junit-bom:5.10.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation('org.web3j:web3j-unit:5.0.3') {
+        exclude group: 'org.web3j'
+    }
+}
+
+application {
+    mainClass = 'example.Erc20ExampleApp'
+}
+
+tasks.named('compileJava') {
+    dependsOn(tasks.named('generateContractWrappers'))
+}
+
+tasks.named('compileTestJava') {
+    dependsOn(tasks.named('generateContractWrappers'))
+}
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+    systemProperty 'junit.jupiter.extensions.autodetection.enabled', 'true'
+}

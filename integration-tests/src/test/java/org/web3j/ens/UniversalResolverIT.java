@@ -31,8 +31,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * </pre>
  *
  * <p>Covers the first case from the ENSv2 resolution-tests suite
- * (https://github.com/ensdomains/resolution-tests): {@code ur.integration-tests.eth} must
- * resolve to {@code 0x2222222222222222222222222222222222222222} via the Universal Resolver.
+ * (https://github.com/ensdomains/resolution-tests): {@code ur.integration-tests.eth} must resolve
+ * to {@code 0x2222222222222222222222222222222222222222} via the Universal Resolver.
  */
 @EnabledIfEnvironmentVariable(named = "WEB3J_MAINNET_RPC", matches = ".+")
 public class UniversalResolverIT {
@@ -45,7 +45,6 @@ public class UniversalResolverIT {
 
         String resolved = ens.resolve("ur.integration-tests.eth");
 
-        assertEquals(
-                "0x2222222222222222222222222222222222222222", resolved.toLowerCase());
+        assertEquals("0x2222222222222222222222222222222222222222", resolved.toLowerCase());
     }
 }
