@@ -40,9 +40,14 @@ public class PendingTransactionFilter extends Filter<String> {
             if (logResult instanceof EthLog.Hash) {
                 String transactionHash = ((EthLog.Hash) logResult).get();
                 callback.onEvent(transactionHash);
+            } else if (logResult instanceof EthLog.LogObject) {
+                String transactionHash = ((EthLog.LogObject) logResult).get().getTransactionHash();
+                callback.onEvent(transactionHash);
             } else {
                 throw new FilterException(
-                        "Unexpected result type: " + logResult.get() + ", required Hash");
+                        "Unexpected result type: "
+                                + logResult.get()
+                                + ", required Hash or LogObject");
             }
         }
     }

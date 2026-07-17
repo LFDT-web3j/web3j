@@ -23,6 +23,7 @@ import org.web3j.protocol.core.methods.response.Log;
 import org.web3j.protocol.core.methods.response.Transaction;
 import org.web3j.protocol.websocket.events.LogNotification;
 import org.web3j.protocol.websocket.events.NewHeadsNotification;
+import org.web3j.protocol.websocket.events.PendingTransactionNotification;
 
 /** The Flowables JSON-RPC client event API. */
 public interface Web3jRx {
@@ -205,4 +206,11 @@ public interface Web3jRx {
      * @return a {@link Flowable} instance that emits logs included in new blocks
      */
     Flowable<LogNotification> logsNotifications(List<String> addresses, List<String> topics);
+
+    /**
+     * Creates a {@link Flowable} instance that emits notifications for new pending transactions.
+     *
+     * @return a {@link Flowable} instance that emits notifications for new pending transactions
+     */
+    Flowable<PendingTransactionNotification> newPendingTransactionsNotifications();
 }

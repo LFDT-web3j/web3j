@@ -85,6 +85,17 @@ class WebSocketEventTest {
     }
 
     @Test
+    void testNewPendingTransactionsNotifications() {
+        web3j.newPendingTransactionsNotifications();
+
+        verify(webSocketClient)
+                .send(
+                        matches(
+                                "\\{\"jsonrpc\":\"2.0\",\"method\":\"eth_subscribe\","
+                                        + "\"params\":\\[\"newPendingTransactions\"],\"id\":[0-9]{1,}}"));
+    }
+
+    @Test
     void testLogsNotificationsWithoutArguments() {
         web3j.logsNotifications(new ArrayList<>(), new ArrayList<>());
 
