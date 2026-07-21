@@ -29,4 +29,13 @@ class LogFilterTest extends FilterTester {
 
         runTest(ethLog, web3j.ethLogFlowable(new EthFilter().addSingleTopic("test")));
     }
+
+    @Test
+    void testEthFilterSerialization() throws Exception {
+        EthFilter filter = new EthFilter();
+        filter.addSingleTopic("0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b");
+        String json = objectMapper.writeValueAsString(filter);
+        org.junit.jupiter.api.Assertions.assertTrue(
+                json.contains("0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b"));
+    }
 }
