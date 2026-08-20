@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 
 import org.web3j.abi.datatypes.AbiTypes;
@@ -70,6 +71,9 @@ import static org.web3j.abi.Utils.staticStructNestedPublicFieldsFlatList;
 public class TypeDecoder {
 
     static final int MAX_BYTE_LENGTH_FOR_HEX_STRING = Type.MAX_BYTE_LENGTH << 1;
+
+    private static final ConcurrentHashMap<Class<?>, Integer> TYPE_LENGTH_CACHE =
+            new ConcurrentHashMap<>();
 
     public static Type instantiateType(String solidityType, Object value)
             throws InvocationTargetException,
@@ -173,6 +177,10 @@ public class TypeDecoder {
     }
 
     static <T extends NumericType> int getTypeLength(Class<T> type) {
+        return TYPE_LENGTH_CACHE.computeIfAbsent(type, TypeDecoder::computeTypeLength);
+    }
+
+    private static int computeTypeLength(Class<?> type) {
         if (IntType.class.isAssignableFrom(type)) {
             String regex = "(" + Uint.class.getSimpleName() + "|" + Int.class.getSimpleName() + ")";
             String[] splitName = type.getSimpleName().split(regex);
