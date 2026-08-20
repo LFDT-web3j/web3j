@@ -156,7 +156,8 @@ public class WalletFile {
         @JsonTypeInfo(
                 use = JsonTypeInfo.Id.NAME,
                 include = JsonTypeInfo.As.EXTERNAL_PROPERTY,
-                property = "kdf")
+                property = "kdf",
+                visible = true)
         @JsonSubTypes({
             @JsonSubTypes.Type(value = Aes128CtrKdfParams.class, name = Wallet.AES_128_CTR),
             @JsonSubTypes.Type(value = ScryptKdfParams.class, name = Wallet.SCRYPT)
