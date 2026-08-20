@@ -47,7 +47,7 @@ import org.web3j.abi.datatypes.Type;
 import org.web3j.abi.datatypes.Ufixed;
 import org.web3j.abi.datatypes.Uint;
 import org.web3j.abi.datatypes.Utf8String;
-import org.web3j.abi.datatypes.generated.Uint160;
+import org.web3j.abi.datatypes.generated.*;
 import org.web3j.abi.datatypes.primitive.Double;
 import org.web3j.abi.datatypes.primitive.Float;
 import org.web3j.utils.Numeric;
@@ -140,7 +140,9 @@ public class TypeDecoder {
     }
 
     public static Address decodeAddress(String input) {
-        return new Address(decodeNumeric(input, Uint160.class));
+        byte[] inputByteArray = Numeric.hexStringToByteArray(input);
+        BigInteger numericValue = new BigInteger(1, inputByteArray, 12, 20);
+        return new Address(new Uint160(numericValue));
     }
 
     public static <T extends NumericType> T decodeNumeric(String input, Class<T> type) {
@@ -155,6 +157,18 @@ public class TypeDecoder {
             } else {
                 numericValue = new BigInteger(inputByteArray, valueOffset, typeLengthAsBytes);
             }
+            if (type == Uint256.class) return (T) new Uint256(numericValue);
+            if (type == Uint8.class) return (T) new Uint8(numericValue);
+            if (type == Uint160.class) return (T) new Uint160(numericValue);
+            if (type == Uint128.class) return (T) new Uint128(numericValue);
+            if (type == Uint64.class) return (T) new Uint64(numericValue);
+            if (type == Uint32.class) return (T) new Uint32(numericValue);
+            if (type == Uint16.class) return (T) new Uint16(numericValue);
+            if (type == Int256.class) return (T) new Int256(numericValue);
+            if (type == Int128.class) return (T) new Int128(numericValue);
+            if (type == Int64.class) return (T) new Int64(numericValue);
+            if (type == Int32.class) return (T) new Int32(numericValue);
+
             return type.getConstructor(BigInteger.class).newInstance(numericValue);
 
         } catch (NoSuchMethodException
@@ -316,6 +330,12 @@ public class TypeDecoder {
 
             byte[] bytes =
                     Numeric.hexStringToByteArray(input.substring(offset, offset + hexStringLength));
+
+            if (type == Bytes32.class) return (T) new Bytes32(bytes);
+            if (type == Bytes4.class) return (T) new Bytes4(bytes);
+            if (type == Bytes20.class) return (T) new Bytes20(bytes);
+            if (type == Bytes1.class) return (T) new Bytes1(bytes);
+
             return type.getConstructor(byte[].class).newInstance(bytes);
         } catch (NoSuchMethodException
                 | SecurityException
