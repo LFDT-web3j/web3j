@@ -256,6 +256,13 @@ public class SolidityFunctionWrapperGeneratorTest extends TempFileProvider {
     }
 
     @Test
+    public void testInterfaceStructArrayGeneration() throws Exception {
+        testCodeGeneration("interfacestructarray", "InterfaceStructArray", JAVA_TYPES_ARG, false);
+        testCodeGeneration(
+                "interfacestructarray", "InterfaceStructArray", SOLIDITY_TYPES_ARG, false);
+    }
+
+    @Test
     public void testStaticArrayOfStructsInStructGeneration() throws Exception {
         testCodeGeneration(
                 "staticarrayofstructsinstruct",

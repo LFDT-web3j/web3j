@@ -1,0 +1,28 @@
+[
+  {
+    "inputs": [
+      {"internalType": "string",  "name": "_name",           "type": "string"},
+      {"internalType": "string",  "name": "_symbol",         "type": "string"},
+      {"internalType": "string",  "name": "_baseURI",        "type": "string"},
+      {"internalType": "address", "name": "_creator",        "type": "address"},
+      {"internalType": "bool",    "name": "_shouldComplete",  "type": "bool"},
+      {"internalType": "bool",    "name": "_isApproved",     "type": "bool"},
+      {"internalType": "address", "name": "_rarities",       "type": "address"},
+      {
+        "components": [
+          {"internalType": "string",  "name": "rarity",      "type": "string"},
+          {"internalType": "uint256", "name": "price",       "type": "uint256"},
+          {"internalType": "address", "name": "beneficiary", "type": "address"},
+          {"internalType": "string",  "name": "metadata",    "type": "string"}
+        ],
+        "internalType": "struct IERC721CollectionV2.ItemParam[]",
+        "name": "_items",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "initialize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]
