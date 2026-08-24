@@ -28,6 +28,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 - Add `eth_blobBaseFee` RPC (EIP-7918 / Fusaka-correct blob base fee) [#2300](https://github.com/LFDT-web3j/web3j/pull/2300)
 - Adds context7 json file [#2301](https://github.com/LFDT-web3j/web3j/pull/2301)
 - Bump snapshot version to 6.0.0 [#2302](https://github.com/LFDT-web3j/web3j/pull/2302)
+- Bump tuweni to 2.8.0 [#2308](https://github.com/LFDT-web3j/web3j/pull/2308)
 - Add support for txpool_contentFrom JSON-RPC method to query transaction pool by address [#2262](https://github.com/LFDT-web3j/web3j/pull/2262)
 - Add support for txpool_inspect JSON-RPC method [#2262](https://github.com/LFDT-web3j/web3j/pull/2262)
 
