@@ -23,8 +23,9 @@ dependencies {
             "io.consensys.tuweni:tuweni-units:$tuweniVersion"
     implementation "software.amazon.awssdk:kms:$awsSdkVersion"
     testImplementation project(path: ':crypto', configuration: 'testArtifacts'),
-    "nl.jqno.equalsverifier:equalsverifier:$equalsverifierVersion",
-    "ch.qos.logback:logback-classic:$logbackVersion"
+            "nl.jqno.equalsverifier:equalsverifier:$equalsverifierVersion",
+            "ch.qos.logback:logback-classic:$logbackVersion",
+            "com.squareup.okhttp3:mockwebserver:$okhttpVersion"
 }
 
 def timestampUTC = {
