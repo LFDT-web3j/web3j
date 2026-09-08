@@ -30,6 +30,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 - Bump snapshot version to 6.0.0 [#2302](https://github.com/LFDT-web3j/web3j/pull/2302)
 - Add support for txpool_contentFrom JSON-RPC method to query transaction pool by address [#2262](https://github.com/LFDT-web3j/web3j/pull/2262)
 - Add support for txpool_inspect JSON-RPC method [#2262](https://github.com/LFDT-web3j/web3j/pull/2262)
+- Add `CappedDynamicEIP1559GasProvider` to enforce an upper bound on EIP-1559 gas fees [#2306](https://github.com/LFDT-web3j/web3j/pull/2306)
 
 ### BREAKING CHANGES
 

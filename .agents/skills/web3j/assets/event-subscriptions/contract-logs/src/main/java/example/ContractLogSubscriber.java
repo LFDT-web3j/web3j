@@ -1,3 +1,15 @@
+/*
+ * Copyright 2026 Web3 Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package example;
 
 import java.util.List;
@@ -30,21 +42,22 @@ public class ContractLogSubscriber {
 
         CountDownLatch keepAlive = new CountDownLatch(1);
         Disposable subscription =
-                web3j.ethLogFlowable(filter).subscribe(
-                        log -> {
-                            List<String> topics = log.getTopics();
-                            System.out.printf(
-                                    "log block=%s tx=%s address=%s topics=%s data=%s%n",
-                                    log.getBlockNumber(),
-                                    log.getTransactionHash(),
-                                    log.getAddress(),
-                                    topics,
-                                    log.getData());
-                        },
-                        error -> {
-                            error.printStackTrace();
-                            keepAlive.countDown();
-                        });
+                web3j.ethLogFlowable(filter)
+                        .subscribe(
+                                log -> {
+                                    List<String> topics = log.getTopics();
+                                    System.out.printf(
+                                            "log block=%s tx=%s address=%s topics=%s data=%s%n",
+                                            log.getBlockNumber(),
+                                            log.getTransactionHash(),
+                                            log.getAddress(),
+                                            topics,
+                                            log.getData());
+                                },
+                                error -> {
+                                    error.printStackTrace();
+                                    keepAlive.countDown();
+                                });
 
         Runtime.getRuntime()
                 .addShutdownHook(
@@ -73,8 +86,7 @@ public class ContractLogSubscriber {
     private static String requireEnv(String name) {
         String value = System.getenv(name);
         if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException(
-                    "Missing required environment variable: " + name);
+            throw new IllegalArgumentException("Missing required environment variable: " + name);
         }
         return value;
     }

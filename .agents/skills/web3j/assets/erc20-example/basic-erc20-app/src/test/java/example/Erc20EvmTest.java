@@ -1,11 +1,25 @@
+/*
+ * Copyright 2026 Web3 Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package example;
 
-import example.contracts.ExampleToken;
-import io.reactivex.disposables.Disposable;
 import java.math.BigInteger;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
+import example.contracts.ExampleToken;
+import io.reactivex.disposables.Disposable;
 import org.junit.jupiter.api.Test;
+
 import org.web3j.EVMTest;
 import org.web3j.NodeType;
 import org.web3j.protocol.Web3j;
@@ -22,9 +36,7 @@ class Erc20EvmTest {
 
     @Test
     void deploysTransfersAndStreamsEvents(
-            Web3j web3j,
-            TransactionManager transactionManager,
-            ContractGasProvider gasProvider)
+            Web3j web3j, TransactionManager transactionManager, ContractGasProvider gasProvider)
             throws Exception {
         ExampleToken token =
                 ExampleToken.deploy(
@@ -52,7 +64,8 @@ class Erc20EvmTest {
             String recipient = "0x00000000000000000000000000000000000000b0";
             TransactionReceipt receipt = token.transfer(recipient, BigInteger.valueOf(25L)).send();
 
-            ExampleToken.TransferEventResponse transferEvent = token.getTransferEvents(receipt).get(0);
+            ExampleToken.TransferEventResponse transferEvent =
+                    token.getTransferEvents(receipt).get(0);
             assertEquals(recipient.toLowerCase(), transferEvent._to.toLowerCase());
             assertEquals(BigInteger.valueOf(25L), transferEvent._value);
             assertEquals(BigInteger.valueOf(25L), token.balanceOf(recipient).send());
