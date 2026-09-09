@@ -7,6 +7,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
+- Fix maxPriorityFeePerGas exceeding maxFeePerGas in DynamicEIP1559GasProvider [#2264](https://github.com/LFDT-web3j/web3j/pull/2264)
 - Fix shutdown hook accumulation in Async.defaultExecutorService() — hooks are now removed when executor is explicitly shut down [#2265](https://github.com/LFDT-web3j/web3j/pull/2265)
 - Fix dynamic array decoding in generated wrappers for struct types [#2272](https://github.com/LFDT-web3j/web3j/pull/2272)
 - Fix incorrect casting for array types in generated contract wrappers [#2274](https://github.com/LFDT-web3j/web3j/pull/2274)
