@@ -19,6 +19,8 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Features
 
+- Add `slotNumber`, `blockAccessListHash`, and `requestsHash` to block responses [#2314](https://github.com/LFDT-web3j/web3j/pull/2314)
+
 - Add signTypedData address recovery test [#2260](https://github.com/LFDT-web3j/web3j/pull/2260)
 - Add support for EIP-7594 blob transaction wrapper [#2263](https://github.com/LFDT-web3j/web3j/pull/2263)
 - Add http code to the ClientConnectionException [#2295](https://github.com/LFDT-web3j/web3j/pull/2295)

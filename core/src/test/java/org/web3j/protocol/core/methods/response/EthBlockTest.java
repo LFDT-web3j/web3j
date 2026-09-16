@@ -16,7 +16,10 @@ import java.math.BigInteger;
 
 import org.junit.jupiter.api.Test;
 
+import org.web3j.protocol.ObjectMapperFactory;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class EthBlockTest {
 
@@ -40,5 +43,39 @@ class EthBlockTest {
                         null, null, null, null);
 
         assertEquals(BigInteger.valueOf(1000), ethBlock.getSize());
+    }
+
+    @Test
+    void testSlotNumberAndHeaderHashes() {
+        String balHash = "0x" + "22".repeat(32);
+        String requestsHash = "0x" + "33".repeat(32);
+        EthBlock.Block block =
+                readBlock(
+                        """
+                {"slotNumber":"0x0","blockAccessListHash":"%s","requestsHash":"%s"}
+                """
+                                .formatted(balHash, requestsHash));
+
+        assertEquals(BigInteger.ZERO, block.getSlotNumber());
+        assertEquals("0x0", block.getSlotNumberRaw());
+        assertEquals(balHash, block.getBlockAccessListHash());
+        assertEquals(requestsHash, block.getRequestsHash());
+    }
+
+    @Test
+    void testAbsentHeaderFields() {
+        EthBlock.Block block = readBlock("{}");
+
+        assertNull(block.getSlotNumber());
+        assertNull(block.getSlotNumberRaw());
+        assertNull(block.getBlockAccessListHash());
+        assertNull(block.getRequestsHash());
+    }
+
+    private EthBlock.Block readBlock(String result) {
+        return ObjectMapperFactory.getObjectMapper()
+                .readValue(
+                        "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":" + result + "}", EthBlock.class)
+                .getBlock();
     }
 }
