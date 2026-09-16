@@ -46,7 +46,7 @@ class EthBlockTest {
     }
 
     @Test
-    void testNewHeaderFields() {
+    void testSlotNumberAndHeaderHashes() {
         String balHash = "0x" + "22".repeat(32);
         String requestsHash = "0x" + "33".repeat(32);
         EthBlock.Block block =

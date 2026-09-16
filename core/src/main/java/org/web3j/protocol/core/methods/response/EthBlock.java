@@ -478,10 +478,7 @@ public class EthBlock extends Response<EthBlock.Block> {
             this.excessBlobGas = excessBlobGas;
         }
 
-        /**
-         * Returns the slot number, or {@code null} if the block predates this field. An explicit
-         * zero slot is returned as {@link BigInteger#ZERO}.
-         */
+        /** Returns the slot number, or {@code null} if absent from the response. */
         public BigInteger getSlotNumber() {
             return slotNumber == null ? null : Numeric.decodeQuantity(slotNumber);
         }
