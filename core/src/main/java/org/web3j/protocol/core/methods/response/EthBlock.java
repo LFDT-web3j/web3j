@@ -87,6 +87,9 @@ public class EthBlock extends Response<EthBlock.Block> {
         private List<Withdrawal> withdrawals;
         private String blobGasUsed;
         private String excessBlobGas;
+        private String slotNumber;
+        private String blockAccessListHash;
+        private String requestsHash;
 
         public Block() {}
 
@@ -475,6 +478,38 @@ public class EthBlock extends Response<EthBlock.Block> {
             this.excessBlobGas = excessBlobGas;
         }
 
+        /**
+         * Returns the slot number, or {@code null} if the block predates this field. An explicit
+         * zero slot is returned as {@link BigInteger#ZERO}.
+         */
+        public BigInteger getSlotNumber() {
+            return slotNumber == null ? null : Numeric.decodeQuantity(slotNumber);
+        }
+
+        public String getSlotNumberRaw() {
+            return slotNumber;
+        }
+
+        public void setSlotNumber(String slotNumber) {
+            this.slotNumber = slotNumber;
+        }
+
+        public String getBlockAccessListHash() {
+            return blockAccessListHash;
+        }
+
+        public void setBlockAccessListHash(String blockAccessListHash) {
+            this.blockAccessListHash = blockAccessListHash;
+        }
+
+        public String getRequestsHash() {
+            return requestsHash;
+        }
+
+        public void setRequestsHash(String requestsHash) {
+            this.requestsHash = requestsHash;
+        }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) {
@@ -625,6 +660,16 @@ public class EthBlock extends Response<EthBlock.Block> {
                 return false;
             }
 
+            if (!Objects.equals(getSlotNumberRaw(), block.getSlotNumberRaw())) {
+                return false;
+            }
+            if (!Objects.equals(getBlockAccessListHash(), block.getBlockAccessListHash())) {
+                return false;
+            }
+            if (!Objects.equals(getRequestsHash(), block.getRequestsHash())) {
+                return false;
+            }
+
             return getWithdrawals() != null
                     ? getWithdrawals().equals(block.getWithdrawals())
                     : block.getWithdrawals() == null;
@@ -684,6 +729,9 @@ public class EthBlock extends Response<EthBlock.Block> {
                             + (getExcessBlobGasRaw() != null
                                     ? getExcessBlobGasRaw().hashCode()
                                     : 0);
+            result = 31 * result + Objects.hashCode(getSlotNumberRaw());
+            result = 31 * result + Objects.hashCode(getBlockAccessListHash());
+            result = 31 * result + Objects.hashCode(getRequestsHash());
             return result;
         }
     }
