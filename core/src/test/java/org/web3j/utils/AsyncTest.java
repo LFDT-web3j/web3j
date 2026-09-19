@@ -14,11 +14,13 @@ package org.web3j.utils;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AsyncTest {
 
@@ -68,5 +70,17 @@ class AsyncTest {
         for (int i = 0; i < count; i++) {
             assertEquals(i, futures.get(i).get());
         }
+    }
+
+    @Test
+    void testShutdownHookCleanup() throws Exception {
+        ScheduledExecutorService exec1 = Async.defaultExecutorService();
+        ScheduledExecutorService exec2 = Async.defaultExecutorService();
+
+        Async.shutdown(exec1);
+        Async.shutdown(exec2);
+
+        assertTrue(exec1.isTerminated());
+        assertTrue(exec2.isTerminated());
     }
 }

@@ -2,8 +2,6 @@ description 'web3j integration tests'
 
 
 repositories {
-    maven { url 'https://oss.sonatype.org/content/repositories/releases/' }
-    maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
     maven { url "https://hyperledger.jfrog.io/artifactory/besu-maven/" }
     maven { url "https://artifacts.consensys.net/public/maven/maven/" }
     maven { url "https://splunk.jfrog.io/splunk/ext-releases-local" }

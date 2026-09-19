@@ -14,6 +14,7 @@ package org.web3j.utils;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -24,6 +25,13 @@ import java.util.concurrent.TimeUnit;
 public class Async {
 
     private Async() {}
+
+    /**
+     * Maps each executor created by {@link #defaultExecutorService()} to its registered JVM
+     * shutdown hook so the hook can be removed when the executor is explicitly shut down.
+     */
+    private static final ConcurrentHashMap<ExecutorService, Thread> registeredShutdownHooks =
+            new ConcurrentHashMap<>();
 
     /**
      * Shared executor used for async operations. Use {@link #shutdown()} to stop it and prevent
@@ -98,9 +106,17 @@ public class Async {
      */
     public static ScheduledExecutorService defaultExecutorService() {
         ScheduledExecutorService scheduledExecutorService =
-                Executors.newScheduledThreadPool(getCpuCount());
+                Executors.newScheduledThreadPool(
+                        getCpuCount(),
+                        r -> {
+                            Thread t = new Thread(r);
+                            t.setDaemon(true);
+                            return t;
+                        });
 
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdown(scheduledExecutorService)));
+        Thread hook = new Thread(() -> shutdown(scheduledExecutorService));
+        registeredShutdownHooks.put(scheduledExecutorService, hook);
+        Runtime.getRuntime().addShutdownHook(hook);
 
         return scheduledExecutorService;
     }
@@ -108,9 +124,20 @@ public class Async {
     /**
      * Shutdown as per {@link ExecutorService} Javadoc recommendation.
      *
+     * <p>If the executor was created via {@link #defaultExecutorService()}, its registered JVM
+     * shutdown hook is also removed to prevent hook accumulation.
+     *
      * @param executorService executor service we wish to shut down.
      */
-    private static void shutdown(ExecutorService executorService) {
+    public static void shutdown(ExecutorService executorService) {
+        Thread hook = registeredShutdownHooks.remove(executorService);
+        if (hook != null) {
+            try {
+                Runtime.getRuntime().removeShutdownHook(hook);
+            } catch (IllegalStateException ignored) {
+                // JVM is already shutting down, the hook is running — nothing to do.
+            }
+        }
         executorService.shutdown();
         try {
             if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {

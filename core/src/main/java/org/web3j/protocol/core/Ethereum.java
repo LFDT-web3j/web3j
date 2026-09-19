@@ -79,6 +79,8 @@ import org.web3j.protocol.core.methods.response.ShhNewGroup;
 import org.web3j.protocol.core.methods.response.ShhNewIdentity;
 import org.web3j.protocol.core.methods.response.ShhUninstallFilter;
 import org.web3j.protocol.core.methods.response.ShhVersion;
+import org.web3j.protocol.core.methods.response.TxPoolContentFrom;
+import org.web3j.protocol.core.methods.response.TxPoolInspect;
 import org.web3j.protocol.core.methods.response.TxPoolStatus;
 import org.web3j.protocol.core.methods.response.Web3ClientVersion;
 import org.web3j.protocol.core.methods.response.Web3Sha3;
@@ -274,6 +276,10 @@ public interface Ethereum {
     Request<?, ShhMessages> shhGetMessages(BigInteger filterId);
 
     Request<?, TxPoolStatus> txPoolStatus();
+
+    Request<?, TxPoolContentFrom> txPoolContentFrom(String address);
+
+    Request<?, TxPoolInspect> txPoolInspect();
 
     Request<?, LineaGetTransactionExclusionStatusV1> lineaGetTransactionExclusionStatusV1(
             String transactionHash);

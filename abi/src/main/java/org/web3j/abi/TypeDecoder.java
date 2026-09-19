@@ -710,6 +710,8 @@ public class TypeDecoder {
                                             - parameterOffsets.get(dynamicParametersProcessed)
                                     : parameterOffsets.get(dynamicParametersProcessed + 1)
                                             - parameterOffsets.get(dynamicParametersProcessed);
+                    final java.lang.reflect.Type genericParameterType =
+                            constructor.getGenericParameterTypes()[i];
                     final Class<T> parameterFromAnnotation =
                             Utils.extractParameterFromAnnotation(
                                     constructor.getParameterAnnotations()[i]);
@@ -720,6 +722,7 @@ public class TypeDecoder {
                                     parameterOffsets.get(dynamicParametersProcessed),
                                     parameterLength,
                                     declaredField,
+                                    genericParameterType,
                                     parameterFromAnnotation));
                     dynamicParametersProcessed++;
                 }
@@ -747,11 +750,13 @@ public class TypeDecoder {
         return (int) Arrays.stream(cls).filter(c -> isDynamic((Class<T>) c)).count();
     }
 
+    @SuppressWarnings("unchecked")
     private static <T extends Type> T decodeDynamicParameterFromStruct(
             final String input,
             final int parameterOffset,
             final int parameterLength,
             final Class<T> declaredField,
+            final java.lang.reflect.Type genericParameterType,
             final Class<T> parameter)
             throws ClassNotFoundException {
         final String dynamicElementData =
@@ -759,18 +764,19 @@ public class TypeDecoder {
 
         final T value;
         if (DynamicStruct.class.isAssignableFrom(declaredField)) {
-            value = decodeDynamicStruct(dynamicElementData, 0, TypeReference.create(declaredField));
+            value = (T) decodeDynamicStruct(dynamicElementData, 0, (TypeReference) new TypeReference(genericParameterType, false) {});
         } else if (DynamicArray.class.isAssignableFrom(declaredField)) {
-            if (parameter == null) {
-                throw new RuntimeException(
-                        "parameter can not be null, try to use annotation @Parameterized to specify the parameter type");
+            TypeReference<?> typeRef;
+            if (genericParameterType instanceof ParameterizedType) {
+                typeRef = new TypeReference(genericParameterType, false) {};
+            } else {
+                if (parameter == null) {
+                    throw new RuntimeException(
+                            "parameter can not be null, try to use annotation @Parameterized to specify the parameter type");
+                }
+                typeRef = Utils.getDynamicArrayTypeReference(parameter);
             }
-            value =
-                    (T)
-                            decodeDynamicArray(
-                                    dynamicElementData,
-                                    0,
-                                    Utils.getDynamicArrayTypeReference(parameter));
+            value = (T) decodeDynamicArray(dynamicElementData, 0, typeRef);
         } else {
             value = decode(dynamicElementData, declaredField);
         }

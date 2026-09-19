@@ -7,12 +7,16 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
+- Fix shutdown hook accumulation in Async.defaultExecutorService() — hooks are now removed when executor is explicitly shut down [#2265](https://github.com/LFDT-web3j/web3j/pull/2265)
+- Fix dynamic array decoding in generated wrappers for struct types [#2272](https://github.com/LFDT-web3j/web3j/pull/2272)
+- Fix incorrect casting for array types in generated contract wrappers [#2274](https://github.com/LFDT-web3j/web3j/pull/2274)
 - Fix NullPointerException when deriving child keys from public-only Bip32ECKeyPair [#2284](https://github.com/LFDT-web3j/web3j/pull/2284)
 - Fix multidimensional array encoding support for 2D arrays [#2287](https://github.com/LFDT-web3j/web3j/pull/2287)
 - Fix Utf8String encoding + dynamic array for non-ASCII characters [#2289](https://github.com/LFDT-web3j/web3j/pull/2289)
 - Fix pass accessList to parent in Transaction7702 constructor [#2292](https://github.com/LFDT-web3j/web3j/pull/2292)
 - Fix Transaction serialization failure when fee fields are null [#2293](https://github.com/LFDT-web3j/web3j/pull/2293)
 - Fix stale EIP-7691 blob base-fee update fraction [#2300](https://github.com/LFDT-web3j/web3j/pull/2300)
+- Fix integration-tests: remove unstable legacy Sonatype repositories [#2304](https://github.com/LFDT-web3j/web3j/pull/2304)
 
 ### Features
 
@@ -25,6 +29,8 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 - Add `eth_blobBaseFee` RPC (EIP-7918 / Fusaka-correct blob base fee) [#2300](https://github.com/LFDT-web3j/web3j/pull/2300)
 - Adds context7 json file [#2301](https://github.com/LFDT-web3j/web3j/pull/2301)
 - Bump snapshot version to 6.0.0 [#2302](https://github.com/LFDT-web3j/web3j/pull/2302)
+- Add support for txpool_contentFrom JSON-RPC method to query transaction pool by address [#2262](https://github.com/LFDT-web3j/web3j/pull/2262)
+- Add support for txpool_inspect JSON-RPC method [#2262](https://github.com/LFDT-web3j/web3j/pull/2262)
 
 ### BREAKING CHANGES
 

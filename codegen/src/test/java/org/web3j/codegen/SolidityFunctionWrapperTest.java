@@ -174,6 +174,36 @@ public class SolidityFunctionWrapperTest extends TempFileProvider {
     }
 
     @Test
+    public void testGetEventNativeTypeBytes32Array() {
+        // bytes32[] maps to byte[] representing the Keccak-256 hash
+        assertEquals(
+                getEventNativeType(
+                        ParameterizedTypeName.get(
+                                ClassName.get(DynamicArray.class), TypeName.get(Bytes32.class))),
+                (TypeName.get(byte[].class)));
+    }
+
+    @Test
+    public void testBuildEventWithIndexedArray() throws Exception {
+        NamedType array = new NamedType("array", "uint256[]", true); // indexed = true
+
+        AbiDefinition functionDefinition =
+                new AbiDefinition(
+                        false, Arrays.asList(array), "Transfer", new ArrayList<>(), "event", false);
+        TypeSpec.Builder builder = TypeSpec.classBuilder("TestClass");
+
+        builder.addMethods(
+                solidityFunctionWrapper.buildEventFunctions(
+                        functionDefinition,
+                        builder,
+                        solidityFunctionWrapper.getDuplicatedEventNames(
+                                Collections.singletonList(functionDefinition))));
+
+        String expected = loadExpected("TestBuildEventWithIndexedArray.java");
+        assertEquals(expected, builder.build().toString());
+    }
+
+    @Test
     public void testBuildFunctionTransaction() throws Exception {
         AbiDefinition functionDefinition =
                 new AbiDefinition(
@@ -1259,5 +1289,103 @@ public class SolidityFunctionWrapperTest extends TempFileProvider {
         solidityFunctionWrapper.buildFunctionDefinitions("MyContract", builder, abiDefinitions);
 
         assertEquals(expectedJavaCode, builder.build().toString());
+    }
+
+    @Test
+    public void testBuildEventWithIndexedStaticArray() throws Exception {
+        NamedType array = new NamedType("array", "bytes32[2]", true);
+
+        AbiDefinition functionDefinition =
+                new AbiDefinition(
+                        false, Arrays.asList(array), "Transfer", new ArrayList<>(), "event", false);
+        TypeSpec.Builder builder = TypeSpec.classBuilder("TestClass");
+
+        builder.addMethods(
+                solidityFunctionWrapper.buildEventFunctions(
+                        functionDefinition,
+                        builder,
+                        solidityFunctionWrapper.getDuplicatedEventNames(
+                                Collections.singletonList(functionDefinition))));
+
+        String expected = loadExpected("TestBuildEventWithIndexedStaticArray.java");
+        assertEquals(expected, builder.build().toString());
+    }
+
+    @Test
+    public void testBuildEventWithIndexedNestedArray() throws Exception {
+        NamedType array = new NamedType("array", "uint256[][]", true);
+
+        AbiDefinition functionDefinition =
+                new AbiDefinition(
+                        false, Arrays.asList(array), "Transfer", new ArrayList<>(), "event", false);
+        TypeSpec.Builder builder = TypeSpec.classBuilder("TestClass");
+
+        builder.addMethods(
+                solidityFunctionWrapper.buildEventFunctions(
+                        functionDefinition,
+                        builder,
+                        solidityFunctionWrapper.getDuplicatedEventNames(
+                                Collections.singletonList(functionDefinition))));
+
+        String expected = loadExpected("TestBuildEventWithIndexedNestedArray.java");
+        assertEquals(expected, builder.build().toString());
+    }
+
+    @Test
+    public void testBuildEventWithIndexedArrayWithoutNativeTypes() throws Exception {
+        SolidityFunctionWrapper nonNativeWrapper =
+                new SolidityFunctionWrapper(
+                        false, false, false, Address.DEFAULT_LENGTH, generationReporter);
+
+        NamedType array = new NamedType("array", "uint256[]", true);
+
+        AbiDefinition functionDefinition =
+                new AbiDefinition(
+                        false, Arrays.asList(array), "Transfer", new ArrayList<>(), "event", false);
+        TypeSpec.Builder builder = TypeSpec.classBuilder("TestClass");
+
+        builder.addMethods(
+                nonNativeWrapper.buildEventFunctions(
+                        functionDefinition,
+                        builder,
+                        nonNativeWrapper.getDuplicatedEventNames(
+                                Collections.singletonList(functionDefinition))));
+
+        String expected = loadExpected("TestBuildEventWithIndexedArrayWithoutNativeTypes.java");
+        assertEquals(expected, builder.build().toString());
+    }
+
+    @Test
+    public void testBuildEventWithIndexedStruct() throws Exception {
+        java.lang.reflect.Field mapField = SolidityFunctionWrapper.class.getDeclaredField("structClassNameMap");
+        mapField.setAccessible(true);
+        java.util.Map<String, ClassName> map = 
+                (java.util.Map<String, ClassName>) mapField.get(solidityFunctionWrapper);
+        map.put("struct MyContract.SomeStruct", ClassName.get("", "SomeStruct"));
+
+        NamedType struct = new NamedType("myStruct", "tuple", new ArrayList<>(), "struct MyContract.SomeStruct", true);
+
+        AbiDefinition functionDefinition =
+                new AbiDefinition(
+                        false, Arrays.asList(struct), "Transfer", new ArrayList<>(), "event", false);
+        TypeSpec.Builder builder = TypeSpec.classBuilder("TestClass");
+
+        builder.addMethods(
+                solidityFunctionWrapper.buildEventFunctions(
+                        functionDefinition,
+                        builder,
+                        solidityFunctionWrapper.getDuplicatedEventNames(
+                                Collections.singletonList(functionDefinition))));
+
+        String expected = loadExpected("TestBuildEventWithIndexedStruct.java");
+        assertEquals(expected, builder.build().toString());
+    }
+
+    private String loadExpected(String filename) throws Exception {
+        java.net.URL url = getClass().getResource("/expected/" + filename);
+        if (url == null) {
+            throw new java.io.FileNotFoundException("Resource not found: /expected/" + filename);
+        }
+        return new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(url.toURI()))).replace("\r\n", "\n");
     }
 }
