@@ -1,14 +1,27 @@
 name: Release
 
+run-name: ${{ github.event_name == 'push' && 'Release' || 'Release rehearsal' }} — ${{ github.ref_name }}
+
 on:
   push:
     branches: [ 'release/**' ]
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/build.yml'
+      - '.github/workflows/release.yml'
+      - '**/*.gradle'
+      - 'gradle.properties'
+      - 'gradle/wrapper/**'
+      - 'gradlew'
+  # Manual runs are always rehearsals, even when a release branch is selected.
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -24,21 +37,19 @@ jobs:
     outputs:
       version: ${{ steps.release_name.outputs.version }}
       jars_artifact_id: ${{ steps.release_jars.outputs.artifact-id }}
-    env:
-      JRELEASER_MAVENCENTRAL_CENTRAL_USERNAME: ${{ secrets.JRELEASER_MAVENCENTRAL_CENTRAL_USERNAME }}
-      JRELEASER_GPG_PASSPHRASE: ${{ secrets.JRELEASER_GPG_PASSPHRASE }}
-      JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.JRELEASER_GPG_PUBLIC_KEY }}
-      JRELEASER_GPG_SECRET_KEY: ${{ secrets.JRELEASER_GPG_SECRET_KEY }}
-      JRELEASER_MAVENCENTRAL_CENTRAL_PASSWORD: ${{ secrets.JRELEASER_MAVENCENTRAL_CENTRAL_PASSWORD }}
-      JRELEASER_GITHUB_TOKEN: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v6
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
+          persist-credentials: false
       - name: Validate release version and tag
         id: release_name
         run: |
+          if [[ "$GITHUB_EVENT_NAME" != push || "$GITHUB_REF" != refs/heads/release/* ]]; then
+            echo "version=0.0.0-rehearsal.${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           VERSION="${GITHUB_REF_NAME#release/}"
           if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$ || "$VERSION" == *-SNAPSHOT ]]; then
             echo "Invalid release version: $VERSION" >&2
@@ -70,17 +81,42 @@ jobs:
           RELEASE_VERSION: ${{ steps.release_name.outputs.version }}
         run: ./gradlew "-Pversion=$RELEASE_VERSION" publishMavenPublicationToLocalStagingRepository --stacktrace
 
-      - name: Save staged jars for the GitHub release
+      - name: Record staged artifact checksums and source
+        env:
+          RELEASE_VERSION: ${{ steps.release_name.outputs.version }}
+        run: |
+          shopt -s nullglob
+          ARTIFACTS=(*/build/staging-deploy/org/web3j/*/"$RELEASE_VERSION"/*)
+          if (( ${#ARTIFACTS[@]} == 0 )); then
+            echo "No release artifacts were staged." >&2
+            exit 1
+          fi
+          sha256sum "${ARTIFACTS[@]}" > release-checksums.sha256
+          printf 'commit=%s\nversion=%s\nevent=%s\n' \
+            "$GITHUB_SHA" "$RELEASE_VERSION" "$GITHUB_EVENT_NAME" > release-metadata.txt
+
+      - name: Save staged release artifacts
         id: release_jars
         uses: actions/upload-artifact@v4
         with:
-          name: release-jars-${{ github.run_attempt }}
-          path: '*/build/staging-deploy/org/web3j/*/${{ steps.release_name.outputs.version }}/*.jar'
+          name: release-artifacts-${{ steps.release_name.outputs.version }}-${{ github.run_attempt }}
+          path: |
+            */build/staging-deploy/org/web3j/*/${{ steps.release_name.outputs.version }}/*
+            release-checksums.sha256
+            release-metadata.txt
           if-no-files-found: error
+          retention-days: 14
 
       - name: Deploy to Maven Central (Portal)
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/')
         env:
           RELEASE_VERSION: ${{ steps.release_name.outputs.version }}
+          JRELEASER_MAVENCENTRAL_CENTRAL_USERNAME: ${{ secrets.JRELEASER_MAVENCENTRAL_CENTRAL_USERNAME }}
+          JRELEASER_GPG_PASSPHRASE: ${{ secrets.JRELEASER_GPG_PASSPHRASE }}
+          JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.JRELEASER_GPG_PUBLIC_KEY }}
+          JRELEASER_GPG_SECRET_KEY: ${{ secrets.JRELEASER_GPG_SECRET_KEY }}
+          JRELEASER_MAVENCENTRAL_CENTRAL_PASSWORD: ${{ secrets.JRELEASER_MAVENCENTRAL_CENTRAL_PASSWORD }}
+          JRELEASER_GITHUB_TOKEN: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
         run: ./gradlew "-Pversion=$RELEASE_VERSION" jreleaserDeploy --stacktrace
 
   javadocs-release:
@@ -90,27 +126,70 @@ jobs:
       - uses: actions/checkout@v6
         with:
           ref: ${{ github.sha }}
+          persist-credentials: false
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: zulu
           java-version: 21
-      - name: Generate and publish Javadocs
+      - name: Generate Javadocs
+        env:
+          RELEASE_VERSION: ${{ needs.release.outputs.version }}
+        run: bash ./gradlew "-Pversion=$RELEASE_VERSION" core:javadoc
+      - name: Save rehearsal Javadocs
+        if: github.event_name != 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-javadocs-${{ needs.release.outputs.version }}
+          path: core/build/docs/javadoc/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Publish Javadocs
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/')
         env:
           GITHUB_TOKEN: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
           RELEASE_VERSION: ${{ needs.release.outputs.version }}
-        run: bash ./gradlew "-Pversion=$RELEASE_VERSION" core:javadoc core:gitPublishPush
+        run: bash ./gradlew "-Pversion=$RELEASE_VERSION" core:gitPublishPush
 
   git-release:
     needs: release
     runs-on: ubuntu-latest
     steps:
-      - name: Download published jars
+      - name: Download staged release artifacts
         uses: actions/download-artifact@v4
         with:
           artifact-ids: ${{ needs.release.outputs.jars_artifact_id }}
           path: release-jars
+          merge-multiple: true
+      - name: Verify downloaded artifacts and source
+        working-directory: release-jars
+        env:
+          RELEASE_VERSION: ${{ needs.release.outputs.version }}
+        run: |
+          sha256sum --check --strict release-checksums.sha256
+          # Reject unlisted files as well as missing or changed files.
+          diff -u \
+            <(cut -c 67- release-checksums.sha256 | LC_ALL=C sort) \
+            <(find . -type f ! -path './release-checksums.sha256' ! -path './release-metadata.txt' \
+              | sed 's#^\./##' | LC_ALL=C sort)
+          printf 'commit=%s\nversion=%s\nevent=%s\n' \
+            "$GITHUB_SHA" "$RELEASE_VERSION" "$GITHUB_EVENT_NAME" | cmp - release-metadata.txt
+          JAR_COUNT="$(find . -type f -name '*.jar' | wc -l)"
+          if (( JAR_COUNT == 0 )); then
+            echo "No release jars were downloaded." >&2
+            exit 1
+          fi
+          {
+            echo "### Release artifact verification"
+            echo "Verified $JAR_COUNT JARs and all staged metadata checksums."
+            echo "Version: $RELEASE_VERSION"
+            echo "Commit: $GITHUB_SHA"
+            if [[ "$GITHUB_EVENT_NAME" != push ]]; then
+              echo "Rehearsal only: Maven Central, GitHub release and Javadoc publication are disabled."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Create GitHub release at the validated commit
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/')
         env:
           GH_TOKEN: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
