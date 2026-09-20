@@ -6,9 +6,16 @@ on:
     branches: [ main ]
     types: [ completed ]
 
+permissions:
+  contents: read
+
 jobs:
   publish-snapshot:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
     env:
       JRELEASER_MAVENCENTRAL_CENTRAL_USERNAME: ${{ secrets.JRELEASER_MAVENCENTRAL_CENTRAL_USERNAME }}
@@ -19,6 +26,8 @@ jobs:
       JRELEASER_GITHUB_TOKEN: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -34,5 +43,4 @@ jobs:
         run: chmod +x gradlew
       - name: Publish snapshot
         run: ./gradlew publishSnapshot
-
 

@@ -3,9 +3,27 @@ name: Release
 on:
   push:
     branches: [ 'release/**' ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
+  validate:
+    uses: ./.github/workflows/build.yml
+    secrets:
+      REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+      REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+
   release:
+    needs: validate
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.release_name.outputs.version }}
+      jars_artifact_id: ${{ steps.release_jars.outputs.artifact-id }}
     env:
       JRELEASER_MAVENCENTRAL_CENTRAL_USERNAME: ${{ secrets.JRELEASER_MAVENCENTRAL_CENTRAL_USERNAME }}
       JRELEASER_GPG_PASSPHRASE: ${{ secrets.JRELEASER_GPG_PASSPHRASE }}
@@ -15,17 +33,25 @@ jobs:
       JRELEASER_GITHUB_TOKEN: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v6
-      - name: Build Workflow Dispatch
-        uses: convictional/trigger-workflow-and-wait@v1.3.0
         with:
-          owner: LFDT-web3j
-          repo: web3j
-          github_token: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
-          workflow_file_name: build.yml
-          wait_interval: 10
-          propagate_failure: true
-          trigger_workflow: true
-          wait_workflow: true
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Validate release version and tag
+        id: release_name
+        run: |
+          VERSION="${GITHUB_REF_NAME#release/}"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$ || "$VERSION" == *-SNAPSHOT ]]; then
+            echo "Invalid release version: $VERSION" >&2
+            exit 1
+          fi
+          TAG="v$VERSION"
+          if git show-ref --verify --quiet "refs/tags/$TAG"; then
+            if [[ "$(git rev-parse "refs/tags/$TAG^{commit}")" != "$GITHUB_SHA" ]]; then
+              echo "Tag $TAG already points to another commit." >&2
+              exit 1
+            fi
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -39,49 +65,74 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
-      - name: Extract release version from branch
-        id: release_name
-        run: |
-          BRANCH="${GITHUB_REF##*/}"
-          echo "version=$BRANCH" >> "$GITHUB_OUTPUT"
-      - name: Fail if version is a SNAPSHOT
-        if: endsWith(steps.release_name.outputs.version, '-SNAPSHOT')
-        run: |
-          echo "This workflow is for releases only. Version '${{ steps.release_name.outputs.version }}' ends with -SNAPSHOT." >&2
-          exit 1
-
-      # Publish artifacts to local staging repo (your Gradle config already defines it)
       - name: Stage artifacts locally
-        run: ./gradlew -Pversion=${{ steps.release_name.outputs.version }} publishMavenPublicationToLocalStagingRepository --stacktrace
+        env:
+          RELEASE_VERSION: ${{ steps.release_name.outputs.version }}
+        run: ./gradlew "-Pversion=$RELEASE_VERSION" publishMavenPublicationToLocalStagingRepository --stacktrace
 
-      # Deploy to Central Portal via JReleaser (Publisher API)
+      - name: Save staged jars for the GitHub release
+        id: release_jars
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-jars-${{ github.run_attempt }}
+          path: '*/build/staging-deploy/org/web3j/*/${{ steps.release_name.outputs.version }}/*.jar'
+          if-no-files-found: error
+
       - name: Deploy to Maven Central (Portal)
-        run: ./gradlew -Pversion=${{ steps.release_name.outputs.version }} jreleaserDeploy --stacktrace
+        env:
+          RELEASE_VERSION: ${{ steps.release_name.outputs.version }}
+        run: ./gradlew "-Pversion=$RELEASE_VERSION" jreleaserDeploy --stacktrace
 
   javadocs-release:
     needs: release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: zulu
           java-version: 21
-      - name: Publish Javadocs (gh-pages)
+      - name: Generate and publish Javadocs
         env:
           GITHUB_TOKEN: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
-        run: ./gradlew core:gitPublishPush
+          RELEASE_VERSION: ${{ needs.release.outputs.version }}
+        run: bash ./gradlew "-Pversion=$RELEASE_VERSION" core:javadoc core:gitPublishPush
 
   git-release:
     needs: release
     runs-on: ubuntu-latest
     steps:
-      - name: Github Release
-        uses: marvinpinto/action-automatic-releases@latest
+      - name: Download published jars
+        uses: actions/download-artifact@v4
         with:
-          repo_token: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
-          automatic_release_tag: 'v${{ needs.release.outputs.stripped_version }}'
-          prerelease: false
-          files: |
-            "web3j-unit-"+${{ steps.release_name.outputs.result }}.*
+          artifact-ids: ${{ needs.release.outputs.jars_artifact_id }}
+          path: release-jars
+      - name: Create GitHub release at the validated commit
+        env:
+          GH_TOKEN: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_VERSION: ${{ needs.release.outputs.version }}
+        run: |
+          JARS=()
+          while IFS= read -r -d '' JAR; do
+            JARS+=("$JAR")
+          done < <(find release-jars -type f -name '*.jar' -print0)
+          if (( ${#JARS[@]} == 0 )); then
+            echo "No published jars were downloaded." >&2
+            exit 1
+          fi
+          TAG="v$RELEASE_VERSION"
+          TAG_REF="$(gh api "repos/$GH_REPO/git/matching-refs/tags/$TAG" \
+            --jq ".[] | select(.ref == \"refs/tags/$TAG\") | .ref")"
+          if [[ -n "$TAG_REF" ]]; then
+            TAG_COMMIT="$(gh api "repos/$GH_REPO/commits/$TAG" --jq .sha)"
+            if [[ "$TAG_COMMIT" != "$GITHUB_SHA" ]]; then
+              echo "Tag $TAG now points to another commit." >&2
+              exit 1
+            fi
+          fi
+          gh release create "$TAG" "${JARS[@]}" \
+            --target "$GITHUB_SHA" --title "$TAG" --generate-notes

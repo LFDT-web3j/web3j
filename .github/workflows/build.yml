@@ -6,6 +6,15 @@ on:
   pull_request:
     branches: [ main ]
   workflow_dispatch:
+  workflow_call:
+    secrets:
+      REGISTRY_USERNAME:
+        required: false
+      REGISTRY_PASSWORD:
+        required: false
+
+permissions:
+  contents: read
 
 jobs:
   integration-test:
@@ -15,6 +24,8 @@ jobs:
       registry.password: ${{ secrets.REGISTRY_PASSWORD }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -34,6 +45,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -47,7 +60,7 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
-      - name: Build
-        run: ./gradlew test
+      - name: Check formatting and run unit tests
+        run: ./gradlew check
       - name: Upload coverage reports to Codecov with GitHub Action
         uses: codecov/codecov-action@v5
