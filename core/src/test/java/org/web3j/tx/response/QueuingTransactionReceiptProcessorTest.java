@@ -70,7 +70,9 @@ public class QueuingTransactionReceiptProcessorTest {
             assertFalse(executor.isShutdown());
         }
 
-        assertTrue(executor.isShutdown(), "Executor should be shutdown after try-with-resources block");
+        assertTrue(
+                executor.isShutdown(),
+                "Executor should be shutdown after try-with-resources block");
     }
 
     @Test
@@ -84,9 +86,12 @@ public class QueuingTransactionReceiptProcessorTest {
 
             // We submit a task and check the thread properties
             Boolean isDaemon =
-                    executor.submit(() -> Thread.currentThread().isDaemon()).get(5, java.util.concurrent.TimeUnit.SECONDS);
+                    executor.submit(() -> Thread.currentThread().isDaemon())
+                            .get(5, java.util.concurrent.TimeUnit.SECONDS);
 
-            assertTrue(isDaemon, "Threads created by Async.defaultExecutorService() should be daemons");
+            assertTrue(
+                    isDaemon,
+                    "Threads created by Async.defaultExecutorService() should be daemons");
         }
     }
 

@@ -46,9 +46,15 @@ public class TxPoolInspectTest extends ResponseTester {
 
         assertEquals(
                 "0.1 ETH + 21000 gas",
-                content.getResult().getPending().get("0x0032D05F320fa74C871E892F48F0e6387c0Dfe95").get(BigInteger.ZERO));
+                content.getResult()
+                        .getPending()
+                        .get("0x0032D05F320fa74C871E892F48F0e6387c0Dfe95")
+                        .get(BigInteger.ZERO));
         assertEquals(
                 "0.05 ETH + 21000 gas",
-                content.getResult().getQueued().get("0x00Bf700CeB382877F8bFa38b05fcC81126f4f228").get(new BigInteger("49")));
+                content.getResult()
+                        .getQueued()
+                        .get("0x00Bf700CeB382877F8bFa38b05fcC81126f4f228")
+                        .get(new BigInteger("49")));
     }
 }
