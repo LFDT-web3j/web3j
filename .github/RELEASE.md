@@ -2,10 +2,14 @@
 
 The **Release** workflow checks the version/tag, then validates the selected
 commit with the reusable Build workflow before staging its Maven publications.
-Staging bypasses the Gradle build cache. Required publications are derived from
-`settings.gradle`, excluding `integration-tests`: every module must supply its
-binary, sources and Javadoc JARs, POM and Gradle module metadata. Unsupported
-settings include syntax fails closed and requires updating this check.
+Staging bypasses the Gradle build cache. The separate `verifyReleaseArtifacts`
+Gradle task reads the configured projects and Maven publications, excluding
+`integration-tests`: every module must supply its binary, sources and Javadoc
+JARs, POM and Gradle module metadata. It verifies existing files without invoking
+staging or publication, and writes the required-file inventory for the handoff.
+No Python interpreter is used by the release workflow.
+The task also rejects coordinates or staging locations incompatible with the
+workflow's current `org.web3j`, release-version and `build/staging-deploy` paths.
 
 SHA-256 checksums cover staged files and the expected-file list. Commit, version
 and event are recorded separately. The workflow uploads these files and verifies

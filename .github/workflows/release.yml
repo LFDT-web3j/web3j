@@ -115,6 +115,11 @@ jobs:
           RELEASE_VERSION: ${{ steps.release_name.outputs.version }}
         run: ./gradlew "-Pversion=$RELEASE_VERSION" publishMavenPublicationToLocalStagingRepository --no-build-cache --stacktrace
 
+      - name: Verify staged release artifacts
+        env:
+          RELEASE_VERSION: ${{ steps.release_name.outputs.version }}
+        run: ./gradlew "-Pversion=$RELEASE_VERSION" :verifyReleaseArtifacts --no-build-cache --stacktrace
+
       - name: Record staged artifact checksums and source
         env:
           RELEASE_VERSION: ${{ steps.release_name.outputs.version }}
@@ -127,36 +132,6 @@ jobs:
             echo "No release artifacts were staged." >&2
             exit 1
           fi
-          # Derive required publications from settings, independently of staged files.
-          python3 - <<'PY'
-          import os
-          from pathlib import Path
-          import re
-
-          settings = Path('settings.gradle').read_text()
-          declarations = re.findall(r'^\s*include\b[^\n]*', settings, re.MULTILINE)
-          modules = []
-          for declaration in declarations:
-              match = re.fullmatch(r"\s*include\s+(['\"])([\w:-]+)\1\s*", declaration)
-              if not match:
-                  raise SystemExit('Unsupported settings include syntax: ' + declaration)
-              module = match[2].lstrip(':')
-              if module != 'integration-tests':
-                  modules.append(module)
-          if not modules or len(modules) != len(set(modules)):
-              raise SystemExit('Missing or duplicate publishable modules in settings.gradle')
-          version = os.environ['RELEASE_VERSION']
-          required = []
-          for module in sorted(modules):
-              artifact = module.split(':')[-1]
-              directory = Path(module.replace(':', '/')) / 'build/staging-deploy/org/web3j' / artifact / version
-              for suffix in ('.jar', '-sources.jar', '-javadoc.jar', '.pom', '.module'):
-                  path = directory / (artifact + '-' + version + suffix)
-                  if not path.is_file() or path.stat().st_size == 0:
-                      raise SystemExit('Missing or empty required publication: ' + str(path))
-                  required.append(str(path))
-          Path('release-expected-files.txt').write_text('\n'.join(required) + '\n')
-          PY
           sha256sum "${ARTIFACTS[@]}" release-expected-files.txt > release-checksums.sha256
           printf 'commit=%s\nversion=%s\nevent=%s\n' \
             "$GITHUB_SHA" "$RELEASE_VERSION" "$GITHUB_EVENT_NAME" > release-metadata.txt
