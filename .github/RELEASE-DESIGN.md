@@ -132,4 +132,3 @@ does not prevent unrelated writers from moving tags.
 [git-push]: https://github.com/ajoberstar/gradle-git-publish/blob/8b81ec492f7ecbd8a7f371eba70a7c3cc2601057/src/main/java/org/ajoberstar/gradle/git/publish/tasks/GitPublishPush.java
 [git-51]: https://github.com/ajoberstar/gradle-git-publish/releases/tag/5.1.0
 [credentials]: https://git-scm.com/docs/gitcredentials
-
