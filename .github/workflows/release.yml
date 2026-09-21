@@ -20,6 +20,10 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 concurrency:
   group: release-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: false
@@ -79,19 +83,51 @@ jobs:
       - name: Stage artifacts locally
         env:
           RELEASE_VERSION: ${{ steps.release_name.outputs.version }}
-        run: ./gradlew "-Pversion=$RELEASE_VERSION" publishMavenPublicationToLocalStagingRepository --stacktrace
+        run: ./gradlew "-Pversion=$RELEASE_VERSION" publishMavenPublicationToLocalStagingRepository --no-build-cache --stacktrace
 
       - name: Record staged artifact checksums and source
         env:
           RELEASE_VERSION: ${{ steps.release_name.outputs.version }}
         run: |
-          shopt -s nullglob
-          ARTIFACTS=(*/build/staging-deploy/org/web3j/*/"$RELEASE_VERSION"/*)
+          ARTIFACTS=()
+          while IFS= read -r -d '' ARTIFACT; do
+            ARTIFACTS+=("${ARTIFACT#./}")
+          done < <(find . -type f -path "*/build/staging-deploy/org/web3j/*/$RELEASE_VERSION/*" -print0)
           if (( ${#ARTIFACTS[@]} == 0 )); then
             echo "No release artifacts were staged." >&2
             exit 1
           fi
-          sha256sum "${ARTIFACTS[@]}" > release-checksums.sha256
+          # Derive required publications from settings, independently of staged files.
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          import re
+
+          settings = Path('settings.gradle').read_text()
+          declarations = re.findall(r'^\s*include\b[^\n]*', settings, re.MULTILINE)
+          modules = []
+          for declaration in declarations:
+              match = re.fullmatch(r"\s*include\s+(['\"])([\w:-]+)\1\s*", declaration)
+              if not match:
+                  raise SystemExit('Unsupported settings include syntax: ' + declaration)
+              module = match[2].lstrip(':')
+              if module != 'integration-tests':
+                  modules.append(module)
+          if not modules or len(modules) != len(set(modules)):
+              raise SystemExit('Missing or duplicate publishable modules in settings.gradle')
+          version = os.environ['RELEASE_VERSION']
+          required = []
+          for module in sorted(modules):
+              artifact = module.split(':')[-1]
+              directory = Path(module.replace(':', '/')) / 'build/staging-deploy/org/web3j' / artifact / version
+              for suffix in ('.jar', '-sources.jar', '-javadoc.jar', '.pom', '.module'):
+                  path = directory / (artifact + '-' + version + suffix)
+                  if not path.is_file() or path.stat().st_size == 0:
+                      raise SystemExit('Missing or empty required publication: ' + str(path))
+                  required.append(str(path))
+          Path('release-expected-files.txt').write_text('\n'.join(required) + '\n')
+          PY
+          sha256sum "${ARTIFACTS[@]}" release-expected-files.txt > release-checksums.sha256
           printf 'commit=%s\nversion=%s\nevent=%s\n' \
             "$GITHUB_SHA" "$RELEASE_VERSION" "$GITHUB_EVENT_NAME" > release-metadata.txt
 
@@ -101,7 +137,8 @@ jobs:
         with:
           name: release-artifacts-${{ steps.release_name.outputs.version }}-${{ github.run_attempt }}
           path: |
-            */build/staging-deploy/org/web3j/*/${{ steps.release_name.outputs.version }}/*
+            **/build/staging-deploy/org/web3j/*/${{ steps.release_name.outputs.version }}/*
+            release-expected-files.txt
             release-checksums.sha256
             release-metadata.txt
           if-no-files-found: error
@@ -117,7 +154,13 @@ jobs:
           JRELEASER_GPG_SECRET_KEY: ${{ secrets.JRELEASER_GPG_SECRET_KEY }}
           JRELEASER_MAVENCENTRAL_CENTRAL_PASSWORD: ${{ secrets.JRELEASER_MAVENCENTRAL_CENTRAL_PASSWORD }}
           JRELEASER_GITHUB_TOKEN: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
-        run: ./gradlew "-Pversion=$RELEASE_VERSION" jreleaserDeploy --stacktrace
+        run: |
+          sha256sum --check --strict release-checksums.sha256
+          # Deploy the recorded staging files; do not execute the publishing dependency again.
+          ./gradlew "-Pversion=$RELEASE_VERSION" jreleaserDeploy \
+            -x publishMavenPublicationToLocalStagingRepository --no-build-cache --stacktrace
+          # Signing may add .asc files, but must not change the recorded payload.
+          sha256sum --check --strict release-checksums.sha256
 
   javadocs-release:
     needs: release
@@ -174,6 +217,13 @@ jobs:
               | sed 's#^\./##' | LC_ALL=C sort)
           printf 'commit=%s\nversion=%s\nevent=%s\n' \
             "$GITHUB_SHA" "$RELEASE_VERSION" "$GITHUB_EVENT_NAME" | cmp - release-metadata.txt
+          test -s release-expected-files.txt
+          while IFS= read -r EXPECTED; do
+            if [[ ! -s "$EXPECTED" ]]; then
+              echo "Missing or empty required publication: $EXPECTED" >&2
+              exit 1
+            fi
+          done < release-expected-files.txt
           JAR_COUNT="$(find . -type f -name '*.jar' | wc -l)"
           if (( JAR_COUNT == 0 )); then
             echo "No release jars were downloaded." >&2
