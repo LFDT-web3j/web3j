@@ -26,10 +26,40 @@ defaults:
 
 concurrency:
   group: release-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name != 'push' }}
 
 jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate release version and tag
+        id: release_name
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" != push || "$GITHUB_REF" != refs/heads/release/* ]]; then
+            echo "version=0.0.0-rehearsal.${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          VERSION="${GITHUB_REF_NAME#release/}"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$ || "$VERSION" == *-SNAPSHOT ]]; then
+            echo "Invalid release version: $VERSION" >&2
+            exit 1
+          fi
+          TAG="v$VERSION"
+          if git show-ref --verify --quiet "refs/tags/$TAG"; then
+            if [[ "$(git rev-parse "refs/tags/$TAG^{commit}")" != "$GITHUB_SHA" ]]; then
+              echo "Tag $TAG already points to another commit." >&2
+              exit 1
+            fi
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
   validate:
+    needs: preflight
     uses: ./.github/workflows/build.yml
     secrets:
       REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
@@ -257,11 +287,24 @@ jobs:
           TAG_REF="$(gh api "repos/$GH_REPO/git/matching-refs/tags/$TAG" \
             --jq ".[] | select(.ref == \"refs/tags/$TAG\") | .ref")"
           if [[ -n "$TAG_REF" ]]; then
-            TAG_COMMIT="$(gh api "repos/$GH_REPO/commits/$TAG" --jq .sha)"
+            TAG_OBJECT="$(gh api "repos/$GH_REPO/git/ref/tags/$TAG" --jq '[.object.type, .object.sha] | @tsv')"
+            read -r TAG_TYPE TAG_COMMIT <<< "$TAG_OBJECT"
+            while [[ "$TAG_TYPE" == tag ]]; do
+              TAG_OBJECT="$(gh api "repos/$GH_REPO/git/tags/$TAG_COMMIT" --jq '[.object.type, .object.sha] | @tsv')"
+              read -r TAG_TYPE TAG_COMMIT <<< "$TAG_OBJECT"
+            done
+            if [[ "$TAG_TYPE" != commit ]]; then
+              echo "Tag $TAG does not resolve to a commit." >&2
+              exit 1
+            fi
             if [[ "$TAG_COMMIT" != "$GITHUB_SHA" ]]; then
               echo "Tag $TAG now points to another commit." >&2
               exit 1
             fi
           fi
+          RELEASE_FLAGS=()
+          if [[ "$RELEASE_VERSION" == *-* ]]; then
+            RELEASE_FLAGS+=(--prerelease --latest=false)
+          fi
           gh release create "$TAG" "${JARS[@]}" \
-            --target "$GITHUB_SHA" --title "$TAG" --generate-notes
+            --target "$GITHUB_SHA" --title "$TAG" --generate-notes "${RELEASE_FLAGS[@]}"

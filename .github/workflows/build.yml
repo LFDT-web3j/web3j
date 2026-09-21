@@ -16,6 +16,10 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   integration-test:
     runs-on: ubuntu-latest
@@ -40,7 +44,12 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Run integration tests
-        run: ./gradlew integration-tests:test -Pintegration-tests=true
+        run: |
+          BUILD_FLAGS=()
+          if [[ "$GITHUB_EVENT_NAME" == push ]]; then
+            BUILD_FLAGS+=(--no-build-cache)
+          fi
+          ./gradlew integration-tests:test -Pintegration-tests=true "${BUILD_FLAGS[@]}"
   build:
     runs-on: ubuntu-latest
     steps:
@@ -61,6 +70,12 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Check formatting and run unit tests
-        run: ./gradlew check
+        run: |
+          BUILD_FLAGS=()
+          if [[ "$GITHUB_EVENT_NAME" == push ]]; then
+            BUILD_FLAGS+=(--no-build-cache)
+          fi
+          # Use the reviewed formatter inputs already tracked in this checkout.
+          ./gradlew check -x downloadJavaLicense -x downloadFormatterProperties "${BUILD_FLAGS[@]}"
       - name: Upload coverage reports to Codecov with GitHub Action
         uses: codecov/codecov-action@v5
