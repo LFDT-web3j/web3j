@@ -1,11 +1,25 @@
+/*
+ * Copyright 2026 Web3 Labs Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package example;
 
-import example.contracts.ExampleToken;
-import io.reactivex.disposables.Disposable;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
+import example.contracts.ExampleToken;
+import io.reactivex.disposables.Disposable;
+
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
@@ -46,7 +60,8 @@ public final class Erc20ExampleApp {
             System.out.println("Token name: " + token.name().send());
             System.out.println("Token symbol: " + token.symbol().send());
             System.out.println("Total supply: " + token.totalSupply().send());
-            System.out.println("Deployer balance: " + token.balanceOf(credentials.getAddress()).send());
+            System.out.println(
+                    "Deployer balance: " + token.balanceOf(credentials.getAddress()).send());
 
             CountDownLatch eventSeen = new CountDownLatch(1);
             transferSubscription =
@@ -69,7 +84,8 @@ public final class Erc20ExampleApp {
             TransactionReceipt receipt = token.transfer(recipient, transferAmount).send();
             System.out.println("Transfer tx hash: " + receipt.getTransactionHash());
 
-            List<ExampleToken.TransferEventResponse> receiptEvents = token.getTransferEvents(receipt);
+            List<ExampleToken.TransferEventResponse> receiptEvents =
+                    token.getTransferEvents(receipt);
             if (!receiptEvents.isEmpty()) {
                 ExampleToken.TransferEventResponse event = receiptEvents.get(0);
                 System.out.printf(

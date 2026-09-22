@@ -6,33 +6,87 @@ on:
     branches: [ main ]
     types: [ completed ]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-snapshot-main
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
 jobs:
   publish-snapshot:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
-    env:
-      JRELEASER_MAVENCENTRAL_CENTRAL_USERNAME: ${{ secrets.JRELEASER_MAVENCENTRAL_CENTRAL_USERNAME }}
-      JRELEASER_GPG_PASSPHRASE: ${{ secrets.JRELEASER_GPG_PASSPHRASE }}
-      JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.JRELEASER_GPG_PUBLIC_KEY }}
-      JRELEASER_GPG_SECRET_KEY: ${{ secrets.JRELEASER_GPG_SECRET_KEY }}
-      JRELEASER_MAVENCENTRAL_CENTRAL_PASSWORD: ${{ secrets.JRELEASER_MAVENCENTRAL_CENTRAL_PASSWORD }}
-      JRELEASER_GITHUB_TOKEN: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
     steps:
+      - name: Check snapshot is still main
+        id: freshness
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          EXPECTED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          REMOTE_SHA="$(gh api "repos/$GH_REPO/git/ref/heads/main" --jq '.object.sha')"
+          if [[ ! "$REMOTE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo 'Could not determine the current main commit' >&2
+            exit 1
+          fi
+          if [[ "$REMOTE_SHA" != "$EXPECTED_SHA" ]]; then
+            echo 'current=false' >> "$GITHUB_OUTPUT"
+            echo 'Snapshot skipped: the successful Build no longer represents main.' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo 'current=true' >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v6
+        if: steps.freshness.outputs.current == 'true'
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
       - name: Set up JDK 21
+        if: steps.freshness.outputs.current == 'true'
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: 21
       - name: Cache Gradle packages
+        if: steps.freshness.outputs.current == 'true'
         uses: actions/cache@v4
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
       - name: Grant execute permission for gradlew
+        if: steps.freshness.outputs.current == 'true'
         run: chmod +x gradlew
+      - name: Recheck main before snapshot publication
+        id: publish_freshness
+        if: steps.freshness.outputs.current == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          EXPECTED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          REMOTE_SHA="$(gh api "repos/$GH_REPO/git/ref/heads/main" --jq '.object.sha')"
+          if [[ ! "$REMOTE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo 'Could not determine the current main commit' >&2
+            exit 1
+          fi
+          if [[ "$REMOTE_SHA" != "$EXPECTED_SHA" ]]; then
+            echo 'current=false' >> "$GITHUB_OUTPUT"
+            echo 'Snapshot skipped: main changed during setup.' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo 'current=true' >> "$GITHUB_OUTPUT"
       - name: Publish snapshot
+        if: steps.freshness.outputs.current == 'true' && steps.publish_freshness.outputs.current == 'true'
+        env:
+          JRELEASER_MAVENCENTRAL_CENTRAL_USERNAME: ${{ secrets.JRELEASER_MAVENCENTRAL_CENTRAL_USERNAME }}
+          JRELEASER_MAVENCENTRAL_CENTRAL_PASSWORD: ${{ secrets.JRELEASER_MAVENCENTRAL_CENTRAL_PASSWORD }}
         run: ./gradlew publishSnapshot
-
-

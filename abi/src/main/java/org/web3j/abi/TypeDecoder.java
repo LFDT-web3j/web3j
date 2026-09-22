@@ -764,7 +764,13 @@ public class TypeDecoder {
 
         final T value;
         if (DynamicStruct.class.isAssignableFrom(declaredField)) {
-            value = (T) decodeDynamicStruct(dynamicElementData, 0, (TypeReference) new TypeReference(genericParameterType, false) {});
+            value =
+                    (T)
+                            decodeDynamicStruct(
+                                    dynamicElementData,
+                                    0,
+                                    (TypeReference)
+                                            new TypeReference(genericParameterType, false) {});
         } else if (DynamicArray.class.isAssignableFrom(declaredField)) {
             TypeReference<?> typeRef;
             if (genericParameterType instanceof ParameterizedType) {

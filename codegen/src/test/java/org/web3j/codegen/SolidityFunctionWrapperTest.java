@@ -1357,17 +1357,29 @@ public class SolidityFunctionWrapperTest extends TempFileProvider {
 
     @Test
     public void testBuildEventWithIndexedStruct() throws Exception {
-        java.lang.reflect.Field mapField = SolidityFunctionWrapper.class.getDeclaredField("structClassNameMap");
+        java.lang.reflect.Field mapField =
+                SolidityFunctionWrapper.class.getDeclaredField("structClassNameMap");
         mapField.setAccessible(true);
-        java.util.Map<String, ClassName> map = 
+        java.util.Map<String, ClassName> map =
                 (java.util.Map<String, ClassName>) mapField.get(solidityFunctionWrapper);
         map.put("struct MyContract.SomeStruct", ClassName.get("", "SomeStruct"));
 
-        NamedType struct = new NamedType("myStruct", "tuple", new ArrayList<>(), "struct MyContract.SomeStruct", true);
+        NamedType struct =
+                new NamedType(
+                        "myStruct",
+                        "tuple",
+                        new ArrayList<>(),
+                        "struct MyContract.SomeStruct",
+                        true);
 
         AbiDefinition functionDefinition =
                 new AbiDefinition(
-                        false, Arrays.asList(struct), "Transfer", new ArrayList<>(), "event", false);
+                        false,
+                        Arrays.asList(struct),
+                        "Transfer",
+                        new ArrayList<>(),
+                        "event",
+                        false);
         TypeSpec.Builder builder = TypeSpec.classBuilder("TestClass");
 
         builder.addMethods(
@@ -1386,6 +1398,7 @@ public class SolidityFunctionWrapperTest extends TempFileProvider {
         if (url == null) {
             throw new java.io.FileNotFoundException("Resource not found: /expected/" + filename);
         }
-        return new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(url.toURI()))).replace("\r\n", "\n");
+        return new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(url.toURI())))
+                .replace("\r\n", "\n");
     }
 }
