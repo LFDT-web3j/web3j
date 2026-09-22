@@ -7,11 +7,23 @@ Gradle task reads the configured projects and Maven publications, excluding
 `integration-tests`: every module must supply its binary, sources and Javadoc
 JARs, POM and Gradle module metadata. It verifies existing files without invoking
 staging or publication, and writes the required-file inventory for the handoff.
-No Python interpreter is used by the release workflow.
-The task also rejects coordinates or staging locations incompatible with the
-workflow's current `org.web3j`, release-version and `build/staging-deploy` paths.
+The Maven artifact ID must equal the Gradle project name, the group must be
+`org.web3j`, and the version must match the supplied release version. Staging
+must use each project's `build/staging-deploy` directory. The excluded root and
+`integration-tests` projects must have neither a `maven` publication nor a
+`localStaging` repository; making either publishable fails verification.
 
-SHA-256 checksums cover staged files and the expected-file list. Commit, version
+The module set comes from the evaluated `settings.gradle`, not an independent
+allowlist. The current count of 13 is descriptive: removing an included module
+also removes it from verification. Review module-set changes as release-scope
+changes. The verify step records its actual module and file counts in the run
+summary. Standalone verification schedules no producers; when staging is also
+requested in one invocation, verification runs after it, including with
+`--parallel`. The task opts out of the configuration cache because it reads the
+evaluated publication model at execution time.
+
+Before recording SHA-256 checksums, every required file must occur in the staged
+file set. Checksums cover staged files and the expected-file list. Commit, version
 and event are recorded separately. The workflow uploads these files and verifies
 them after downloading the exact artifact ID. Central deployment excludes the
 Gradle re-staging dependency and checks the recorded hashes before and after
@@ -42,6 +54,28 @@ Rehearsals use `0.0.0-rehearsal.<run-id>.<attempt>` and provide two downloads:
   required-file list and source record.
 - `release-javadocs-<version>`: generated core API documentation.
 
+After the package upload, a rehearsal-only self-test temporarily removes one
+module metadata file. Verification must reject the missing file without
+regenerating it or retaining an inventory. The self-test restores the file,
+verifies again, and compares the inventory and payload checksums with the
+uploaded state. It receives no secrets and is skipped for push events.
+The intentional Gradle failure appears in its log; the self-test step itself
+must finish successfully.
+
+To verify locally, first stage using the same explicit **non-SNAPSHOT** version:
+
+```sh
+VERSION=0.0.0-rehearsal.local
+./gradlew "-Pversion=$VERSION" publishMavenPublicationToLocalStagingRepository --no-build-cache
+./gradlew "-Pversion=$VERSION" :verifyReleaseArtifacts --no-build-cache
+```
+
+The second command only checks existing files. Omitting `-Pversion` selects the
+repository's default `-SNAPSHOT` version, whose timestamped Maven staging files
+do not match this release verifier's expected filenames. It cannot verify that
+default snapshot layout. Retained artifacts can be checked without compiling
+by restoring their original staging paths and supplying their recorded version.
+
 The workflow requests 14 days of retention, but the repository currently caps
 this at 7 days. Check actual expiry and retain recovery evidence before it expires.
 
@@ -65,6 +99,9 @@ it for every event, including rehearsals. CI formatting uses the checked-in
 license/formatter inputs by excluding their two download tasks. Other existing
 shared build-fragment downloads and mutable dependencies remain; these changes
 do not make the build reproducible or entirely independent of the network.
+The existing Spotless `groovyGradle` target is `*.gradle` in each project
+directory; it does not include `gradle/release-validation.gradle`. A passing
+Spotless check therefore does not establish formatting coverage for that script.
 
 Do not make path-filtered Release checks globally required: `preflight`,
 `validate / build`, `validate / integration-test`, `release`, `javadocs-release`

@@ -118,7 +118,10 @@ jobs:
       - name: Verify staged release artifacts
         env:
           RELEASE_VERSION: ${{ steps.release_name.outputs.version }}
-        run: ./gradlew "-Pversion=$RELEASE_VERSION" :verifyReleaseArtifacts --no-build-cache --stacktrace
+        run: |
+          VERIFY_LOG="$(mktemp "$RUNNER_TEMP/release-verification.XXXXXX")"
+          ./gradlew "-Pversion=$RELEASE_VERSION" :verifyReleaseArtifacts --no-build-cache --stacktrace --console=plain | tee "$VERIFY_LOG"
+          grep -E '^Verified [0-9]+ required files across [0-9]+ release modules\.$' "$VERIFY_LOG" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Record staged artifact checksums and source
         env:
@@ -132,6 +135,13 @@ jobs:
             echo "No release artifacts were staged." >&2
             exit 1
           fi
+          test -s release-expected-files.txt
+          while IFS= read -r EXPECTED || [[ -n "$EXPECTED" ]]; do
+            printf '%s\n' "${ARTIFACTS[@]}" | grep -Fx -- "$EXPECTED" > /dev/null || {
+              echo "Required publication missing from checksum manifest: $EXPECTED" >&2
+              exit 1
+            }
+          done < release-expected-files.txt
           sha256sum "${ARTIFACTS[@]}" release-expected-files.txt > release-checksums.sha256
           printf 'commit=%s\nversion=%s\nevent=%s\n' \
             "$GITHUB_SHA" "$RELEASE_VERSION" "$GITHUB_EVENT_NAME" > release-metadata.txt
@@ -148,6 +158,38 @@ jobs:
             release-metadata.txt
           if-no-files-found: error
           retention-days: 14
+
+      - name: Test rejection of incomplete release artifacts
+        if: github.event_name != 'push'
+        env:
+          RELEASE_VERSION: ${{ steps.release_name.outputs.version }}
+        run: |
+          TEST_DIR="$(mktemp -d "$RUNNER_TEMP/release-verifier.XXXXXX")"
+          MISSING="utils/build/staging-deploy/org/web3j/utils/$RELEASE_VERSION/utils-$RELEASE_VERSION.module"
+          cp release-expected-files.txt "$TEST_DIR/expected-files.txt"
+          restore_file() {
+            if [[ -f "$TEST_DIR/withheld.module" ]]; then
+              mv "$TEST_DIR/withheld.module" "$MISSING"
+            fi
+          }
+          trap restore_file EXIT
+          mv "$MISSING" "$TEST_DIR/withheld.module"
+          if ./gradlew "-Pversion=$RELEASE_VERSION" :verifyReleaseArtifacts --no-build-cache --console=plain > "$TEST_DIR/rejection.log" 2>&1; then
+            cat "$TEST_DIR/rejection.log"
+            echo "Verification accepted a missing publication." >&2
+            exit 1
+          fi
+          cat "$TEST_DIR/rejection.log"
+          grep -F 'Missing or empty required publication:' "$TEST_DIR/rejection.log"
+          if [[ -e "$MISSING" || -e release-expected-files.txt ]]; then
+            echo "Failed verification regenerated a publication or retained its inventory." >&2
+            exit 1
+          fi
+          mv "$TEST_DIR/withheld.module" "$MISSING"
+          ./gradlew "-Pversion=$RELEASE_VERSION" :verifyReleaseArtifacts --no-build-cache --console=plain
+          cmp "$TEST_DIR/expected-files.txt" release-expected-files.txt
+          sha256sum --check --strict release-checksums.sha256
+          echo "Incomplete-artifact rejection passed; restored inventory and payload match the upload." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Deploy to Maven Central (Portal)
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/')
@@ -223,7 +265,7 @@ jobs:
           printf 'commit=%s\nversion=%s\nevent=%s\n' \
             "$GITHUB_SHA" "$RELEASE_VERSION" "$GITHUB_EVENT_NAME" | cmp - release-metadata.txt
           test -s release-expected-files.txt
-          while IFS= read -r EXPECTED; do
+          while IFS= read -r EXPECTED || [[ -n "$EXPECTED" ]]; do
             if [[ ! -s "$EXPECTED" ]]; then
               echo "Missing or empty required publication: $EXPECTED" >&2
               exit 1
