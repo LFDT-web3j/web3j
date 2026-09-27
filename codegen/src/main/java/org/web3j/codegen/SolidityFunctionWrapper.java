@@ -728,11 +728,13 @@ public class SolidityFunctionWrapper extends Generator {
                 }
 
                 if (nativeTypeName instanceof ParameterizedTypeName) {
-                    ParameterizedTypeName parameterizedTypeName = (ParameterizedTypeName) nativeTypeName;
+                    ParameterizedTypeName parameterizedTypeName =
+                            (ParameterizedTypeName) nativeTypeName;
                     if (parameterizedTypeName.rawType.equals(ClassName.get(DynamicArray.class))) {
                         TypeName elementType = parameterizedTypeName.typeArguments.get(0);
                         while (elementType instanceof ParameterizedTypeName) {
-                            elementType = ((ParameterizedTypeName) elementType).typeArguments.get(0);
+                            elementType =
+                                    ((ParameterizedTypeName) elementType).typeArguments.get(0);
                         }
                         annotationSpec =
                                 AnnotationSpec.builder(Parameterized.class)
@@ -1963,7 +1965,10 @@ public class SolidityFunctionWrapper extends Generator {
                 indexedParameters) {
             final TypeName typeName;
             if (isHashedIndexedType(namedType.getType())) {
-                typeName = useNativeJavaTypes ? TypeName.get(byte[].class) : ClassName.get("org.web3j.abi.datatypes.generated", "Bytes32");
+                typeName =
+                        useNativeJavaTypes
+                                ? TypeName.get(byte[].class)
+                                : ClassName.get("org.web3j.abi.datatypes.generated", "Bytes32");
             } else if (namedType.getType().equals("tuple")) {
                 typeName = structClassNameMap.get(namedType.structIdentifier());
             } else if (namedType.getType().startsWith("tuple")
@@ -2197,9 +2202,8 @@ public class SolidityFunctionWrapper extends Generator {
                 if (isHashedIndexedType(namedTypeName.getType())) {
                     nativeConversion = ".getValue()";
                 } else if (structClassNameMap.values().stream()
-                            .map(ClassName::simpleName)
-                            .noneMatch(
-                                    name -> name.equals(namedTypeName.getTypeName().toString()))) {
+                        .map(ClassName::simpleName)
+                        .noneMatch(name -> name.equals(namedTypeName.getTypeName().toString()))) {
                     nativeConversion = ".getValue()";
                 } else {
                     nativeConversion = "";
@@ -2209,7 +2213,10 @@ public class SolidityFunctionWrapper extends Generator {
             }
             final TypeName indexedEventWrapperType;
             if (isHashedIndexedType(namedTypeName.getType())) {
-                indexedEventWrapperType = useNativeJavaTypes ? TypeName.get(byte[].class) : ClassName.get("org.web3j.abi.datatypes.generated", "Bytes32");
+                indexedEventWrapperType =
+                        useNativeJavaTypes
+                                ? TypeName.get(byte[].class)
+                                : ClassName.get("org.web3j.abi.datatypes.generated", "Bytes32");
             } else if (namedTypeName.getType().equals("tuple")) {
                 indexedEventWrapperType = structClassNameMap.get(namedTypeName.structIdentifier());
             } else if (namedTypeName.getType().startsWith("tuple")
