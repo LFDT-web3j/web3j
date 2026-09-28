@@ -67,8 +67,7 @@ public abstract class HSMHTTPRequestProcessor<T extends HSMHTTPPass>
                 int code = response.code();
                 String text = responseBody == null ? "N/A" : responseBody.string();
                 throw new ClientConnectionException(
-                        code,
-                        "Invalid response received: " + code + "; " + text);
+                        code, "Invalid response received: " + code + "; " + text);
             }
         } catch (IOException e) {
             log.error(e.getMessage(), e);

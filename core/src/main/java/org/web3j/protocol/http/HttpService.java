@@ -170,8 +170,7 @@ public class HttpService extends Service {
                 String text = responseBody == null ? "N/A" : responseBody.string();
 
                 throw new ClientConnectionException(
-                        code,
-                        "Invalid response received: " + code + "; " + text);
+                        code, "Invalid response received: " + code + "; " + text);
             }
         }
     }

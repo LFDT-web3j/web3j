@@ -32,8 +32,7 @@ public final class TxPoolContentFrom extends Response<TxPoolContentFrom.TxPoolCo
         public TxPoolContentFromResult() {}
 
         public TxPoolContentFromResult(
-                Map<BigInteger, Transaction> pending,
-                Map<BigInteger, Transaction> queued) {
+                Map<BigInteger, Transaction> pending, Map<BigInteger, Transaction> queued) {
             this.pending = immutableCopy(pending, Function.identity());
             this.queued = immutableCopy(queued, Function.identity());
         }

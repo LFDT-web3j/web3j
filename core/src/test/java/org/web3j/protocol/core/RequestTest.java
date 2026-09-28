@@ -160,8 +160,7 @@ class RequestTest extends RequestTester {
     void testTxPoolInspect() throws Exception {
         web3j.txPoolInspect().send();
 
-        verifyResult(
-                "{\"jsonrpc\":\"2.0\",\"method\":\"txpool_inspect\",\"params\":[],\"id\":1}");
+        verifyResult("{\"jsonrpc\":\"2.0\",\"method\":\"txpool_inspect\",\"params\":[],\"id\":1}");
     }
 
     @Test
