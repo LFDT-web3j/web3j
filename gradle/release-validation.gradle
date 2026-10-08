@@ -1,0 +1,73 @@
+tasks.register('verifyReleaseArtifacts') {
+    group = 'verification'
+    description = 'Verifies staged Maven publications without building or publishing them.'
+    def inventory = rootProject.file('release-expected-files.txt')
+    outputs.file(inventory)
+    // Check the staged bytes on every invocation, including after a successful check.
+    outputs.upToDateWhen { false }
+    notCompatibleWithConfigurationCache('Reads the evaluated project and publication model at execution time')
+    mustRunAfter {
+        rootProject.subprojects.collectMany { module ->
+            def stagingTask = 'publishMavenPublicationToLocalStagingRepository'
+            module.tasks.names.contains(stagingTask) ? [module.tasks.named(stagingTask)] : []
+        }
+    }
+
+    doLast {
+        if (!inventory.delete() && inventory.exists()) {
+            throw new GradleException("Cannot remove stale release inventory: $inventory")
+        }
+        def expected = []
+        def modules = rootProject.subprojects.findAll { it.name != 'integration-tests' }
+        if (modules.empty) {
+            throw new GradleException('No release modules configured')
+        }
+        (rootProject.allprojects - modules).each { module ->
+            def publishing = module.extensions.findByType(PublishingExtension)
+            if (publishing?.publications?.findByName('maven') != null ||
+                    publishing?.repositories?.findByName('localStaging') != null) {
+                throw new GradleException("Unverified project is publishable: ${module.path}")
+            }
+        }
+        modules.each { module ->
+            def publishing = module.extensions.findByType(PublishingExtension)
+            def publication = publishing?.publications?.findByName('maven')
+            def repository = publishing?.repositories?.findByName('localStaging')
+            if (!(publication instanceof MavenPublication)) {
+                throw new GradleException("Missing Maven publication: ${module.path}:maven")
+            }
+            def repositoryUrl = repository instanceof MavenArtifactRepository ? repository.url : null
+            if (repositoryUrl == null || repositoryUrl.scheme != 'file' || repositoryUrl.opaque ||
+                    repositoryUrl.authority != null || repositoryUrl.query != null || repositoryUrl.fragment != null) {
+                throw new GradleException("Missing local staging repository: ${module.path}")
+            }
+            def staging = new File(repositoryUrl).canonicalFile
+            // Keep the inventory compatible with the release workflow's upload paths.
+            if (staging != module.file('build/staging-deploy').canonicalFile ||
+                    publication.groupId != 'org.web3j' || publication.artifactId != module.name ||
+                    publication.version != rootProject.version.toString()) {
+                throw new GradleException("Unsupported release staging layout or coordinates: ${module.path}")
+            }
+            def directory = new File(staging,
+                    "${publication.groupId.replace('.', '/')}/${publication.artifactId}/${publication.version}")
+            def baseName = "${publication.artifactId}-${publication.version}"
+            ['', 'sources', 'javadoc'].each { classifier ->
+                if (!publication.artifacts.any { it.extension == 'jar' && (it.classifier ?: '') == classifier }) {
+                    throw new GradleException("Missing ${classifier ?: 'binary'} JAR publication: ${module.path}")
+                }
+            }
+            ['.jar', '-sources.jar', '-javadoc.jar', '.pom', '.module'].each { suffix ->
+                def artifact = new File(directory, baseName + suffix).canonicalFile
+                if (!artifact.toPath().startsWith(rootProject.projectDir.canonicalFile.toPath())) {
+                    throw new GradleException("Staged publication is outside the checkout: $artifact")
+                }
+                if (!artifact.isFile() || artifact.length() == 0) {
+                    throw new GradleException("Missing or empty required publication: $artifact")
+                }
+                expected.add(rootProject.relativePath(artifact))
+            }
+        }
+        inventory.setText(expected.sort().join('\n') + '\n', 'UTF-8')
+        logger.lifecycle("Verified ${expected.size()} required files across ${modules.size()} release modules.")
+    }
+}
