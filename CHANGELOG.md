@@ -3,7 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
-# [6.0.0]() (Upcoming)
+# [6.1.0]() (Upcoming)
+
+### Bug Fixes
+
+-
+### Features
+
+- Add `slotNumber`, `blockAccessListHash`, and `requestsHash` to block responses [#2314](https://github.com/LFDT-web3j/web3j/pull/2314)
+- Add `CappedDynamicEIP1559GasProvider` to enforce an upper bound on EIP-1559 gas fees [#2306](https://github.com/LFDT-web3j/web3j/pull/2306)
+- Bump tuweni to 2.8.0 [#2308](https://github.com/LFDT-web3j/web3j/pull/2308)
+- Dependency update jackson, bouncycastle[#2303](https://github.com/LFDT-web3j/web3j/pull/2303)
+
+
+### BREAKING CHANGES
+
+
+# [6.0.0](https://github.com/LFDT-web3j/web3j/releases/tag/v6.0.0) (2026-06-29)
 
 ### Bug Fixes
 
@@ -20,7 +36,6 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Features
 
-- Add `slotNumber`, `blockAccessListHash`, and `requestsHash` to block responses [#2314](https://github.com/LFDT-web3j/web3j/pull/2314)
 - Add signTypedData address recovery test [#2260](https://github.com/LFDT-web3j/web3j/pull/2260)
 - Add support for EIP-7594 blob transaction wrapper [#2263](https://github.com/LFDT-web3j/web3j/pull/2263)
 - Add http code to the ClientConnectionException [#2295](https://github.com/LFDT-web3j/web3j/pull/2295)
@@ -30,10 +45,8 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 - Add `eth_blobBaseFee` RPC (EIP-7918 / Fusaka-correct blob base fee) [#2300](https://github.com/LFDT-web3j/web3j/pull/2300)
 - Adds context7 json file [#2301](https://github.com/LFDT-web3j/web3j/pull/2301)
 - Bump snapshot version to 6.0.0 [#2302](https://github.com/LFDT-web3j/web3j/pull/2302)
-- Bump tuweni to 2.8.0 [#2308](https://github.com/LFDT-web3j/web3j/pull/2308)
 - Add support for txpool_contentFrom JSON-RPC method to query transaction pool by address [#2262](https://github.com/LFDT-web3j/web3j/pull/2262)
 - Add support for txpool_inspect JSON-RPC method [#2262](https://github.com/LFDT-web3j/web3j/pull/2262)
-- Add `CappedDynamicEIP1559GasProvider` to enforce an upper bound on EIP-1559 gas fees [#2306](https://github.com/LFDT-web3j/web3j/pull/2306)
 
 ### BREAKING CHANGES
 
