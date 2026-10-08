@@ -802,6 +802,7 @@ class EnsResolverTest {
         Call mockCall = mock(Call.class);
         when(mockCall.execute()).thenReturn(mockResponse);
         when(httpClientMock.newCall(any())).thenReturn(mockCall);
+        ensResolver.setHttpClient(httpClientMock);
 
         EnsMetadataResponse actualResponse = ensResolver.getEnsMetadata(name);
 
