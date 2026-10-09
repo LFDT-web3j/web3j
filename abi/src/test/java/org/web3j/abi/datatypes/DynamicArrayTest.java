@@ -20,11 +20,17 @@ import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
 
+import org.web3j.abi.FunctionEncoder;
+import org.web3j.abi.TypeDecoder;
+import org.web3j.abi.TypeEncoder;
+import org.web3j.abi.TypeReference;
+import org.web3j.abi.Utils;
 import org.web3j.abi.datatypes.generated.StaticArray2;
 import org.web3j.abi.datatypes.generated.Uint256;
 import org.web3j.abi.datatypes.generated.Uint8;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DynamicArrayTest {
 
@@ -117,6 +123,15 @@ public class DynamicArrayTest {
     }
 
     @Test
+    public void testStaticArrayContainingDynamicArrayTypeAsString() {
+        DynamicArray<Uint256> inner =
+                new DynamicArray<>(Uint256.class, new Uint256(1), new Uint256(2));
+        StaticArray2<DynamicArray> outer = new StaticArray2<>(DynamicArray.class, inner, inner);
+
+        assertEquals("uint256[][2]", outer.getTypeAsString());
+    }
+
+    @Test
     public void testUint256DynamicArrayNested() {
         List<Uint256> innerValues = Arrays.asList(new Uint256(1), new Uint256(2));
         DynamicArray<Uint256> inner = new DynamicArray<>(Uint256.class, innerValues);
@@ -127,28 +142,27 @@ public class DynamicArrayTest {
     }
 
     @Test
-    public void test2D3DAnd4DArrayEncodingDecoding() throws Exception {
-        // Create 2D Array: uint256[][]
-        DynamicArray<Uint256> innerArray =
+    public void test2DArrayEncodingDecoding() {
+        DynamicArray<Uint256> inner =
                 new DynamicArray<>(Uint256.class, new Uint256(1), new Uint256(2));
-        DynamicArray<DynamicArray> outer2D = new DynamicArray<>(DynamicArray.class, innerArray);
+        DynamicArray<DynamicArray> outer = new DynamicArray<>(DynamicArray.class, inner);
 
-        assertEquals("uint256[][]", outer2D.getTypeAsString());
+        assertEquals("uint256[][]", outer.getTypeAsString());
 
-        // Encode and Decode 2D array
-        String encoded2D = org.web3j.abi.TypeEncoder.encode(outer2D);
-        org.web3j.abi.TypeReference<DynamicArray<DynamicArray<Uint256>>> typeRef2D =
-                new org.web3j.abi.TypeReference<>() {};
-        DynamicArray decoded2D =
-                org.web3j.abi.TypeDecoder.decodeDynamicArray(encoded2D, 0, typeRef2D);
-        assertEquals(outer2D.getTypeAsString(), decoded2D.getTypeAsString());
-        assertEquals(1, decoded2D.getValue().size());
-        DynamicArray decodedInner2D = (DynamicArray) decoded2D.getValue().get(0);
-        assertEquals(2, decodedInner2D.getValue().size());
-        assertEquals(new Uint256(1), decodedInner2D.getValue().get(0));
-        assertEquals(new Uint256(2), decodedInner2D.getValue().get(1));
+        String encoded = TypeEncoder.encode(outer);
+        TypeReference<DynamicArray<DynamicArray<Uint256>>> typeRef = new TypeReference<>() {};
+        DynamicArray decoded = TypeDecoder.decodeDynamicArray(encoded, 0, typeRef);
 
-        // Create 3D Array: uint256[][][]
+        assertEquals(outer.getTypeAsString(), decoded.getTypeAsString());
+        assertEquals(1, decoded.getValue().size());
+        DynamicArray decodedInner = (DynamicArray) decoded.getValue().get(0);
+        assertEquals(2, decodedInner.getValue().size());
+        assertEquals(new Uint256(1), decodedInner.getValue().get(0));
+        assertEquals(new Uint256(2), decodedInner.getValue().get(1));
+    }
+
+    @Test
+    public void test3DArrayEncodingDecoding() {
         DynamicArray<Uint256> inner1 =
                 new DynamicArray<>(Uint256.class, new Uint256(1), new Uint256(2));
         DynamicArray<Uint256> inner2 = new DynamicArray<>(Uint256.class, new Uint256(3));
@@ -159,39 +173,106 @@ public class DynamicArrayTest {
 
         assertEquals("uint256[][][]", outer3D.getTypeAsString());
 
-        // Create 4D Array: uint256[][][][]
-        DynamicArray<DynamicArray> outer4D = new DynamicArray<>(DynamicArray.class, outer3D);
-        assertEquals("uint256[][][][]", outer4D.getTypeAsString());
-
-        // Encode 3D array
-        String encoded3D = org.web3j.abi.TypeEncoder.encode(outer3D);
-
-        // Decode 3D array back
-        org.web3j.abi.TypeReference<DynamicArray<DynamicArray<DynamicArray<Uint256>>>> typeRef3D =
-                new org.web3j.abi.TypeReference<>() {};
-        DynamicArray decoded3D =
-                org.web3j.abi.TypeDecoder.decodeDynamicArray(encoded3D, 0, typeRef3D);
+        String encoded3D = TypeEncoder.encode(outer3D);
+        TypeReference<DynamicArray<DynamicArray<DynamicArray<Uint256>>>> typeRef3D =
+                new TypeReference<>() {};
+        DynamicArray decoded3D = TypeDecoder.decodeDynamicArray(encoded3D, 0, typeRef3D);
 
         assertEquals(outer3D.getTypeAsString(), decoded3D.getTypeAsString());
         assertEquals(2, decoded3D.getValue().size());
 
         DynamicArray decodedMiddle1 = (DynamicArray) decoded3D.getValue().get(0);
         assertEquals(2, decodedMiddle1.getValue().size());
-
         DynamicArray decodedInner1 = (DynamicArray) decodedMiddle1.getValue().get(0);
         assertEquals(2, decodedInner1.getValue().size());
         assertEquals(new Uint256(1), decodedInner1.getValue().get(0));
         assertEquals(new Uint256(2), decodedInner1.getValue().get(1));
+        DynamicArray decodedInner2 = (DynamicArray) decodedMiddle1.getValue().get(1);
+        assertEquals(1, decodedInner2.getValue().size());
+        assertEquals(new Uint256(3), decodedInner2.getValue().get(0));
 
-        // Encode and Decode 4D array
-        String encoded4D = org.web3j.abi.TypeEncoder.encode(outer4D);
-        org.web3j.abi.TypeReference<DynamicArray<DynamicArray<DynamicArray<DynamicArray<Uint256>>>>>
-                typeRef4D = new org.web3j.abi.TypeReference<>() {};
-        DynamicArray decoded4D =
-                org.web3j.abi.TypeDecoder.decodeDynamicArray(encoded4D, 0, typeRef4D);
+        DynamicArray decodedMiddle2 = (DynamicArray) decoded3D.getValue().get(1);
+        assertEquals(1, decodedMiddle2.getValue().size());
+        DynamicArray decodedInner3 = (DynamicArray) decodedMiddle2.getValue().get(0);
+        assertEquals(1, decodedInner3.getValue().size());
+        assertEquals(new Uint256(3), decodedInner3.getValue().get(0));
+    }
+
+    @Test
+    public void test4DArrayEncodingDecoding() {
+        DynamicArray<Uint256> inner1 =
+                new DynamicArray<>(Uint256.class, new Uint256(1), new Uint256(2));
+        DynamicArray<Uint256> inner2 = new DynamicArray<>(Uint256.class, new Uint256(3));
+        DynamicArray<DynamicArray> middle1 = new DynamicArray<>(DynamicArray.class, inner1, inner2);
+        DynamicArray<DynamicArray> middle2 = new DynamicArray<>(DynamicArray.class, inner2);
+        DynamicArray<DynamicArray> outer3D =
+                new DynamicArray<>(DynamicArray.class, middle1, middle2);
+        DynamicArray<DynamicArray> outer4D = new DynamicArray<>(DynamicArray.class, outer3D);
+
+        assertEquals("uint256[][][][]", outer4D.getTypeAsString());
+
+        String encoded4D = TypeEncoder.encode(outer4D);
+        TypeReference<DynamicArray<DynamicArray<DynamicArray<DynamicArray<Uint256>>>>> typeRef4D =
+                new TypeReference<>() {};
+        DynamicArray decoded4D = TypeDecoder.decodeDynamicArray(encoded4D, 0, typeRef4D);
 
         assertEquals(outer4D.getTypeAsString(), decoded4D.getTypeAsString());
         assertEquals(1, decoded4D.getValue().size());
+
+        DynamicArray decoded3D = (DynamicArray) decoded4D.getValue().get(0);
+        assertEquals(2, decoded3D.getValue().size());
+
+        DynamicArray decodedMiddle1 = (DynamicArray) decoded3D.getValue().get(0);
+        assertEquals(2, decodedMiddle1.getValue().size());
+        DynamicArray decodedInner1 = (DynamicArray) decodedMiddle1.getValue().get(0);
+        assertEquals(2, decodedInner1.getValue().size());
+        assertEquals(new Uint256(1), decodedInner1.getValue().get(0));
+        assertEquals(new Uint256(2), decodedInner1.getValue().get(1));
+        DynamicArray decodedInner2 = (DynamicArray) decodedMiddle1.getValue().get(1);
+        assertEquals(1, decodedInner2.getValue().size());
+        assertEquals(new Uint256(3), decodedInner2.getValue().get(0));
+
+        DynamicArray decodedMiddle2 = (DynamicArray) decoded3D.getValue().get(1);
+        assertEquals(1, decodedMiddle2.getValue().size());
+        DynamicArray decodedInner3 = (DynamicArray) decodedMiddle2.getValue().get(0);
+        assertEquals(1, decodedInner3.getValue().size());
+        assertEquals(new Uint256(3), decodedInner3.getValue().get(0));
+    }
+
+    @Test
+    public void testString2DArrayEncodingDecodingAndFunctionCall() {
+        List<String> u0 = Arrays.asList("7300", "7400");
+        List<String> u1 = Arrays.asList("7200", "mark");
+        List<List<String>> uAll = Arrays.asList(u0, u1);
+
+        DynamicArray<DynamicArray> array =
+                new DynamicArray<>(
+                        DynamicArray.class,
+                        Utils.typeMap(uAll, DynamicArray.class, Utf8String.class));
+
+        assertEquals("string[][]", array.getTypeAsString());
+
+        Function function =
+                new Function(
+                        "testParas",
+                        Collections.singletonList(array),
+                        Collections.singletonList(new TypeReference<Utf8String>() {}));
+
+        String encodedFunction = FunctionEncoder.encode(function);
+        assertTrue(encodedFunction.startsWith("0xb7f3e465"));
+
+        String encoded2D = TypeEncoder.encode(array);
+        TypeReference<DynamicArray<DynamicArray<Utf8String>>> typeRef = new TypeReference<>() {};
+        DynamicArray decoded = TypeDecoder.decodeDynamicArray(encoded2D, 0, typeRef);
+
+        assertEquals("string[][]", decoded.getTypeAsString());
+        assertEquals(2, decoded.getValue().size());
+        DynamicArray decodedInner1 = (DynamicArray) decoded.getValue().get(0);
+        assertEquals(new Utf8String("7300"), decodedInner1.getValue().get(0));
+        assertEquals(new Utf8String("7400"), decodedInner1.getValue().get(1));
+        DynamicArray decodedInner2 = (DynamicArray) decoded.getValue().get(1);
+        assertEquals(new Utf8String("7200"), decodedInner2.getValue().get(0));
+        assertEquals(new Utf8String("mark"), decodedInner2.getValue().get(1));
     }
 
     private Uint[] arrayOfUints(int length) {

@@ -957,7 +957,9 @@ public class TypeDecoder {
                                 typeName.substring(typeName.replaceAll("[0-9]+$", "").length());
                         int staticLength =
                                 extractedLength.isEmpty() ? 0 : Integer.parseInt(extractedLength);
-                        TypeReference innerType = typeReference.getSubTypeReference();
+                        // elementType is the element TypeReference of the outer array; its subtype
+                        // is the component for this StaticArray dimension.
+                        TypeReference elementType = typeReference.getSubTypeReference();
 
                         TypeReference.StaticArrayTypeReference staticReference =
                                 new TypeReference.StaticArrayTypeReference<StaticArray>(
@@ -965,7 +967,7 @@ public class TypeDecoder {
 
                                     @Override
                                     public TypeReference getSubTypeReference() {
-                                        return innerType.getSubTypeReference();
+                                        return elementType.getSubTypeReference();
                                     }
 
                                     @Override
@@ -980,7 +982,7 @@ public class TypeDecoder {
                                             public java.lang.reflect.Type[]
                                                     getActualTypeArguments() {
                                                 return new java.lang.reflect.Type[] {
-                                                    innerType.getSubTypeReference().getType()
+                                                    elementType.getSubTypeReference().getType()
                                                 };
                                             }
 

@@ -68,6 +68,8 @@ public class DynamicArray<T extends Type> extends Array<T> {
     @Override
     public String getTypeAsString() {
         String type;
+        // Handle dynamic array of zero length. This will fail if the dynamic array
+        // is an array of structs.
         if (value.isEmpty()) {
             if (StructType.class.isAssignableFrom(getComponentType())) {
                 type = Utils.getStructType(getComponentType());

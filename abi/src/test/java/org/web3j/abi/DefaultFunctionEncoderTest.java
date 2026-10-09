@@ -31,6 +31,7 @@ import org.web3j.abi.datatypes.Type;
 import org.web3j.abi.datatypes.Uint;
 import org.web3j.abi.datatypes.Utf8String;
 import org.web3j.abi.datatypes.generated.Bytes10;
+import org.web3j.abi.datatypes.generated.StaticArray2;
 import org.web3j.abi.datatypes.generated.Uint256;
 import org.web3j.abi.datatypes.generated.Uint32;
 import org.web3j.utils.Numeric;
@@ -899,5 +900,24 @@ public class DefaultFunctionEncoderTest {
                         + "6461746100000000000000000000000000000000000000000000000000000000";
 
         assertEquals(expected, FunctionEncoder.encode(AbiV2TestFixture.setQuxFunction));
+    }
+
+    @Test
+    public void testSelectorForStaticArrayNestedInDynamicArray() {
+        DynamicArray array =
+                new DynamicArray(
+                        StaticArray2.class,
+                        new StaticArray2<>(Uint256.class, new Uint256(1), new Uint256(2)));
+        Function f = new Function("foo", Collections.singletonList(array), Collections.emptyList());
+        assertEquals("0x222ceb7c", FunctionEncoder.encode(f).substring(0, 10)); // foo(uint256[2][])
+    }
+
+    @Test
+    public void testSelectorForDynamicArrayNestedInStaticArray() {
+        DynamicArray<Uint256> inner =
+                new DynamicArray<>(Uint256.class, new Uint256(1), new Uint256(2));
+        StaticArray2<DynamicArray> array = new StaticArray2<>(DynamicArray.class, inner, inner);
+        Function f = new Function("foo", Collections.singletonList(array), Collections.emptyList());
+        assertEquals("0x50dbe5d5", FunctionEncoder.encode(f).substring(0, 10)); // foo(uint256[][2])
     }
 }
