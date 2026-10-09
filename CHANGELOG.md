@@ -17,9 +17,11 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 - Fix Transaction serialization failure when fee fields are null [#2293](https://github.com/LFDT-web3j/web3j/pull/2293)
 - Fix stale EIP-7691 blob base-fee update fraction [#2300](https://github.com/LFDT-web3j/web3j/pull/2300)
 - Fix integration-tests: remove unstable legacy Sonatype repositories [#2304](https://github.com/LFDT-web3j/web3j/pull/2304)
+- Fix codegen for struct array parameters defined in interfaces [#2307](https://github.com/LFDT-web3j/web3j/pull/2307)
 
 ### Features
 
+- Add `slotNumber`, `blockAccessListHash`, and `requestsHash` to block responses [#2314](https://github.com/LFDT-web3j/web3j/pull/2314)
 - Add signTypedData address recovery test [#2260](https://github.com/LFDT-web3j/web3j/pull/2260)
 - Add support for EIP-7594 blob transaction wrapper [#2263](https://github.com/LFDT-web3j/web3j/pull/2263)
 - Add http code to the ClientConnectionException [#2295](https://github.com/LFDT-web3j/web3j/pull/2295)
@@ -29,8 +31,10 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 - Add `eth_blobBaseFee` RPC (EIP-7918 / Fusaka-correct blob base fee) [#2300](https://github.com/LFDT-web3j/web3j/pull/2300)
 - Adds context7 json file [#2301](https://github.com/LFDT-web3j/web3j/pull/2301)
 - Bump snapshot version to 6.0.0 [#2302](https://github.com/LFDT-web3j/web3j/pull/2302)
+- Bump tuweni to 2.8.0 [#2308](https://github.com/LFDT-web3j/web3j/pull/2308)
 - Add support for txpool_contentFrom JSON-RPC method to query transaction pool by address [#2262](https://github.com/LFDT-web3j/web3j/pull/2262)
 - Add support for txpool_inspect JSON-RPC method [#2262](https://github.com/LFDT-web3j/web3j/pull/2262)
+- Add `CappedDynamicEIP1559GasProvider` to enforce an upper bound on EIP-1559 gas fees [#2306](https://github.com/LFDT-web3j/web3j/pull/2306)
 
 ### BREAKING CHANGES
 

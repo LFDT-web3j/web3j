@@ -1223,7 +1223,10 @@ public class TypeEncoderTest {
     public void testDynamicUtf8StringsArray() {
         // Test for issue #1741: non-ASCII characters (Chinese, Korean, etc.) encoding
         DynamicArray<Utf8String> array =
-                new DynamicArray<>(Utf8String.class, new Utf8String("\u4f60\u597d"), new Utf8String("\u4e16\u754c"));
+                new DynamicArray<>(
+                        Utf8String.class,
+                        new Utf8String("\u4f60\u597d"),
+                        new Utf8String("\u4e16\u754c"));
 
         // "\u4f60\u597d" UTF-8 = E4BDA0E5A5BD (6 bytes)
         // "\u4e16\u754c" UTF-8 = E4B896E7958C (6 bytes)
