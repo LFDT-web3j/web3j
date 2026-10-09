@@ -81,7 +81,9 @@ public abstract class StaticArray<T extends Type> extends Array<T> {
     @Override
     public String getTypeAsString() {
         String type;
-        if (!value.isEmpty() && StructType.class.isAssignableFrom(value.get(0).getClass())) {
+        if (!value.isEmpty()
+                && (Array.class.isAssignableFrom(value.get(0).getClass())
+                        || StructType.class.isAssignableFrom(value.get(0).getClass()))) {
             type = value.get(0).getTypeAsString();
         } else {
             type = AbiTypes.getTypeAString(getComponentType());
