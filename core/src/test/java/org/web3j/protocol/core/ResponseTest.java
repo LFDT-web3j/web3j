@@ -24,6 +24,8 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import org.web3j.protocol.ResponseTester;
 import org.web3j.protocol.core.methods.response.AbiDefinition;
@@ -845,14 +847,23 @@ class ResponseTest extends ResponseTester {
         assertEquals(ethBaseFee.getBaseFee(), (BigInteger.valueOf(25000000000L)));
     }
 
-    @Test
-    void testEthBlockTransactionHashes() {
+    @ParameterizedTest
+    @CsvSource(
+            value = {"null, null", "0x0, 0", "0x123, 291"},
+            nullValues = "null")
+    void testEthBlockTransactionHashes(String slotNumber, BigInteger expectedSlotNumber) {
+        String blockAccessListHash = slotNumber == null ? null : "0x" + "22".repeat(32);
+        String requestsHash = slotNumber == null ? null : "0x" + "33".repeat(32);
 
         buildResponse(
                 "{\n"
                         + "\"id\":1,\n"
                         + "\"jsonrpc\":\"2.0\",\n"
                         + "\"result\": {\n"
+                        + (slotNumber == null
+                                ? ""
+                                : "\"slotNumber\": \"%s\",\"blockAccessListHash\": \"%s\",\"requestsHash\": \"%s\","
+                                        .formatted(slotNumber, blockAccessListHash, requestsHash))
                         + "    \"number\": \"0x1b4\",\n"
                         + "    \"hash\": \"0xe670ec64341771606e55d6b4ca35a1a6b75ee3d5145a99d05921026d1527331\",\n"
                         + "    \"parentHash\": \"0x9646252be9520f6e71339a8df9c55e4d7619deeb018d2a3f2d21fc165dde5eb5\",\n"
@@ -944,8 +955,15 @@ class ResponseTest extends ResponseTester {
                                         "0x1e09b4199780a45792f4ff195ef68410a091b047",
                                         "0xd1f129")),
                         "0xa0000",
-                        "0x4bc0000");
+                        "0x4bc0000",
+                        slotNumber,
+                        blockAccessListHash,
+                        requestsHash);
         assertEquals(ethBlock.getBlock(), (block));
+        assertEquals(expectedSlotNumber, ethBlock.getBlock().getSlotNumber());
+        assertEquals(slotNumber, ethBlock.getBlock().getSlotNumberRaw());
+        assertEquals(blockAccessListHash, ethBlock.getBlock().getBlockAccessListHash());
+        assertEquals(requestsHash, ethBlock.getBlock().getRequestsHash());
     }
 
     @Test
@@ -1093,14 +1111,23 @@ class ResponseTest extends ResponseTester {
         assertEquals(ethBlock.getBlock(), (block));
     }
 
-    @Test
-    void testEthBlockFullTransactionsWithBlob() {
+    @ParameterizedTest
+    @CsvSource(
+            value = {"null, null", "0x0, 0", "0x123, 291"},
+            nullValues = "null")
+    void testEthBlockFullTransactionsWithBlob(String slotNumber, BigInteger expectedSlotNumber) {
+        String blockAccessListHash = slotNumber == null ? null : "0x" + "22".repeat(32);
+        String requestsHash = slotNumber == null ? null : "0x" + "33".repeat(32);
 
         buildResponse(
                 "{\n"
                         + "\"id\":1,\n"
                         + "\"jsonrpc\":\"2.0\",\n"
                         + "\"result\": {\n"
+                        + (slotNumber == null
+                                ? ""
+                                : "\"slotNumber\": \"%s\",\"blockAccessListHash\": \"%s\",\"requestsHash\": \"%s\","
+                                        .formatted(slotNumber, blockAccessListHash, requestsHash))
                         + "    \"number\": \"0x1b4\",\n"
                         + "    \"hash\": \"0xe670ec64341771606e55d6b4ca35a1a6b75ee3d5145a99d05921026d1527331\",\n"
                         + "    \"parentHash\": \"0x9646252be9520f6e71339a8df9c55e4d7619deeb018d2a3f2d21fc165dde5eb5\",\n"
@@ -1250,9 +1277,16 @@ class ResponseTest extends ResponseTester {
                                         "0x1e09b4199780a45792f4ff195ef68410a091b047",
                                         "0xd1f129")),
                         "0xa0000",
-                        "0x4bc0000");
+                        "0x4bc0000",
+                        slotNumber,
+                        blockAccessListHash,
+                        requestsHash);
 
         assertEquals(ethBlock.getBlock(), (block));
+        assertEquals(expectedSlotNumber, ethBlock.getBlock().getSlotNumber());
+        assertEquals(slotNumber, ethBlock.getBlock().getSlotNumberRaw());
+        assertEquals(blockAccessListHash, ethBlock.getBlock().getBlockAccessListHash());
+        assertEquals(requestsHash, ethBlock.getBlock().getRequestsHash());
     }
 
     @Test

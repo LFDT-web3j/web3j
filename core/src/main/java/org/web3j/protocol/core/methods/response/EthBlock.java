@@ -87,8 +87,77 @@ public class EthBlock extends Response<EthBlock.Block> {
         private List<Withdrawal> withdrawals;
         private String blobGasUsed;
         private String excessBlobGas;
+        private String slotNumber;
+        private String blockAccessListHash;
+        private String requestsHash;
 
         public Block() {}
+
+        public Block(
+                String number,
+                String hash,
+                String parentHash,
+                String parentBeaconBlockRoot,
+                String nonce,
+                String sha3Uncles,
+                String logsBloom,
+                String transactionsRoot,
+                String stateRoot,
+                String receiptsRoot,
+                String author,
+                String miner,
+                String mixHash,
+                String difficulty,
+                String totalDifficulty,
+                String extraData,
+                String size,
+                String gasLimit,
+                String gasUsed,
+                String timestamp,
+                List<TransactionResult> transactions,
+                List<String> uncles,
+                List<String> sealFields,
+                String baseFeePerGas,
+                String withdrawalsRoot,
+                List<Withdrawal> withdrawals,
+                String blobGasUsed,
+                String excessBlobGas,
+                String slotNumber,
+                String blockAccessListHash,
+                String requestsHash) {
+            this(
+                    number,
+                    hash,
+                    parentHash,
+                    parentBeaconBlockRoot,
+                    nonce,
+                    sha3Uncles,
+                    logsBloom,
+                    transactionsRoot,
+                    stateRoot,
+                    receiptsRoot,
+                    author,
+                    miner,
+                    mixHash,
+                    difficulty,
+                    totalDifficulty,
+                    extraData,
+                    size,
+                    gasLimit,
+                    gasUsed,
+                    timestamp,
+                    transactions,
+                    uncles,
+                    sealFields,
+                    baseFeePerGas,
+                    withdrawalsRoot,
+                    withdrawals,
+                    blobGasUsed,
+                    excessBlobGas);
+            this.slotNumber = slotNumber;
+            this.blockAccessListHash = blockAccessListHash;
+            this.requestsHash = requestsHash;
+        }
 
         public Block(
                 String number,
@@ -475,6 +544,35 @@ public class EthBlock extends Response<EthBlock.Block> {
             this.excessBlobGas = excessBlobGas;
         }
 
+        /** Returns the slot number, or {@code null} if absent from the response. */
+        public BigInteger getSlotNumber() {
+            return slotNumber == null ? null : Numeric.decodeQuantity(slotNumber);
+        }
+
+        public String getSlotNumberRaw() {
+            return slotNumber;
+        }
+
+        public void setSlotNumber(String slotNumber) {
+            this.slotNumber = slotNumber;
+        }
+
+        public String getBlockAccessListHash() {
+            return blockAccessListHash;
+        }
+
+        public void setBlockAccessListHash(String blockAccessListHash) {
+            this.blockAccessListHash = blockAccessListHash;
+        }
+
+        public String getRequestsHash() {
+            return requestsHash;
+        }
+
+        public void setRequestsHash(String requestsHash) {
+            this.requestsHash = requestsHash;
+        }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) {
@@ -625,9 +723,21 @@ public class EthBlock extends Response<EthBlock.Block> {
                 return false;
             }
 
-            return getWithdrawals() != null
-                    ? getWithdrawals().equals(block.getWithdrawals())
-                    : block.getWithdrawals() == null;
+            if (!Objects.equals(getWithdrawals(), block.getWithdrawals())) {
+                return false;
+            }
+
+            if (!Objects.equals(getSlotNumberRaw(), block.getSlotNumberRaw())) {
+                return false;
+            }
+            if (!Objects.equals(getBlockAccessListHash(), block.getBlockAccessListHash())) {
+                return false;
+            }
+            if (!Objects.equals(getRequestsHash(), block.getRequestsHash())) {
+                return false;
+            }
+
+            return true;
         }
 
         @Override
@@ -684,6 +794,9 @@ public class EthBlock extends Response<EthBlock.Block> {
                             + (getExcessBlobGasRaw() != null
                                     ? getExcessBlobGasRaw().hashCode()
                                     : 0);
+            result = 31 * result + Objects.hashCode(getSlotNumberRaw());
+            result = 31 * result + Objects.hashCode(getBlockAccessListHash());
+            result = 31 * result + Objects.hashCode(getRequestsHash());
             return result;
         }
     }

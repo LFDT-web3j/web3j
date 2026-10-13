@@ -14,9 +14,9 @@ plugins {
 
 
 ext {
-    bouncycastleVersion = '1.80'
-    jacksonVersion = '3.1.0'
-    jacksonAnnotationsVersion = '2.17.1'
+    bouncycastleVersion = '1.84'
+    jacksonVersion = '3.2.1'
+    jacksonAnnotationsVersion = '2.21'
     javaPoetVersion = '1.13.0'
     kotlinVersion = '1.9.24'
     kotlinPoetVersion = '1.16.0'
@@ -29,7 +29,7 @@ ext {
     ensAdraffyVersion = '0.2.0'
     kzg4844Version = '2.1.6'
     awsSdkVersion = '2.27.24'
-    tuweniVersion = '2.7.0'
+    tuweniVersion = '2.8.0'
     // test dependencies
     equalsverifierVersion = '3.16.1'
     junitVersion = '6.0.2'
