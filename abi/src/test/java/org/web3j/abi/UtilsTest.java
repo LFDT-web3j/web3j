@@ -98,4 +98,25 @@ public class UtilsTest {
     public void testTypeMapEmpty() {
         assertEquals(typeMap(new ArrayList<>(), Uint256.class), (new ArrayList<Uint256>()));
     }
+
+    @Test
+    public void testGetTypeNameForNestedArrayTypes() throws Exception {
+        assertEquals(
+                "uint256[][]",
+                Utils.getTypeName(new TypeReference<DynamicArray<DynamicArray<Uint256>>>() {}));
+
+        assertEquals(
+                "uint256[2][]",
+                Utils.getTypeName(new TypeReference<DynamicArray<StaticArray2<Uint256>>>() {}));
+
+        assertEquals(
+                "uint256[32][]",
+                Utils.getTypeName(new TypeReference<DynamicArray<StaticArray32<Uint256>>>() {}));
+
+        assertEquals(
+                "uint256[][]", Utils.getTypeName(TypeReference.makeTypeReference("uint256[][]")));
+
+        assertEquals(
+                "uint256[2][]", Utils.getTypeName(TypeReference.makeTypeReference("uint256[2][]")));
+    }
 }
