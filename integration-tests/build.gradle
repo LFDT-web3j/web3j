@@ -7,8 +7,8 @@ repositories {
     maven { url "https://splunk.jfrog.io/splunk/ext-releases-local" }
 }
 ext {
-    besuDepVersion = '25.10.0'
-    besuNativeDepVersion = '1.4.0'
+    besuDepVersion = '25.12.0'
+    besuNativeDepVersion = '1.5.0'
 }
 
 def withoutAbi = { exclude group: 'org.web3j', module: 'abi' }

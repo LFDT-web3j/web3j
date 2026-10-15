@@ -15,6 +15,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 - Add `CappedDynamicEIP1559GasProvider` to enforce an upper bound on EIP-1559 gas fees [#2306](https://github.com/LFDT-web3j/web3j/pull/2306)
 - Bump tuweni to 2.8.0 [#2308](https://github.com/LFDT-web3j/web3j/pull/2308)
 - Dependency update jackson, bouncycastle[#2303](https://github.com/LFDT-web3j/web3j/pull/2303)
+- Bump various dependencies (Jackson, Bouncy Castle, OkHttp, Logback, etc.) [#2322](https://github.com/LFDT-web3j/web3j/pull/2322)
 
 
 ### BREAKING CHANGES
