@@ -8,6 +8,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 - Fix maxPriorityFeePerGas exceeding maxFeePerGas in DynamicEIP1559GasProvider [#2264](https://github.com/LFDT-web3j/web3j/pull/2264)
+- Fix nested array type strings (static/dynamic combinations) and multidimensional dynamic array decoding [#2287](https://github.com/LFDT-web3j/web3j/pull/2287)
 
 ### Features
 
@@ -16,6 +17,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 - Bump tuweni to 2.8.0 [#2308](https://github.com/LFDT-web3j/web3j/pull/2308)
 - Dependency update jackson, bouncycastle[#2303](https://github.com/LFDT-web3j/web3j/pull/2303)
 - Bump various dependencies (Jackson, Bouncy Castle, OkHttp, Logback, etc.) [#2322](https://github.com/LFDT-web3j/web3j/pull/2322)
+- cache type bit-width parsing in TypeDecoder.getTypeLength[#2280](https://github.com/LFDT-web3j/web3j/pull/2280)
 
 
 ### BREAKING CHANGES
@@ -29,7 +31,6 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 - Fix dynamic array decoding in generated wrappers for struct types [#2272](https://github.com/LFDT-web3j/web3j/pull/2272)
 - Fix incorrect casting for array types in generated contract wrappers [#2274](https://github.com/LFDT-web3j/web3j/pull/2274)
 - Fix NullPointerException when deriving child keys from public-only Bip32ECKeyPair [#2284](https://github.com/LFDT-web3j/web3j/pull/2284)
-- Fix nested array type strings (static/dynamic combinations) and multidimensional dynamic array decoding [#2287](https://github.com/LFDT-web3j/web3j/pull/2287)
 - Fix Utf8String encoding + dynamic array for non-ASCII characters [#2289](https://github.com/LFDT-web3j/web3j/pull/2289)
 - Fix pass accessList to parent in Transaction7702 constructor [#2292](https://github.com/LFDT-web3j/web3j/pull/2292)
 - Fix Transaction serialization failure when fee fields are null [#2293](https://github.com/LFDT-web3j/web3j/pull/2293)
