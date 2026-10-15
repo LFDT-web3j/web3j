@@ -17,10 +17,13 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import io.reactivex.Flowable;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ArrayNode;
 
@@ -85,11 +88,13 @@ public abstract class Service implements Web3jService {
                                 : null;
                 ArrayNode nodes = (ArrayNode) objectMapper.readTree(responseBytes);
                 List<Response<?>> responses = new ArrayList<>(nodes.size());
+                List<JsonNode> byRequest = matchById(nodes, batchRequest.getRequests());
 
                 for (int i = 0; i < nodes.size(); i++) {
                     Request<?, ? extends Response<?>> request = batchRequest.getRequests().get(i);
+                    JsonNode node = byRequest != null ? byRequest.get(i) : nodes.get(i);
                     Response<?> response =
-                            objectMapper.treeToValue(nodes.get(i), request.getResponseType());
+                            objectMapper.treeToValue(node, request.getResponseType());
                     if (rawResponse != null) {
                         response.setRawResponse(rawResponse);
                     }
@@ -101,6 +106,25 @@ public abstract class Service implements Web3jService {
                 return null;
             }
         }
+    }
+
+    // JSON-RPC 2.0 allows batch responses in any order, so pair them with requests by id.
+    // Returns null (keep array order) if the ids don't map one-to-one.
+    private static List<JsonNode> matchById(
+            ArrayNode nodes, List<Request<?, ? extends Response<?>>> requests) {
+        Map<Long, JsonNode> byId = new HashMap<>();
+        for (JsonNode node : nodes) {
+            byId.put(node.path("id").asLong(-1), node);
+        }
+        List<JsonNode> matched = new ArrayList<>(requests.size());
+        for (Request<?, ? extends Response<?>> request : requests) {
+            JsonNode node = byId.remove(request.getId());
+            if (node == null) {
+                return null;
+            }
+            matched.add(node);
+        }
+        return matched;
     }
 
     @Override

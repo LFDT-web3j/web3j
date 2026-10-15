@@ -93,4 +93,33 @@ class BatchTest extends BatchTester {
         NetVersion netVersion = (NetVersion) response.getResponses().get(2);
         assertEquals("59", netVersion.getNetVersion());
     }
+
+    @Test
+    void testBatchResponseOutOfOrder() throws Exception {
+        BatchRequest batchRequest =
+                web3j.newBatch().add(web3j.web3ClientVersion()).add(web3j.netVersion());
+        long clientVersionId = batchRequest.getRequests().get(0).getId();
+        long netVersionId = batchRequest.getRequests().get(1).getId();
+
+        // JSON-RPC 2.0 allows batch responses in any order
+        buildResponse(
+                "["
+                        + "{\"jsonrpc\":\"2.0\",\"id\":"
+                        + netVersionId
+                        + ",\"result\":\"59\"},"
+                        + "{\"jsonrpc\":\"2.0\",\"id\":"
+                        + clientVersionId
+                        + ",\"result\":\"Mist/v0.9.3/darwin/go1.4.1\"}"
+                        + "]");
+
+        BatchResponse response = batchRequest.send();
+
+        Web3ClientVersion web3ClientVersion = (Web3ClientVersion) response.getResponses().get(0);
+        assertEquals("Mist/v0.9.3/darwin/go1.4.1", web3ClientVersion.getWeb3ClientVersion());
+        assertEquals(clientVersionId, web3ClientVersion.getId());
+
+        NetVersion netVersion = (NetVersion) response.getResponses().get(1);
+        assertEquals("59", netVersion.getNetVersion());
+        assertEquals(netVersionId, netVersion.getId());
+    }
 }
