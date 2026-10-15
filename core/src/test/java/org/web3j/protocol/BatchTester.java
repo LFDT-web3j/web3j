@@ -93,7 +93,9 @@ public abstract class BatchTester {
                 for (int i = 0; i < node.size(); i++) {
                     contents[i] = node.get(i).toString();
                     responseBody.append(
-                            "{\"jsonrpc\":\"2.0\",\"method\":\"\",\"params\":[],\"id\":1}");
+                            "{\"jsonrpc\":\"2.0\",\"method\":\"\",\"params\":[],\"id\":"
+                                    + node.get(i).get("id")
+                                    + "}");
 
                     if (i != node.size() - 1) {
                         responseBody.append(',');

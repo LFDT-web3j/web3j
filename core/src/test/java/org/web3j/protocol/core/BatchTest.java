@@ -12,6 +12,8 @@
  */
 package org.web3j.protocol.core;
 
+import java.io.IOException;
+
 import org.junit.jupiter.api.Test;
 
 import org.web3j.protocol.BatchTester;
@@ -22,6 +24,7 @@ import org.web3j.protocol.core.methods.response.Web3Sha3;
 import org.web3j.protocol.http.HttpService;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BatchTest extends BatchTester {
@@ -52,32 +55,39 @@ class BatchTest extends BatchTester {
 
     @Test
     void testBatchResponse() throws Exception {
+        BatchRequest batchRequest =
+                web3j.newBatch()
+                        .add(web3j.web3ClientVersion())
+                        .add(web3j.web3Sha3("0x68656c6c6f20776f726c64"))
+                        .add(web3j.netVersion());
+
         buildResponse(
                 "["
                         + "{\n"
-                        + "  \"id\":67,\n"
+                        + "  \"id\":"
+                        + batchRequest.getRequests().get(0).getId()
+                        + ",\n"
                         + "  \"jsonrpc\":\"2.0\",\n"
                         + "  \"result\": \"Mist/v0.9.3/darwin/go1.4.1\"\n"
                         + "},"
                         + "{\n"
-                        + "  \"id\":64,\n"
+                        + "  \"id\":"
+                        + batchRequest.getRequests().get(1).getId()
+                        + ",\n"
                         + "  \"jsonrpc\": \"2.0\",\n"
                         + "  \"result\": "
                         + "\"0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad\"\n"
                         + "},"
                         + "{\n"
-                        + "  \"id\":67,\n"
+                        + "  \"id\":"
+                        + batchRequest.getRequests().get(2).getId()
+                        + ",\n"
                         + "  \"jsonrpc\": \"2.0\",\n"
                         + "  \"result\": \"59\"\n"
                         + "}"
                         + "]");
 
-        BatchResponse response =
-                web3j.newBatch()
-                        .add(web3j.web3ClientVersion())
-                        .add(web3j.web3Sha3("0x68656c6c6f20776f726c64"))
-                        .add(web3j.netVersion())
-                        .send();
+        BatchResponse response = batchRequest.send();
 
         assertTrue(response.getResponses().get(0) instanceof Web3ClientVersion);
         Web3ClientVersion web3ClientVersion = (Web3ClientVersion) response.getResponses().get(0);
@@ -121,5 +131,24 @@ class BatchTest extends BatchTester {
         NetVersion netVersion = (NetVersion) response.getResponses().get(1);
         assertEquals("59", netVersion.getNetVersion());
         assertEquals(netVersionId, netVersion.getId());
+    }
+
+    @Test
+    void testBatchResponseDuplicateIdFails() {
+        BatchRequest batchRequest =
+                web3j.newBatch().add(web3j.web3ClientVersion()).add(web3j.netVersion());
+        long clientVersionId = batchRequest.getRequests().get(0).getId();
+
+        buildResponse(
+                "["
+                        + "{\"jsonrpc\":\"2.0\",\"id\":"
+                        + clientVersionId
+                        + ",\"result\":\"Mist/v0.9.3/darwin/go1.4.1\"},"
+                        + "{\"jsonrpc\":\"2.0\",\"id\":"
+                        + clientVersionId
+                        + ",\"result\":\"59\"}"
+                        + "]");
+
+        assertThrows(IOException.class, batchRequest::send);
     }
 }
