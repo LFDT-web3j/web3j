@@ -38,6 +38,40 @@ public class AuthorizationTuple {
         this.s = s;
     }
 
+    /**
+     * Signs an EIP-7702 authorization with the given key pair and returns the populated (signed)
+     * tuple. Convenience wrapper around {@link Sign#signAuthorization(BigInteger, String,
+     * BigInteger, ECKeyPair)}.
+     *
+     * @param chainId chain id the authorization is bound to ({@code 0} = valid on any chain)
+     * @param address 20-byte delegation target address (0x-prefixed)
+     * @param nonce authority account nonce the authorization is valid for
+     * @param keyPair the authority's key pair
+     * @return a signed authorization tuple
+     */
+    public static AuthorizationTuple from(
+            BigInteger chainId, String address, BigInteger nonce, ECKeyPair keyPair) {
+        return Sign.signAuthorization(chainId, address, nonce, keyPair);
+    }
+
+    /** Convenience overload taking {@link Credentials}. */
+    public static AuthorizationTuple from(
+            BigInteger chainId, String address, BigInteger nonce, Credentials credentials) {
+        return Sign.signAuthorization(chainId, address, nonce, credentials);
+    }
+
+    /** Convenience overload taking a {@code long} chainId. */
+    public static AuthorizationTuple from(
+            long chainId, String address, BigInteger nonce, ECKeyPair keyPair) {
+        return Sign.signAuthorization(chainId, address, nonce, keyPair);
+    }
+
+    /** Convenience overload taking a {@code long} chainId and {@link Credentials}. */
+    public static AuthorizationTuple from(
+            long chainId, String address, BigInteger nonce, Credentials credentials) {
+        return Sign.signAuthorization(chainId, address, nonce, credentials);
+    }
+
     public BigInteger getChainId() {
         return chainId;
     }

@@ -14,8 +14,10 @@ package org.web3j.utils;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -24,25 +26,70 @@ public class Async {
 
     private Async() {}
 
-    private static final ExecutorService executor = Executors.newCachedThreadPool();
+    /**
+     * Maps each executor created by {@link #defaultExecutorService()} to its registered JVM
+     * shutdown hook so the hook can be removed when the executor is explicitly shut down.
+     */
+    private static final ConcurrentHashMap<ExecutorService, Thread> registeredShutdownHooks =
+            new ConcurrentHashMap<>();
 
-    static {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdown(executor)));
+    /**
+     * Shared executor used for async operations. Use {@link #shutdown()} to stop it and prevent
+     * ClassLoader leaks during web app undeployment.
+     */
+    private static volatile ExecutorService executor;
+
+    private static ExecutorService getExecutor() {
+        ExecutorService result = executor;
+        if (result == null || result.isShutdown() || result.isTerminated()) {
+            synchronized (Async.class) {
+                result = executor;
+                if (result == null || result.isShutdown() || result.isTerminated()) {
+                    executor =
+                            result =
+                                    Executors.newCachedThreadPool(
+                                            r -> {
+                                                Thread t = new Thread(r);
+                                                t.setName("web3j-async");
+                                                t.setDaemon(true);
+                                                return t;
+                                            });
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Stops the shared executor service. Useful in web containers to release threads and prevent
+     * ClassLoader leaks.
+     */
+    public static void shutdown() {
+        synchronized (Async.class) {
+            if (executor != null && !executor.isShutdown()) {
+                shutdown(executor);
+                executor = null;
+            }
+        }
     }
 
     public static <T> CompletableFuture<T> run(Callable<T> callable) {
         CompletableFuture<T> result = new CompletableFuture<>();
-        CompletableFuture.runAsync(
-                () -> {
-                    // we need to explicitly catch any exceptions,
-                    // otherwise they will be silently discarded
-                    try {
-                        result.complete(callable.call());
-                    } catch (Throwable e) {
-                        result.completeExceptionally(e);
-                    }
-                },
-                executor);
+        try {
+            CompletableFuture.runAsync(
+                    () -> {
+                        // we need to explicitly catch any exceptions,
+                        // otherwise they will be silently discarded
+                        try {
+                            result.complete(callable.call());
+                        } catch (Throwable throwable) {
+                            result.completeExceptionally(throwable);
+                        }
+                    },
+                    getExecutor());
+        } catch (RejectedExecutionException e) {
+            result.completeExceptionally(e);
+        }
         return result;
     }
 
@@ -59,9 +106,17 @@ public class Async {
      */
     public static ScheduledExecutorService defaultExecutorService() {
         ScheduledExecutorService scheduledExecutorService =
-                Executors.newScheduledThreadPool(getCpuCount());
+                Executors.newScheduledThreadPool(
+                        getCpuCount(),
+                        r -> {
+                            Thread t = new Thread(r);
+                            t.setDaemon(true);
+                            return t;
+                        });
 
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdown(scheduledExecutorService)));
+        Thread hook = new Thread(() -> shutdown(scheduledExecutorService));
+        registeredShutdownHooks.put(scheduledExecutorService, hook);
+        Runtime.getRuntime().addShutdownHook(hook);
 
         return scheduledExecutorService;
     }
@@ -69,9 +124,20 @@ public class Async {
     /**
      * Shutdown as per {@link ExecutorService} Javadoc recommendation.
      *
+     * <p>If the executor was created via {@link #defaultExecutorService()}, its registered JVM
+     * shutdown hook is also removed to prevent hook accumulation.
+     *
      * @param executorService executor service we wish to shut down.
      */
-    private static void shutdown(ExecutorService executorService) {
+    public static void shutdown(ExecutorService executorService) {
+        Thread hook = registeredShutdownHooks.remove(executorService);
+        if (hook != null) {
+            try {
+                Runtime.getRuntime().removeShutdownHook(hook);
+            } catch (IllegalStateException ignored) {
+                // JVM is already shutting down, the hook is running — nothing to do.
+            }
+        }
         executorService.shutdown();
         try {
             if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {

@@ -17,14 +17,14 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectWriter;
 
 import org.web3j.crypto.HSMHTTPPass;
 import org.web3j.dto.HSMHTTPRequestDTO;
@@ -48,7 +48,7 @@ public class HSMHTTPRequestProcessorTestImpl<T extends HSMHTTPPass>
         String json;
         try {
             json = ow.writeValueAsString(requestDto);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             log.error(e.getMessage(), e);
             throw new RuntimeException(e);
         }

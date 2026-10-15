@@ -142,11 +142,16 @@ public class ArraysInStruct extends Contract {
 
         public List<String> addressArrayFieldStatic;
 
-        public Entity(byte[] bytesField, byte[] extraData, List<String> stringArrayField,
-                List<byte[]> bytesArrayField, List<byte[]> bytes2ArrayField,
-                List<byte[]> bytes32ArrayField, List<BigInteger> unitArrayField,
-                List<BigInteger> unit256ArrayField, List<Boolean> boolField,
-                List<BigInteger> intArrayField, List<String> addressArrayField,
+        public Entity(byte[] bytesField, byte[] extraData,
+                @Parameterized(type = Utf8String.class) List<String> stringArrayField,
+                @Parameterized(type = DynamicBytes.class) List<byte[]> bytesArrayField,
+                @Parameterized(type = Bytes2.class) List<byte[]> bytes2ArrayField,
+                @Parameterized(type = Bytes32.class) List<byte[]> bytes32ArrayField,
+                @Parameterized(type = Uint256.class) List<BigInteger> unitArrayField,
+                @Parameterized(type = Uint256.class) List<BigInteger> unit256ArrayField,
+                @Parameterized(type = Bool.class) List<Boolean> boolField,
+                @Parameterized(type = Int256.class) List<BigInteger> intArrayField,
+                @Parameterized(type = Address.class) List<String> addressArrayField,
                 List<String> stringArrayFieldStatic, List<byte[]> bytesArrayFieldStatic,
                 List<byte[]> bytes2ArrayFieldStatic, List<byte[]> bytes32ArrayFieldStatic,
                 List<BigInteger> unitArrayFieldStatic, List<BigInteger> unit256ArrayFieldStatic,
@@ -240,15 +245,14 @@ public class ArraysInStruct extends Contract {
                 @Parameterized(type = Bool.class) DynamicArray<Bool> boolField,
                 @Parameterized(type = Int256.class) DynamicArray<Int256> intArrayField,
                 @Parameterized(type = Address.class) DynamicArray<Address> addressArrayField,
-                @Parameterized(type = Utf8String.class) StaticArray5<Utf8String> stringArrayFieldStatic,
-                @Parameterized(type = DynamicBytes.class) StaticArray5<DynamicBytes> bytesArrayFieldStatic,
-                @Parameterized(type = Bytes2.class) StaticArray5<Bytes2> bytes2ArrayFieldStatic,
-                @Parameterized(type = Bytes32.class) StaticArray5<Bytes32> bytes32ArrayFieldStatic,
-                @Parameterized(type = Uint256.class) StaticArray5<Uint256> unitArrayFieldStatic,
-                @Parameterized(type = Uint256.class) StaticArray5<Uint256> unit256ArrayFieldStatic,
-                @Parameterized(type = Bool.class) StaticArray5<Bool> boolFieldStatic,
-                @Parameterized(type = Int256.class) StaticArray5<Int256> intArrayFieldStatic,
-                @Parameterized(type = Address.class) StaticArray5<Address> addressArrayFieldStatic) {
+                StaticArray5<Utf8String> stringArrayFieldStatic,
+                StaticArray5<DynamicBytes> bytesArrayFieldStatic,
+                StaticArray5<Bytes2> bytes2ArrayFieldStatic,
+                StaticArray5<Bytes32> bytes32ArrayFieldStatic,
+                StaticArray5<Uint256> unitArrayFieldStatic,
+                StaticArray5<Uint256> unit256ArrayFieldStatic, StaticArray5<Bool> boolFieldStatic,
+                StaticArray5<Int256> intArrayFieldStatic,
+                StaticArray5<Address> addressArrayFieldStatic) {
             super(bytesField, extraData, stringArrayField, bytesArrayField, bytes2ArrayField, bytes32ArrayField, unitArrayField, unit256ArrayField, boolField, intArrayField, addressArrayField, stringArrayFieldStatic, bytesArrayFieldStatic, bytes2ArrayFieldStatic, bytes32ArrayFieldStatic, unitArrayFieldStatic, unit256ArrayFieldStatic, boolFieldStatic, intArrayFieldStatic, addressArrayFieldStatic);
             this.bytesField = bytesField.getValue();
             this.extraData = extraData.getValue();

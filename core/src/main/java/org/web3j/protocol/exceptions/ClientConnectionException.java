@@ -14,7 +14,19 @@ package org.web3j.protocol.exceptions;
 
 /** Client connection exception. */
 public class ClientConnectionException extends RuntimeException {
+    private final Integer code;
+
+    public ClientConnectionException(Integer code, String message) {
+        super(message);
+        this.code = code;
+    }
+
     public ClientConnectionException(String message) {
         super(message);
+        this.code = null;
+    }
+
+    public Integer getCode() {
+        return code;
     }
 }

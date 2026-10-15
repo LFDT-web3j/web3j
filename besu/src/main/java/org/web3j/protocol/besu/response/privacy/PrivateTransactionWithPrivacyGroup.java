@@ -16,12 +16,12 @@ import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.annotation.JsonDeserialize;
 
 import org.web3j.utils.Base64String;
 
-@JsonDeserialize(using = JsonDeserializer.None.class)
+@JsonDeserialize(using = ValueDeserializer.None.class)
 public class PrivateTransactionWithPrivacyGroup extends PrivateTransaction {
 
     private Base64String privacyGroupId;

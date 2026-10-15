@@ -12,19 +12,21 @@
  */
 package org.web3j.protocol.deserializer;
 
-import java.io.IOException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.core.TreeNode;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ValueDeserializer;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.TreeNode;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-
-public class KeepAsJsonDeserialzier extends JsonDeserializer<String> {
+public class KeepAsJsonDeserialzier extends ValueDeserializer<String> {
 
     @Override
-    public String deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
+    public String deserialize(JsonParser jp, DeserializationContext ctxt) {
+        if (jp.currentToken() == JsonToken.VALUE_NULL) {
+            return null;
+        }
 
-        TreeNode tree = jp.getCodec().readTree(jp);
-        return tree.toString();
+        TreeNode tree = jp.readValueAsTree();
+        return tree != null ? tree.toString() : null;
     }
 }

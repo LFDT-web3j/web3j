@@ -91,7 +91,7 @@ class RawTransactionManagerTest extends ManagedTransactionTester {
 
         TxSignService txHSMSignService = new TxHSMSignService<>(hsmRequestProcessor, hsmhttpPass);
         RawTransactionManager transactionManager =
-                new RawTransactionManager(web3j, txHSMSignService, ChainId.NONE);
+                new RawTransactionManager(web3j, txHSMSignService, ChainIdLong.NONE);
 
         String sign = transactionManager.sign(createRawTx());
 

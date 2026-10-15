@@ -49,7 +49,7 @@ public class SolidityFunctionWrapperGeneratorTest extends TempFileProvider {
         super.setUp();
 
         URL url = SolidityFunctionWrapperGeneratorTest.class.getResource("/solidity");
-        solidityBaseDir = url.getPath();
+        solidityBaseDir = new File(url.toURI()).getAbsolutePath();
     }
 
     @Test
@@ -253,6 +253,13 @@ public class SolidityFunctionWrapperGeneratorTest extends TempFileProvider {
     @Test
     public void testArrayOfStructAndStructCompareJavaFile() throws Exception {
         compareJavaFile("ArrayOfStructAndStruct", true, false);
+    }
+
+    @Test
+    public void testInterfaceStructArrayGeneration() throws Exception {
+        testCodeGeneration("interfacestructarray", "InterfaceStructArray", JAVA_TYPES_ARG, false);
+        testCodeGeneration(
+                "interfacestructarray", "InterfaceStructArray", SOLIDITY_TYPES_ARG, false);
     }
 
     @Test

@@ -718,6 +718,8 @@ public class TypeDecoder {
                                             - parameterOffsets.get(dynamicParametersProcessed)
                                     : parameterOffsets.get(dynamicParametersProcessed + 1)
                                             - parameterOffsets.get(dynamicParametersProcessed);
+                    final java.lang.reflect.Type genericParameterType =
+                            constructor.getGenericParameterTypes()[i];
                     final Class<T> parameterFromAnnotation =
                             Utils.extractParameterFromAnnotation(
                                     constructor.getParameterAnnotations()[i]);
@@ -728,6 +730,7 @@ public class TypeDecoder {
                                     parameterOffsets.get(dynamicParametersProcessed),
                                     parameterLength,
                                     declaredField,
+                                    genericParameterType,
                                     parameterFromAnnotation));
                     dynamicParametersProcessed++;
                 }
@@ -755,11 +758,13 @@ public class TypeDecoder {
         return (int) Arrays.stream(cls).filter(c -> isDynamic((Class<T>) c)).count();
     }
 
+    @SuppressWarnings("unchecked")
     private static <T extends Type> T decodeDynamicParameterFromStruct(
             final String input,
             final int parameterOffset,
             final int parameterLength,
             final Class<T> declaredField,
+            final java.lang.reflect.Type genericParameterType,
             final Class<T> parameter)
             throws ClassNotFoundException {
         final String dynamicElementData =
@@ -767,18 +772,25 @@ public class TypeDecoder {
 
         final T value;
         if (DynamicStruct.class.isAssignableFrom(declaredField)) {
-            value = decodeDynamicStruct(dynamicElementData, 0, TypeReference.create(declaredField));
-        } else if (DynamicArray.class.isAssignableFrom(declaredField)) {
-            if (parameter == null) {
-                throw new RuntimeException(
-                        "parameter can not be null, try to use annotation @Parameterized to specify the parameter type");
-            }
             value =
                     (T)
-                            decodeDynamicArray(
+                            decodeDynamicStruct(
                                     dynamicElementData,
                                     0,
-                                    Utils.getDynamicArrayTypeReference(parameter));
+                                    (TypeReference)
+                                            new TypeReference(genericParameterType, false) {});
+        } else if (DynamicArray.class.isAssignableFrom(declaredField)) {
+            TypeReference<?> typeRef;
+            if (genericParameterType instanceof ParameterizedType) {
+                typeRef = new TypeReference(genericParameterType, false) {};
+            } else {
+                if (parameter == null) {
+                    throw new RuntimeException(
+                            "parameter can not be null, try to use annotation @Parameterized to specify the parameter type");
+                }
+                typeRef = Utils.getDynamicArrayTypeReference(parameter);
+            }
+            value = (T) decodeDynamicArray(dynamicElementData, 0, typeRef);
         } else {
             value = decode(dynamicElementData, declaredField);
         }
@@ -943,9 +955,7 @@ public class TypeDecoder {
                                                 offset
                                                         + getDataOffset(
                                                                 input, currOffset, typeReference),
-                                                Utils.getDynamicArrayTypeReference(
-                                                        Utils.getFullParameterizedTypeFromArray(
-                                                                typeReference)));
+                                                typeReference.getSubTypeReference());
                         currOffset +=
                                 getSingleElementLength(input, currOffset, cls)
                                         * MAX_BYTE_LENGTH_FOR_HEX_STRING;
@@ -955,9 +965,9 @@ public class TypeDecoder {
                                 typeName.substring(typeName.replaceAll("[0-9]+$", "").length());
                         int staticLength =
                                 extractedLength.isEmpty() ? 0 : Integer.parseInt(extractedLength);
-                        TypeReference innerType =
-                                TypeReference.create(
-                                        Utils.getFullParameterizedTypeFromArray(typeReference));
+                        // elementType is the element TypeReference of the outer array; its subtype
+                        // is the component for this StaticArray dimension.
+                        TypeReference elementType = typeReference.getSubTypeReference();
 
                         TypeReference.StaticArrayTypeReference staticReference =
                                 new TypeReference.StaticArrayTypeReference<StaticArray>(
@@ -965,7 +975,7 @@ public class TypeDecoder {
 
                                     @Override
                                     public TypeReference getSubTypeReference() {
-                                        return innerType;
+                                        return elementType.getSubTypeReference();
                                     }
 
                                     @Override
@@ -980,7 +990,7 @@ public class TypeDecoder {
                                             public java.lang.reflect.Type[]
                                                     getActualTypeArguments() {
                                                 return new java.lang.reflect.Type[] {
-                                                    innerType.getType()
+                                                    elementType.getSubTypeReference().getType()
                                                 };
                                             }
 

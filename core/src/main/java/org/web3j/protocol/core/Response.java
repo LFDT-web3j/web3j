@@ -13,7 +13,7 @@
 package org.web3j.protocol.core;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonDeserialize;
 
 import org.web3j.protocol.deserializer.KeepAsJsonDeserialzier;
 

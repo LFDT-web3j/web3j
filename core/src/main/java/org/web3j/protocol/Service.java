@@ -14,14 +14,15 @@ package org.web3j.protocol;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.reactivex.Flowable;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
 
 import org.web3j.protocol.core.BatchRequest;
 import org.web3j.protocol.core.BatchResponse;
@@ -34,9 +35,11 @@ import org.web3j.utils.Async;
 public abstract class Service implements Web3jService {
 
     protected final ObjectMapper objectMapper;
+    private final boolean includeRawResponses;
 
     public Service(boolean includeRawResponses) {
-        objectMapper = ObjectMapperFactory.getObjectMapper(includeRawResponses);
+        this.includeRawResponses = includeRawResponses;
+        objectMapper = ObjectMapperFactory.getObjectMapper();
     }
 
     protected abstract InputStream performIO(String payload) throws IOException;
@@ -47,7 +50,12 @@ public abstract class Service implements Web3jService {
 
         try (InputStream result = performIO(payload)) {
             if (result != null) {
-                return objectMapper.readValue(result, responseType);
+                byte[] responseBytes = result.readAllBytes();
+                T response = objectMapper.readValue(responseBytes, responseType);
+                if (includeRawResponses && response != null) {
+                    response.setRawResponse(new String(responseBytes, StandardCharsets.UTF_8));
+                }
+                return response;
             } else {
                 return null;
             }
@@ -70,13 +78,21 @@ public abstract class Service implements Web3jService {
 
         try (InputStream result = performIO(payload)) {
             if (result != null) {
-                ArrayNode nodes = (ArrayNode) objectMapper.readTree(result);
+                byte[] responseBytes = result.readAllBytes();
+                String rawResponse =
+                        includeRawResponses
+                                ? new String(responseBytes, StandardCharsets.UTF_8)
+                                : null;
+                ArrayNode nodes = (ArrayNode) objectMapper.readTree(responseBytes);
                 List<Response<?>> responses = new ArrayList<>(nodes.size());
 
                 for (int i = 0; i < nodes.size(); i++) {
                     Request<?, ? extends Response<?>> request = batchRequest.getRequests().get(i);
                     Response<?> response =
                             objectMapper.treeToValue(nodes.get(i), request.getResponseType());
+                    if (rawResponse != null) {
+                        response.setRawResponse(rawResponse);
+                    }
                     responses.add(response);
                 }
 

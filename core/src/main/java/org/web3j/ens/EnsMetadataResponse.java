@@ -12,8 +12,8 @@
  */
 package org.web3j.ens;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 public class EnsMetadataResponse {
     public boolean is_normalized;
@@ -117,7 +117,7 @@ public class EnsMetadataResponse {
     public String toString() {
         try {
             return new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(this);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             return "Error serializing EnsMetadataResponse: " + e.getMessage();
         }
     }

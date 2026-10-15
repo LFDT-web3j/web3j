@@ -12,19 +12,17 @@
  */
 package org.web3j.protocol.core.methods.response.admin;
 
-import java.io.IOException;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.annotation.JsonDeserialize;
 
-import org.web3j.protocol.ObjectMapperFactory;
 import org.web3j.protocol.core.Response;
 
 /** admin_peers. */
@@ -89,16 +87,16 @@ public class AdminPeers extends Response<List<AdminPeers.Peer>> {
         }
     }
 
-    public static class ResponseDeserialiser extends JsonDeserializer<List<Peer>> {
+    public static class ResponseDeserialiser extends ValueDeserializer<List<Peer>> {
 
-        private ObjectReader objectReader = ObjectMapperFactory.getObjectReader();
+        private final ObjectMapper objectMapper = new ObjectMapper();
 
         @Override
         public List<Peer> deserialize(
-                JsonParser jsonParser, DeserializationContext deserializationContext)
-                throws IOException {
-            if (jsonParser.getCurrentToken() != JsonToken.VALUE_NULL) {
-                return objectReader.readValue(jsonParser, new TypeReference<List<Peer>>() {});
+                JsonParser jsonParser, DeserializationContext deserializationContext) {
+            if (jsonParser.currentToken() != JsonToken.VALUE_NULL) {
+                return objectMapper.convertValue(
+                        jsonParser.readValueAsTree(), new TypeReference<List<Peer>>() {});
             } else {
                 return null; // null is wrapped by Optional in above getter
             }

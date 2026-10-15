@@ -13,11 +13,13 @@
 package org.web3j.protocol.core.methods.request;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 /**
  * Filter implementation as per <a
  * href="https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_newfilter">docs</a>
  */
+@JsonPropertyOrder({"topics", "to", "data"})
 public class ShhFilter extends Filter<ShhFilter> {
     private String to;
 

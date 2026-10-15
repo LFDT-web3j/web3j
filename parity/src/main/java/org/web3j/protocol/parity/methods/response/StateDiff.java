@@ -15,7 +15,7 @@ package org.web3j.protocol.parity.methods.response;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 /**
  * StateDiff used in following methods.

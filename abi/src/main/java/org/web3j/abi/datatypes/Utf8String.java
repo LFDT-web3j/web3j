@@ -12,6 +12,8 @@
  */
 package org.web3j.abi.datatypes;
 
+import java.nio.charset.StandardCharsets;
+
 /** UTF-8 encoded string type. */
 public class Utf8String implements Type<String> {
 
@@ -30,11 +32,14 @@ public class Utf8String implements Type<String> {
      */
     @Override
     public int bytes32PaddedLength() {
-        if (value.isEmpty()) {
-            return MAX_BYTE_LENGTH;
-        } else {
-            return 2 * MAX_BYTE_LENGTH;
+        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+        int len = bytes.length;
+        int mod = len % MAX_BYTE_LENGTH;
+        int padding = 0;
+        if (mod != 0) {
+            padding = MAX_BYTE_LENGTH - mod;
         }
+        return MAX_BYTE_LENGTH + len + padding;
     }
 
     @Override

@@ -30,6 +30,8 @@ public class DynamicEIP1559GasProvider implements ContractEIP1559GasProvider, Pr
     private final BigDecimal customMultiplier;
     private BigInteger maxGasLimit = BigInteger.valueOf(9_000_000);
 
+    private final ThreadLocal<BigInteger> pendingPriorityFee = new ThreadLocal<>();
+
     public DynamicEIP1559GasProvider(Web3j web3j, long chainId) {
         this(web3j, chainId, Priority.NORMAL);
     }
@@ -54,13 +56,21 @@ public class DynamicEIP1559GasProvider implements ContractEIP1559GasProvider, Pr
     @Override
     public BigInteger getMaxFeePerGas() {
         try {
+            BigInteger pendingTip = pendingPriorityFee.get();
+            pendingPriorityFee.remove();
             BigInteger baseFee =
                     web3j.ethGetBlockByNumber(DefaultBlockParameterName.LATEST, false)
                             .send()
                             .getBlock()
                             .getBaseFeePerGas();
 
-            return baseFee.multiply(BigInteger.valueOf(2)).add(getMaxPriorityFeePerGas());
+            BigInteger currentTip =
+                    applyPriority(fetchMaxPriorityFeePerGas(), priority, customMultiplier);
+            BigInteger maxFee = baseFee.multiply(BigInteger.valueOf(2)).add(currentTip);
+            if (pendingTip != null) {
+                maxFee = maxFee.max(pendingTip);
+            }
+            return maxFee;
         } catch (IOException e) {
             throw new RuntimeException("Failed to get ethMaxFeePerGas");
         }
@@ -69,17 +79,22 @@ public class DynamicEIP1559GasProvider implements ContractEIP1559GasProvider, Pr
     @Override
     public BigInteger getMaxPriorityFeePerGas() {
         try {
-            EthMaxPriorityFeePerGas ethMaxPriorityFeePerGas =
-                    web3j.ethMaxPriorityFeePerGas().send();
-            if (ethMaxPriorityFeePerGas.hasError()) {
-                throw new RuntimeException(
-                        "Error fetching ethMaxPriorityFeePerGas: "
-                                + ethMaxPriorityFeePerGas.getError().getMessage());
-            }
-            return ethMaxPriorityFeePerGas.getMaxPriorityFeePerGas();
+            BigInteger fee = applyPriority(fetchMaxPriorityFeePerGas(), priority, customMultiplier);
+            pendingPriorityFee.set(fee);
+            return fee;
         } catch (IOException e) {
             throw new RuntimeException("Failed to get ethMaxPriorityFeePerGas");
         }
+    }
+
+    private BigInteger fetchMaxPriorityFeePerGas() throws IOException {
+        EthMaxPriorityFeePerGas ethMaxPriorityFeePerGas = web3j.ethMaxPriorityFeePerGas().send();
+        if (ethMaxPriorityFeePerGas.hasError()) {
+            throw new RuntimeException(
+                    "Error fetching ethMaxPriorityFeePerGas: "
+                            + ethMaxPriorityFeePerGas.getError().getMessage());
+        }
+        return ethMaxPriorityFeePerGas.getMaxPriorityFeePerGas();
     }
 
     @Override

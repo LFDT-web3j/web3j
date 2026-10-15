@@ -4,4 +4,7 @@ plugins {
 
 description 'Minimal set of web3j utility classes'
 
-dependencies { api "org.bouncycastle:bcprov-jdk18on:$bouncycastleVersion" }
+dependencies {
+    api "org.bouncycastle:bcprov-jdk18on:$bouncycastleVersion"
+    api "org.bouncycastle:bcutil-jdk18on:$bouncycastleVersion"
+}

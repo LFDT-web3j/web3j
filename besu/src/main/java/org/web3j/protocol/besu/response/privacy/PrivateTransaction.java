@@ -12,15 +12,15 @@
  */
 package org.web3j.protocol.besu.response.privacy;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.TreeNode;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.TreeNode;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.annotation.JsonDeserialize;
 
 import org.web3j.utils.Base64String;
 import org.web3j.utils.Numeric;
@@ -29,24 +29,25 @@ import org.web3j.utils.Restriction;
 @JsonDeserialize(using = PrivateTransaction.ResponseDeserialiser.class)
 public abstract class PrivateTransaction {
 
-    public static class ResponseDeserialiser extends StdDeserializer<PrivateTransaction> {
+    public static class ResponseDeserialiser extends ValueDeserializer<PrivateTransaction> {
+
+        private final ObjectMapper objectMapper = new ObjectMapper();
 
         protected ResponseDeserialiser() {
-            super(PrivateTransaction.class);
+            super();
         }
 
         @Override
-        public PrivateTransaction deserialize(JsonParser p, DeserializationContext ctxt)
-                throws IOException {
+        public PrivateTransaction deserialize(JsonParser p, DeserializationContext ctxt) {
             final TreeNode node = p.readValueAsTree();
 
             // Select the concrete class based on the existence of a property
             if (node.get("privateFor") != null && node.get("privateFor").isArray()) {
-                return p.getCodec().treeToValue(node, PrivateTransactionLegacy.class);
+                return objectMapper.convertValue(node, PrivateTransactionLegacy.class);
             } else if ((node.get("privateFor") != null && node.get("privateFor").isValueNode())
                     || (node.get("privacyGroupId") != null
                             && node.get("privacyGroupId").isValueNode())) {
-                return p.getCodec().treeToValue(node, PrivateTransactionWithPrivacyGroup.class);
+                return objectMapper.convertValue(node, PrivateTransactionWithPrivacyGroup.class);
             }
 
             return null;

@@ -146,11 +146,13 @@ public class Utils {
         try {
             if (type.equals(DynamicArray.class)) {
                 Class<U> parameterizedType = getParameterizedTypeFromArray(typeReference);
-                String parameterizedTypeName = simpleNameOrStruct(parameterizedType);
+                String parameterizedTypeName =
+                        resolveElementTypeName(typeReference, parameterizedType);
                 return parameterizedTypeName + "[]";
             } else if (StaticArray.class.isAssignableFrom(type)) {
                 Class<U> parameterizedType = getParameterizedTypeFromArray(typeReference);
-                String parameterizedTypeName = simpleNameOrStruct(parameterizedType);
+                String parameterizedTypeName =
+                        resolveElementTypeName(typeReference, parameterizedType);
                 final int length;
                 if (TypeReference.StaticArrayTypeReference.class.isAssignableFrom(
                         typeReference.getClass())) {
@@ -165,6 +167,18 @@ public class Utils {
         } catch (ClassNotFoundException e) {
             throw new UnsupportedOperationException("Invalid class reference provided", e);
         }
+    }
+
+    private static <T extends Type, U extends Type> String resolveElementTypeName(
+            TypeReference<T> outerRef, Class<U> elementType) {
+        if (DynamicArray.class.isAssignableFrom(elementType)
+                || StaticArray.class.isAssignableFrom(elementType)) {
+            TypeReference<?> subRef = outerRef.getSubTypeReference();
+            if (subRef != null) {
+                return getTypeName(subRef);
+            }
+        }
+        return simpleNameOrStruct(elementType);
     }
 
     private static <U extends Type> String simpleNameOrStruct(Class<U> parameterizedType) {
@@ -193,20 +207,6 @@ public class Utils {
 
         String parameterizedTypeName = getTypeName(typeArguments[0]);
         return (Class<T>) Class.forName(parameterizedTypeName);
-    }
-
-    static <T extends Type> Class<T> getFullParameterizedTypeFromArray(TypeReference typeReference)
-            throws ClassNotFoundException {
-
-        java.lang.reflect.Type type = typeReference.getType();
-
-        java.lang.reflect.Type typeArgument =
-                ((ParameterizedType) type).getActualTypeArguments()[0];
-
-        return (Class<T>)
-                Class.forName(
-                        ((ParameterizedType) typeArgument)
-                                .getActualTypeArguments()[0].getTypeName());
     }
 
     @SuppressWarnings("unchecked")

@@ -12,19 +12,19 @@
  */
 package org.web3j.protocol.core.methods.response;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.annotation.JsonDeserialize;
 
 import org.web3j.protocol.ObjectMapperFactory;
 import org.web3j.protocol.core.Response;
@@ -87,8 +87,77 @@ public class EthBlock extends Response<EthBlock.Block> {
         private List<Withdrawal> withdrawals;
         private String blobGasUsed;
         private String excessBlobGas;
+        private String slotNumber;
+        private String blockAccessListHash;
+        private String requestsHash;
 
         public Block() {}
+
+        public Block(
+                String number,
+                String hash,
+                String parentHash,
+                String parentBeaconBlockRoot,
+                String nonce,
+                String sha3Uncles,
+                String logsBloom,
+                String transactionsRoot,
+                String stateRoot,
+                String receiptsRoot,
+                String author,
+                String miner,
+                String mixHash,
+                String difficulty,
+                String totalDifficulty,
+                String extraData,
+                String size,
+                String gasLimit,
+                String gasUsed,
+                String timestamp,
+                List<TransactionResult> transactions,
+                List<String> uncles,
+                List<String> sealFields,
+                String baseFeePerGas,
+                String withdrawalsRoot,
+                List<Withdrawal> withdrawals,
+                String blobGasUsed,
+                String excessBlobGas,
+                String slotNumber,
+                String blockAccessListHash,
+                String requestsHash) {
+            this(
+                    number,
+                    hash,
+                    parentHash,
+                    parentBeaconBlockRoot,
+                    nonce,
+                    sha3Uncles,
+                    logsBloom,
+                    transactionsRoot,
+                    stateRoot,
+                    receiptsRoot,
+                    author,
+                    miner,
+                    mixHash,
+                    difficulty,
+                    totalDifficulty,
+                    extraData,
+                    size,
+                    gasLimit,
+                    gasUsed,
+                    timestamp,
+                    transactions,
+                    uncles,
+                    sealFields,
+                    baseFeePerGas,
+                    withdrawalsRoot,
+                    withdrawals,
+                    blobGasUsed,
+                    excessBlobGas);
+            this.slotNumber = slotNumber;
+            this.blockAccessListHash = blockAccessListHash;
+            this.requestsHash = requestsHash;
+        }
 
         public Block(
                 String number,
@@ -475,6 +544,35 @@ public class EthBlock extends Response<EthBlock.Block> {
             this.excessBlobGas = excessBlobGas;
         }
 
+        /** Returns the slot number, or {@code null} if absent from the response. */
+        public BigInteger getSlotNumber() {
+            return slotNumber == null ? null : Numeric.decodeQuantity(slotNumber);
+        }
+
+        public String getSlotNumberRaw() {
+            return slotNumber;
+        }
+
+        public void setSlotNumber(String slotNumber) {
+            this.slotNumber = slotNumber;
+        }
+
+        public String getBlockAccessListHash() {
+            return blockAccessListHash;
+        }
+
+        public void setBlockAccessListHash(String blockAccessListHash) {
+            this.blockAccessListHash = blockAccessListHash;
+        }
+
+        public String getRequestsHash() {
+            return requestsHash;
+        }
+
+        public void setRequestsHash(String requestsHash) {
+            this.requestsHash = requestsHash;
+        }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) {
@@ -625,9 +723,21 @@ public class EthBlock extends Response<EthBlock.Block> {
                 return false;
             }
 
-            return getWithdrawals() != null
-                    ? getWithdrawals().equals(block.getWithdrawals())
-                    : block.getWithdrawals() == null;
+            if (!Objects.equals(getWithdrawals(), block.getWithdrawals())) {
+                return false;
+            }
+
+            if (!Objects.equals(getSlotNumberRaw(), block.getSlotNumberRaw())) {
+                return false;
+            }
+            if (!Objects.equals(getBlockAccessListHash(), block.getBlockAccessListHash())) {
+                return false;
+            }
+            if (!Objects.equals(getRequestsHash(), block.getRequestsHash())) {
+                return false;
+            }
+
+            return true;
         }
 
         @Override
@@ -684,6 +794,9 @@ public class EthBlock extends Response<EthBlock.Block> {
                             + (getExcessBlobGasRaw() != null
                                     ? getExcessBlobGasRaw().hashCode()
                                     : 0);
+            result = 31 * result + Objects.hashCode(getSlotNumberRaw());
+            result = 31 * result + Objects.hashCode(getBlockAccessListHash());
+            result = 31 * result + Objects.hashCode(getRequestsHash());
             return result;
         }
     }
@@ -955,14 +1068,13 @@ public class EthBlock extends Response<EthBlock.Block> {
     }
 
     public static class ResultTransactionDeserialiser
-            extends JsonDeserializer<List<TransactionResult>> {
+            extends ValueDeserializer<List<TransactionResult>> {
 
         private ObjectReader objectReader = ObjectMapperFactory.getObjectReader();
 
         @Override
         public List<TransactionResult> deserialize(
-                JsonParser jsonParser, DeserializationContext deserializationContext)
-                throws IOException {
+                JsonParser jsonParser, DeserializationContext deserializationContext) {
 
             List<TransactionResult> transactionResults = new ArrayList<>();
             JsonToken nextToken = jsonParser.nextToken();
@@ -1051,16 +1163,15 @@ public class EthBlock extends Response<EthBlock.Block> {
         }
     }
 
-    public static class ResponseDeserialiser extends JsonDeserializer<Block> {
+    public static class ResponseDeserialiser extends ValueDeserializer<Block> {
 
-        private ObjectReader objectReader = ObjectMapperFactory.getObjectReader();
+        private final ObjectMapper objectMapper = new ObjectMapper();
 
         @Override
         public Block deserialize(
-                JsonParser jsonParser, DeserializationContext deserializationContext)
-                throws IOException {
-            if (jsonParser.getCurrentToken() != JsonToken.VALUE_NULL) {
-                return objectReader.readValue(jsonParser, Block.class);
+                JsonParser jsonParser, DeserializationContext deserializationContext) {
+            if (jsonParser.currentToken() != JsonToken.VALUE_NULL) {
+                return objectMapper.convertValue(jsonParser.readValueAsTree(), Block.class);
             } else {
                 return null; // null is wrapped by Optional in above getter
             }

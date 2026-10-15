@@ -14,6 +14,7 @@ package org.web3j.crypto;
 
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -126,23 +127,96 @@ public class TransactionDecoder {
         final List<Blob> blobs;
         final List<Bytes> kzgCommitments;
         final List<Bytes> kzgProofs;
-        // Check if the first element of outerList is a list
-        if (outerList.getValues().get(0) instanceof RlpList) {
-            txPayload = (RlpList) outerList.getValues().get(0);
+        final BigInteger wrapperVersion;
+        // EIP-7594: flat list of CELLS_PER_EXT_BLOB * len(blobs) proofs
+        final List<Bytes> cellProofs;
+        final List<AccessListObject> accessList;
 
-            // Decode blobs, commitments, and proofs
-            blobs = decodeBlobs(((RlpList) outerList.getValues().get(1)).getValues());
-            kzgCommitments = decodeBytesList(((RlpList) outerList.getValues().get(2)).getValues());
-            kzgProofs = decodeBytesList(((RlpList) outerList.getValues().get(3)).getValues());
+        final List<RlpType> outerValues = outerList.getValues();
+        if (outerValues.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Malformed EIP-4844 transaction: outer list is empty");
+        }
+
+        // Dispatch: network wrapper if first element is a list (tx_payload_body),
+        // otherwise the entire outerList IS the tx_payload_body (no sidecar).
+        if (outerValues.get(0) instanceof RlpList) {
+            int size = outerValues.size();
+            if (size == 5) {
+                // EIP-7594 format: [tx_payload_body, wrapper_version, blobs, commitments,
+                // cell_proofs]
+                txPayload = (RlpList) outerValues.get(0);
+
+                if (!(outerValues.get(1) instanceof RlpString)) {
+                    throw new IllegalArgumentException(
+                            "Malformed EIP-7594 transaction: wrapper_version must be RlpString");
+                }
+                wrapperVersion = ((RlpString) outerValues.get(1)).asPositiveBigInteger();
+
+                if (!(outerValues.get(2) instanceof RlpList)) {
+                    throw new IllegalArgumentException(
+                            "Malformed EIP-7594 transaction: blobs must be RlpList");
+                }
+                blobs = decodeBlobs(((RlpList) outerValues.get(2)).getValues());
+
+                if (!(outerValues.get(3) instanceof RlpList)) {
+                    throw new IllegalArgumentException(
+                            "Malformed EIP-7594 transaction: commitments must be RlpList");
+                }
+                kzgCommitments = decodeBytesList(((RlpList) outerValues.get(3)).getValues());
+
+                if (!(outerValues.get(4) instanceof RlpList)) {
+                    throw new IllegalArgumentException(
+                            "Malformed EIP-7594 transaction: cell_proofs must be RlpList");
+                }
+                // cell_proofs is a flat list of 48-byte proof entries
+                cellProofs = decodeBytesList(((RlpList) outerValues.get(4)).getValues());
+                kzgProofs = null;
+            } else if (size == 4) {
+                // EIP-4844 format: [tx_payload_body, blobs, commitments, proofs]
+                txPayload = (RlpList) outerValues.get(0);
+                blobs = decodeBlobs(((RlpList) outerValues.get(1)).getValues());
+                kzgCommitments = decodeBytesList(((RlpList) outerValues.get(2)).getValues());
+                kzgProofs = decodeBytesList(((RlpList) outerValues.get(3)).getValues());
+                wrapperVersion = null;
+                cellProofs = null;
+            } else {
+                throw new IllegalArgumentException(
+                        "Malformed EIP-4844 network wrapper: expected 4 (EIP-4844) or 5 "
+                                + "(EIP-7594) elements, got "
+                                + size);
+            }
+
+            // Decode access list from inside tx_payload_body (field index 8)
+            final List<RlpType> tvForAL = txPayload.getValues();
+            if (tvForAL.size() <= 8 || !(tvForAL.get(8) instanceof RlpList)) {
+                throw new IllegalArgumentException(
+                        "Malformed EIP-4844 tx_payload_body: missing access list at index 8");
+            }
+            accessList = decodeAccessList(((RlpList) tvForAL.get(8)).getValues());
         } else {
-            txPayload = (RlpList) outerList;
+            // No sidecar — outerList is the tx_payload_body itself
+            txPayload = outerList;
             blobs = null;
             kzgCommitments = null;
             kzgProofs = null;
+            wrapperVersion = null;
+            cellProofs = null;
+            final List<RlpType> tvForAL = txPayload.getValues();
+            if (tvForAL.size() > 8 && tvForAL.get(8) instanceof RlpList) {
+                accessList = decodeAccessList(((RlpList) tvForAL.get(8)).getValues());
+            } else {
+                accessList = Collections.emptyList();
+            }
         }
 
-        // Decode the transaction payload
+        // Decode the transaction payload fields
         final List<RlpType> txValues = txPayload.getValues();
+        if (txValues.size() < 11) {
+            throw new IllegalArgumentException(
+                    "Malformed EIP-4844 tx_payload_body: expected at least 11 fields, got "
+                            + txValues.size());
+        }
 
         final long chainId = ((RlpString) txValues.get(0)).asPositiveBigInteger().longValue();
         final BigInteger nonce = ((RlpString) txValues.get(1)).asPositiveBigInteger();
@@ -153,28 +227,53 @@ public class TransactionDecoder {
         final String to = ((RlpString) txValues.get(5)).asString();
         final BigInteger value = ((RlpString) txValues.get(6)).asPositiveBigInteger();
         final String data = ((RlpString) txValues.get(7)).asString();
+        // index 8 = access list (already decoded above)
         final BigInteger maxFeePerBlobGas = ((RlpString) txValues.get(9)).asPositiveBigInteger();
         final List<Bytes> versionedHashes =
                 decodeVersionedHashes(((RlpList) txValues.get(10)).getValues());
 
-        // Create the raw transaction object
-        final RawTransaction rawTransaction =
-                RawTransaction.createTransaction(
-                        blobs,
-                        kzgCommitments,
-                        kzgProofs,
-                        chainId,
-                        nonce,
-                        maxPriorityFeePerGas,
-                        maxFeePerGas,
-                        gasLimit,
-                        to,
-                        value,
-                        data,
-                        maxFeePerBlobGas,
-                        versionedHashes);
+        // Reconstruct the RawTransaction object
+        final RawTransaction rawTransaction;
+        if (wrapperVersion != null) {
+            // EIP-7594 path
+            rawTransaction =
+                    RawTransaction.createTransaction(
+                            blobs,
+                            kzgCommitments,
+                            cellProofs,
+                            wrapperVersion,
+                            chainId,
+                            nonce,
+                            maxPriorityFeePerGas,
+                            maxFeePerGas,
+                            gasLimit,
+                            to,
+                            value,
+                            data,
+                            maxFeePerBlobGas,
+                            versionedHashes,
+                            accessList);
+        } else {
+            // EIP-4844 path (with or without sidecar)
+            rawTransaction =
+                    RawTransaction.createTransaction(
+                            blobs,
+                            kzgCommitments,
+                            kzgProofs,
+                            chainId,
+                            nonce,
+                            maxPriorityFeePerGas,
+                            maxFeePerGas,
+                            gasLimit,
+                            to,
+                            value,
+                            data,
+                            maxFeePerBlobGas,
+                            versionedHashes,
+                            accessList);
+        }
 
-        // Handle signature if present
+        // Handle signature if present (fields 11, 12, 13 = y_parity, r, s)
         if (txValues.size() > UNSIGNED_EIP4844TX_RLP_LIST_SIZE) {
             final byte[] v =
                     Sign.getVFromRecId(
@@ -194,14 +293,29 @@ public class TransactionDecoder {
 
     private static List<Blob> decodeBlobs(List<RlpType> rlpBlobs) {
         return rlpBlobs.stream()
-                .map(r -> new Blob(((RlpString) r).getBytes()))
+                .map(
+                        r -> {
+                            if (!(r instanceof RlpString)) {
+                                throw new IllegalArgumentException(
+                                        "Malformed blob entry: expected RlpString");
+                            }
+                            return new Blob(((RlpString) r).getBytes());
+                        })
                 .collect(Collectors.toList());
     }
 
-    // Decoding logic for commitments and proofs
+    // Decoding logic for commitments, proofs, and EIP-7594 flat cell_proofs
     private static List<Bytes> decodeBytesList(List<RlpType> rlpBytesList) {
         return rlpBytesList.stream()
-                .map(r -> Bytes.wrap(((RlpString) r).getBytes()))
+                .map(
+                        r -> {
+                            if (!(r instanceof RlpString)) {
+                                throw new IllegalArgumentException(
+                                        "Malformed bytes list: expected RlpString, got "
+                                                + r.getClass().getSimpleName());
+                            }
+                            return Bytes.wrap(((RlpString) r).getBytes());
+                        })
                 .collect(Collectors.toList());
     }
 

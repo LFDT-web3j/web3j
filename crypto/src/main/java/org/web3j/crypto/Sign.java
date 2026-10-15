@@ -14,6 +14,7 @@ package org.web3j.crypto;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.SignatureException;
 import java.util.Arrays;
@@ -27,6 +28,9 @@ import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.math.ec.FixedPointCombMultiplier;
 import org.bouncycastle.math.ec.custom.sec.SecP256K1Curve;
 
+import org.web3j.rlp.RlpEncoder;
+import org.web3j.rlp.RlpList;
+import org.web3j.rlp.RlpString;
 import org.web3j.utils.Numeric;
 
 import static org.bouncycastle.util.BigIntegers.TWO;
@@ -402,6 +406,135 @@ public class Sign {
      */
     public static BigInteger publicFromPoint(byte[] bits) {
         return new BigInteger(1, Arrays.copyOfRange(bits, 1, bits.length)); // remove prefix
+    }
+
+    // =========================================================================
+    // EIP-7702 authorization signing / recovery
+    // =========================================================================
+
+    /** EIP-7702 authorization signing magic byte. */
+    public static final byte EIP7702_MAGIC = 0x05;
+
+    private static final BigInteger NONCE_MAX = BigInteger.ONE.shiftLeft(64); // 2^64, exclusive
+    private static final BigInteger CHAIN_ID_MAX =
+            BigInteger.ONE.shiftLeft(256); // 2^256, exclusive
+    private static final int ADDRESS_LENGTH_IN_BYTES = 20;
+
+    /**
+     * Computes the EIP-7702 authorization digest: {@code keccak256(0x05 ‖ rlp([chainId, address,
+     * nonce]))}. This is the value signed (and recovered against) for a set-code authorization.
+     *
+     * @param chainId chain id the authorization is bound to ({@code 0} = valid on any chain)
+     * @param address 20-byte delegation target address (0x-prefixed)
+     * @param nonce authority account nonce the authorization is valid for
+     * @return the 32-byte authorization hash
+     */
+    public static byte[] authorizationHash(BigInteger chainId, String address, BigInteger nonce) {
+        byte[] addressBytes = validateAuthorizationFields(chainId, address, nonce);
+        byte[] rlpEncoded =
+                RlpEncoder.encode(
+                        new RlpList(
+                                RlpString.create(chainId),
+                                RlpString.create(addressBytes),
+                                RlpString.create(nonce)));
+        byte[] toHash =
+                ByteBuffer.allocate(1 + rlpEncoded.length)
+                        .put(EIP7702_MAGIC)
+                        .put(rlpEncoded)
+                        .array();
+        return Hash.sha3(toHash);
+    }
+
+    /**
+     * Signs an EIP-7702 authorization with the given key pair, returning a fully populated (signed)
+     * {@link AuthorizationTuple}. The signature is canonical (low-s) per EIP-2.
+     *
+     * @param chainId chain id the authorization is bound to ({@code 0} = valid on any chain)
+     * @param address 20-byte delegation target address (0x-prefixed)
+     * @param nonce authority account nonce the authorization is valid for
+     * @param keyPair the authority's key pair
+     * @return a signed authorization tuple
+     */
+    public static AuthorizationTuple signAuthorization(
+            BigInteger chainId, String address, BigInteger nonce, ECKeyPair keyPair) {
+        byte[] hash = authorizationHash(chainId, address, nonce);
+        // needToHash = false: sign the precomputed digest directly. ECKeyPair.sign() canonicalises
+        // to low-s, so EIP-2 is satisfied. v is the raw recovery id + LOWER_REAL_V (27).
+        SignatureData sig = signMessage(hash, keyPair, false);
+        BigInteger yParity = BigInteger.valueOf((sig.getV()[0] & 0xFF) - LOWER_REAL_V);
+        BigInteger r = new BigInteger(1, sig.getR());
+        BigInteger s = new BigInteger(1, sig.getS());
+        return new AuthorizationTuple(chainId, address, nonce, yParity, r, s);
+    }
+
+    /** Convenience overload taking {@link Credentials}. */
+    public static AuthorizationTuple signAuthorization(
+            BigInteger chainId, String address, BigInteger nonce, Credentials credentials) {
+        return signAuthorization(chainId, address, nonce, credentials.getEcKeyPair());
+    }
+
+    /** Convenience overload taking a {@code long} chainId. */
+    public static AuthorizationTuple signAuthorization(
+            long chainId, String address, BigInteger nonce, ECKeyPair keyPair) {
+        return signAuthorization(BigInteger.valueOf(chainId), address, nonce, keyPair);
+    }
+
+    /** Convenience overload taking a {@code long} chainId and {@link Credentials}. */
+    public static AuthorizationTuple signAuthorization(
+            long chainId, String address, BigInteger nonce, Credentials credentials) {
+        return signAuthorization(
+                BigInteger.valueOf(chainId), address, nonce, credentials.getEcKeyPair());
+    }
+
+    /**
+     * Recovers the authorizing account ("authority") that signed the given EIP-7702 authorization
+     * tuple.
+     *
+     * @param authorization a signed authorization tuple
+     * @return the 0x-prefixed authority address
+     * @throws SignatureException if the signature is malformed or the key cannot be recovered
+     */
+    public static String recoverAuthorizationSigner(AuthorizationTuple authorization)
+            throws SignatureException {
+        BigInteger yParity = authorization.getYParity();
+        if (yParity == null || yParity.signum() < 0 || yParity.compareTo(BigInteger.ONE) > 0) {
+            throw new SignatureException("y_parity must be 0 or 1, got: " + yParity);
+        }
+        BigInteger s = authorization.getS();
+        if (s != null && s.compareTo(HALF_CURVE_ORDER) > 0) {
+            throw new SignatureException("s value is not canonical (must be <= secp256k1n/2)");
+        }
+        byte[] hash =
+                authorizationHash(
+                        authorization.getChainId(),
+                        authorization.getAddress(),
+                        authorization.getNonce());
+        SignatureData signatureData =
+                new SignatureData(
+                        (byte) (yParity.intValue() + LOWER_REAL_V),
+                        Numeric.toBytesPadded(authorization.getR(), 32),
+                        Numeric.toBytesPadded(authorization.getS(), 32));
+        BigInteger publicKey = signedMessageHashToKey(hash, signatureData);
+        return Numeric.prependHexPrefix(Keys.getAddress(publicKey));
+    }
+
+    private static byte[] validateAuthorizationFields(
+            BigInteger chainId, String address, BigInteger nonce) {
+        if (chainId == null || chainId.signum() < 0 || chainId.compareTo(CHAIN_ID_MAX) >= 0) {
+            throw new IllegalArgumentException("chainId must be in [0, 2^256): " + chainId);
+        }
+        if (nonce == null || nonce.signum() < 0 || nonce.compareTo(NONCE_MAX) >= 0) {
+            throw new IllegalArgumentException("nonce must be in [0, 2^64): " + nonce);
+        }
+        if (address == null) {
+            throw new IllegalArgumentException("address must not be null");
+        }
+        byte[] addressBytes = Numeric.hexStringToByteArray(address);
+        if (addressBytes.length != ADDRESS_LENGTH_IN_BYTES) {
+            throw new IllegalArgumentException(
+                    "address must be 20 bytes, got " + addressBytes.length + ": " + address);
+        }
+        return addressBytes;
     }
 
     public static class SignatureData {

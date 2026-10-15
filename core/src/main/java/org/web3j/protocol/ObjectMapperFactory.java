@@ -12,69 +12,32 @@
  */
 package org.web3j.protocol;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.BeanDescription;
-import com.fasterxml.jackson.databind.DeserializationConfig;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.deser.BeanDeserializerModifier;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-
-import org.web3j.protocol.core.Response;
-import org.web3j.protocol.deserializer.RawResponseDeserializer;
+import tools.jackson.core.json.JsonReadFeature;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.json.JsonMapper;
 
 /** Factory for managing our ObjectMapper instances. */
 public class ObjectMapperFactory {
 
-    private static final ObjectMapper DEFAULT_OBJECT_MAPPER = new ObjectMapper();
-
-    static {
-        configureObjectMapper(DEFAULT_OBJECT_MAPPER, false);
-    }
+    private static final ObjectMapper DEFAULT_OBJECT_MAPPER = buildObjectMapper();
 
     public static ObjectMapper getObjectMapper() {
-        return getObjectMapper(false);
-    }
-
-    public static ObjectMapper getObjectMapper(boolean shouldIncludeRawResponses) {
-        if (!shouldIncludeRawResponses) {
-            return DEFAULT_OBJECT_MAPPER;
-        }
-
-        return configureObjectMapper(new ObjectMapper(), true);
+        return buildObjectMapper();
     }
 
     public static ObjectReader getObjectReader() {
         return DEFAULT_OBJECT_MAPPER.reader();
     }
 
-    private static ObjectMapper configureObjectMapper(
-            ObjectMapper objectMapper, boolean shouldIncludeRawResponses) {
-        if (shouldIncludeRawResponses) {
-            SimpleModule module = new SimpleModule();
-            module.setDeserializerModifier(
-                    new BeanDeserializerModifier() {
-                        @Override
-                        public JsonDeserializer<?> modifyDeserializer(
-                                DeserializationConfig config,
-                                BeanDescription beanDesc,
-                                JsonDeserializer<?> deserializer) {
-                            if (Response.class.isAssignableFrom(beanDesc.getBeanClass())) {
-                                return new RawResponseDeserializer(deserializer);
-                            }
+    private static ObjectMapper buildObjectMapper() {
+        JsonMapper.Builder builder =
+                JsonMapper.builder()
+                        .enable(JsonReadFeature.ALLOW_UNQUOTED_PROPERTY_NAMES)
+                        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                        .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES);
 
-                            return deserializer;
-                        }
-                    });
-
-            objectMapper.registerModule(module);
-        }
-
-        objectMapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
-        return objectMapper;
+        return builder.build();
     }
 }

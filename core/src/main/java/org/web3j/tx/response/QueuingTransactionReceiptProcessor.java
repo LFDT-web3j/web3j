@@ -31,7 +31,8 @@ import org.web3j.utils.Async;
  * only the transaction hash of the submitted transaction. This is encapsulated in an {@link
  * EmptyTransactionReceipt}.
  */
-public class QueuingTransactionReceiptProcessor extends TransactionReceiptProcessor {
+public class QueuingTransactionReceiptProcessor extends TransactionReceiptProcessor
+        implements AutoCloseable {
 
     private final int pollingAttemptsPerTxHash;
 
@@ -60,6 +61,19 @@ public class QueuingTransactionReceiptProcessor extends TransactionReceiptProces
         pendingTransactions.add(new RequestWrapper(transactionHash));
 
         return new EmptyTransactionReceipt(transactionHash);
+    }
+
+    /**
+     * Terminate the internal executor service. This should be called when the processor is no
+     * longer needed, to ensure that threads are properly released and the JVM can shut down.
+     */
+    public void shutdown() {
+        Async.shutdown(scheduledExecutorService);
+    }
+
+    @Override
+    public void close() throws Exception {
+        shutdown();
     }
 
     private void sendTransactionReceiptRequests() {

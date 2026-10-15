@@ -12,17 +12,15 @@
  */
 package org.web3j.protocol.core.methods.response;
 
-import java.io.IOException;
 import java.math.BigInteger;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.annotation.JsonDeserialize;
 
-import org.web3j.protocol.ObjectMapperFactory;
 import org.web3j.protocol.core.Response;
 import org.web3j.utils.Numeric;
 
@@ -104,18 +102,17 @@ public class LineaEstimateGas extends Response<LineaEstimateGas.LineaEstimateGas
         }
     }
 
-    public static class ResponseDeserialiser
-            extends JsonDeserializer<LineaEstimateGas.LineaEstimateGasResponse> {
+    public static class ResponseDeserialiser extends ValueDeserializer<LineaEstimateGasResponse> {
 
-        private ObjectReader objectReader = ObjectMapperFactory.getObjectReader();
+        private final ObjectMapper objectMapper = new ObjectMapper();
 
         @Override
         public LineaEstimateGas.LineaEstimateGasResponse deserialize(
-                JsonParser jsonParser, DeserializationContext deserializationContext)
-                throws IOException {
-            if (jsonParser.getCurrentToken() != JsonToken.VALUE_NULL) {
-                return objectReader.readValue(
-                        jsonParser, LineaEstimateGas.LineaEstimateGasResponse.class);
+                JsonParser jsonParser, DeserializationContext deserializationContext) {
+            if (jsonParser.currentToken() != JsonToken.VALUE_NULL) {
+                return objectMapper.convertValue(
+                        jsonParser.readValueAsTree(),
+                        LineaEstimateGas.LineaEstimateGasResponse.class);
             } else {
                 return null; // null is wrapped by Optional in above getter
             }

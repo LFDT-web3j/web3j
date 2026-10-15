@@ -13,7 +13,6 @@ import org.web3j.abi.datatypes.Type;
 import org.web3j.abi.datatypes.generated.StaticArray2;
 import org.web3j.abi.datatypes.generated.Uint256;
 import org.web3j.abi.datatypes.generated.Uint64;
-import org.web3j.abi.datatypes.reflection.Parameterized;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.RemoteCall;
@@ -158,12 +157,10 @@ public class StaticArrayOfStructsInStruct extends Contract {
             this.players = players;
         }
 
-        public Config(Uint64 index,
-                @Parameterized(type = Player.class) StaticArray2<Player> players) {
+        public Config(Uint64 index, StaticArray2<Player> players) {
             super(index, players);
             this.index = index.getValue();
             this.players = players.getValue();
         }
     }
 }
-

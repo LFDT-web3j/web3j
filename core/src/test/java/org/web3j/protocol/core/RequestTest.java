@@ -149,6 +149,21 @@ class RequestTest extends RequestTester {
     }
 
     @Test
+    void testTxPoolContentFrom() throws Exception {
+        web3j.txPoolContentFrom("0x0032d05f320fa74c871e892f48f0e6387c0dfe95").send();
+
+        verifyResult(
+                "{\"jsonrpc\":\"2.0\",\"method\":\"txpool_contentFrom\",\"params\":[\"0x0032d05f320fa74c871e892f48f0e6387c0dfe95\"],\"id\":1}");
+    }
+
+    @Test
+    void testTxPoolInspect() throws Exception {
+        web3j.txPoolInspect().send();
+
+        verifyResult("{\"jsonrpc\":\"2.0\",\"method\":\"txpool_inspect\",\"params\":[],\"id\":1}");
+    }
+
+    @Test
     void testEthGasPrice() throws Exception {
         web3j.ethGasPrice().send();
 
@@ -381,7 +396,19 @@ class RequestTest extends RequestTester {
 
         verifyResult(
                 "{\"jsonrpc\":\"2.0\",\"method\":\"eth_sendUserOperation\","
-                        + "\"params\":[{\"sender\":\"0xa70e8dd61c5d32be8058bb8eb970870f07233155\",\"nonce\":\"0x1\",\"initCode\":\"0x0\",\"callData\":\"0x0\",\"callGasLimit\":\"0x0\",\"verificationGasLimit\":\"0x0\",\"preVerificationGas\":\"0x0\",\"maxFeePerGas\":\"0x0\",\"maxPriorityFeePerGas\":\"0x0\",\"signature\":\"0x0\",\"paymasterAndData\":\"0x0\"},\"0xa70e8dd61c5d32be8058bb8eb970870f07233156\"],"
+                        + "\"params\":[{"
+                        + "\"callData\":\"0x0\","
+                        + "\"callGasLimit\":\"0x0\","
+                        + "\"initCode\":\"0x0\","
+                        + "\"maxFeePerGas\":\"0x0\","
+                        + "\"maxPriorityFeePerGas\":\"0x0\","
+                        + "\"nonce\":\"0x1\","
+                        + "\"paymasterAndData\":\"0x0\","
+                        + "\"preVerificationGas\":\"0x0\","
+                        + "\"sender\":\"0xa70e8dd61c5d32be8058bb8eb970870f07233155\","
+                        + "\"signature\":\"0x0\","
+                        + "\"verificationGasLimit\":\"0x0\""
+                        + "},\"0xa70e8dd61c5d32be8058bb8eb970870f07233156\"],"
                         + "\"id\":1}");
     }
 
@@ -405,7 +432,19 @@ class RequestTest extends RequestTester {
 
         verifyResult(
                 "{\"jsonrpc\":\"2.0\",\"method\":\"eth_estimateUserOperationGas\","
-                        + "\"params\":[{\"sender\":\"0xa70e8dd61c5d32be8058bb8eb970870f07233155\",\"nonce\":\"0x1\",\"initCode\":\"0x0\",\"callData\":\"0x0\",\"callGasLimit\":\"0x0\",\"verificationGasLimit\":\"0x0\",\"preVerificationGas\":\"0x0\",\"maxFeePerGas\":\"0x0\",\"maxPriorityFeePerGas\":\"0x0\",\"signature\":\"0x0\",\"paymasterAndData\":\"0x0\"},\"0xa70e8dd61c5d32be8058bb8eb970870f07233156\"],"
+                        + "\"params\":[{"
+                        + "\"callData\":\"0x0\","
+                        + "\"callGasLimit\":\"0x0\","
+                        + "\"initCode\":\"0x0\","
+                        + "\"maxFeePerGas\":\"0x0\","
+                        + "\"maxPriorityFeePerGas\":\"0x0\","
+                        + "\"nonce\":\"0x1\","
+                        + "\"paymasterAndData\":\"0x0\","
+                        + "\"preVerificationGas\":\"0x0\","
+                        + "\"sender\":\"0xa70e8dd61c5d32be8058bb8eb970870f07233155\","
+                        + "\"signature\":\"0x0\","
+                        + "\"verificationGasLimit\":\"0x0\"},"
+                        + "\"0xa70e8dd61c5d32be8058bb8eb970870f07233156\"],"
                         + "\"id\":1}");
     }
 
@@ -678,8 +717,12 @@ class RequestTest extends RequestTester {
 
         verifyResult(
                 "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getLogs\","
-                        + "\"params\":[{\"topics\":[],\"fromBlock\":\"0xe8\","
-                        + "\"toBlock\":\"latest\",\"address\":[\"\"]}],\"id\":1}");
+                        + "\"params\":[{"
+                        + "\"address\":[\"\"],"
+                        + "\"fromBlock\":\"0xe8\","
+                        + "\"toBlock\":\"latest\","
+                        + "\"topics\":[]"
+                        + "}],\"id\":1}");
     }
 
     @Test
@@ -692,9 +735,11 @@ class RequestTest extends RequestTester {
 
         verifyResult(
                 "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getLogs\","
-                        + "\"params\":[{\"topics\":[],"
+                        + "\"params\":[{"
+                        + "\"address\":[\"\"],"
                         + "\"blockHash\":\"0xe670ec64341771606e55d6b4ca35a1a6b75ee3d5145a99d05921026d1527331\","
-                        + "\"address\":[\"\"]}],\"id\":<generatedValue>}");
+                        + "\"topics\":[]"
+                        + "}],\"id\":<generatedValue>}");
     }
 
     @Test
@@ -911,14 +956,27 @@ class RequestTest extends RequestTester {
         JsonRpc2_0Web3j jsonRpc20Web3j = new JsonRpc2_0Web3j(web3jService);
 
         BigInteger resultWhenExcessBlobGasIsZero = jsonRpc20Web3j.ethGetBaseFeePerBlobGas();
-        assertEquals(
-                BigInteger.ONE,
-                resultWhenExcessBlobGasIsZero); // Expected result based on your fakeExponential
-        // logic and input
+        assertEquals(BigInteger.ONE, resultWhenExcessBlobGasIsZero); // exp(0) -> MIN_BLOB_BASE_FEE
 
+        // No-arg method now defaults to the Prague (EIP-7691) update fraction 5007716 — the value
+        // live on mainnet. Reference: fake_exponential(1, 79429632, 5007716) = 7736415.
         when(block.getExcessBlobGas()).thenReturn(BigInteger.valueOf(79429632L));
-        BigInteger resultWhenExcessBlobGasIsNotZero = jsonRpc20Web3j.ethGetBaseFeePerBlobGas();
-        assertEquals(BigInteger.valueOf(21518435987L), resultWhenExcessBlobGasIsNotZero);
+        BigInteger resultPrague = jsonRpc20Web3j.ethGetBaseFeePerBlobGas();
+        assertEquals(BigInteger.valueOf(7736415L), resultPrague);
+
+        // The pre-Pectra Cancun fraction 3338477 still reproduces the legacy value via the
+        // overload.
+        BigInteger resultCancun =
+                jsonRpc20Web3j.ethGetBaseFeePerBlobGas(
+                        BlobFee.BLOB_BASE_FEE_UPDATE_FRACTION_CANCUN);
+        assertEquals(BigInteger.valueOf(21518435987L), resultCancun);
+    }
+
+    @Test
+    void testEthBlobBaseFee() throws Exception {
+        web3j.ethBlobBaseFee().send();
+
+        verifyResult("{\"jsonrpc\":\"2.0\",\"method\":\"eth_blobBaseFee\",\"params\":[],\"id\":1}");
     }
 
     @Test
