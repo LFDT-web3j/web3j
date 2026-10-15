@@ -92,9 +92,8 @@ public abstract class Service implements Web3jService {
 
                 for (int i = 0; i < nodes.size(); i++) {
                     Request<?, ? extends Response<?>> request = batchRequest.getRequests().get(i);
-                    JsonNode node = byRequest != null ? byRequest.get(i) : nodes.get(i);
                     Response<?> response =
-                            objectMapper.treeToValue(node, request.getResponseType());
+                            objectMapper.treeToValue(byRequest.get(i), request.getResponseType());
                     if (rawResponse != null) {
                         response.setRawResponse(rawResponse);
                     }
@@ -109,18 +108,23 @@ public abstract class Service implements Web3jService {
     }
 
     // JSON-RPC 2.0 allows batch responses in any order, so pair them with requests by id.
-    // Returns null (keep array order) if the ids don't map one-to-one.
+    // Fails if the ids don't map one-to-one, rather than returning data for the wrong request.
     private static List<JsonNode> matchById(
-            ArrayNode nodes, List<Request<?, ? extends Response<?>>> requests) {
+            ArrayNode nodes, List<Request<?, ? extends Response<?>>> requests) throws IOException {
+        if (nodes.size() != requests.size()) {
+            throw new IOException("Batch response size does not match request size");
+        }
         Map<Long, JsonNode> byId = new HashMap<>();
         for (JsonNode node : nodes) {
-            byId.put(node.path("id").asLong(-1), node);
+            if (byId.put(node.path("id").asLong(-1), node) != null) {
+                throw new IOException("Duplicate id in batch response: " + node.path("id"));
+            }
         }
         List<JsonNode> matched = new ArrayList<>(requests.size());
         for (Request<?, ? extends Response<?>> request : requests) {
             JsonNode node = byId.remove(request.getId());
             if (node == null) {
-                return null;
+                throw new IOException("No batch response for request id: " + request.getId());
             }
             matched.add(node);
         }
