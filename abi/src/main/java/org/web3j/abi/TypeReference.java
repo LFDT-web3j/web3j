@@ -73,6 +73,14 @@ public abstract class TypeReference<T extends org.web3j.abi.datatypes.Type>
      * @return the type wrapped by this Array TypeReference, or null if not Array
      */
     public TypeReference getSubTypeReference() {
+        Type type = getType();
+        if (type instanceof ParameterizedType) {
+            Type[] typeArguments = ((ParameterizedType) type).getActualTypeArguments();
+            if (typeArguments.length > 0) {
+                final Type subType = typeArguments[0];
+                return new TypeReference(subType, isIndexed()) {};
+            }
+        }
         return null;
     }
 
