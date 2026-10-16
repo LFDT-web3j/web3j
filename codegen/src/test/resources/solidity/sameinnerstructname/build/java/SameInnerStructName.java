@@ -136,6 +136,11 @@ public class SameInnerStructName extends Contract {
             super(dummy);
             this.dummy = dummy.getValue();
         }
+
+        @Override
+        public String toString() {
+            return "{ dummy='" + dummy + "', }";
+        }
     }
 
     public static class Bar_Info extends StaticStruct {
@@ -149,6 +154,11 @@ public class SameInnerStructName extends Contract {
         public Bar_Info(Bool dummy) {
             super(dummy);
             this.dummy = dummy.getValue();
+        }
+
+        @Override
+        public String toString() {
+            return "{ dummy='" + dummy + "', }";
         }
     }
 }

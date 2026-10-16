@@ -122,5 +122,10 @@ public class OnlyInArrayStruct extends Contract {
             this.id = id.getValue();
             this.name = name.getValue();
         }
+
+        @Override
+        public String toString() {
+            return "{ id='" + id + "', name='" + name + "', }";
+        }
     }
 }
