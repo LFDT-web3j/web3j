@@ -103,3 +103,5 @@ allprojects {
 configure(subprojects.findAll { it.name != 'integration-tests' }) {
     apply from: "$rootDir/gradle/jacoco/build.gradle"
 }
+
+apply from: "$rootDir/gradle/release-validation.gradle"

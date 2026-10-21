@@ -56,3 +56,6 @@ integration-tests/src/test/resources/quorum-test-network/logs
 
 # Agent files, folders, etc
 Web3j Agent
+
+# Generated release verification inventory
+/release-expected-files.txt
