@@ -8,6 +8,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 - Fix integration test issues on Docker Engine 29 by upgrading Testcontainers to 1.21.4 and correcting `-Pintegration-tests=false` to properly disable tests [#2327](https://github.com/LFDT-web3j/web3j/pull/2327)
+- Fix ABI encoding and decoding of static arrays with dynamic elements (`bytes[2]`, `string[2]`, `uint256[][2]`, `bytes[2][]`) and of nested static arrays (`uint256[2][2]`, `bytes[2][2]`) [#2334](https://github.com/LFDT-web3j/web3j/pull/2334)
 ### Features
 
 - 

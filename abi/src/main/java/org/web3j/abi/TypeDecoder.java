@@ -864,6 +864,15 @@ public class TypeDecoder {
             Class<? extends StaticArray> arrayClass =
                     (Class<? extends StaticArray>)
                             Class.forName("org.web3j.abi.datatypes.generated.StaticArray" + length);
+            T first = elements.get(0);
+            if (first instanceof Array) {
+                // The List-only constructor resolves the component type from the element's type
+                // string, which AbiTypes cannot do for arrays such as "uint256[]" or "uint256[2]".
+                return (T)
+                        arrayClass
+                                .getConstructor(Class.class, List.class)
+                                .newInstance(first.getClass(), elements);
+            }
             return (T) arrayClass.getConstructor(List.class).newInstance(elements);
         } catch (ReflectiveOperationException e) {
             throw new UnsupportedOperationException(e);
@@ -1006,13 +1015,30 @@ public class TypeDecoder {
                                         };
                                     }
                                 };
-                        value =
-                                (T)
-                                        TypeDecoder.decodeStaticArray(
-                                                input, currOffset, staticReference, staticLength);
-                        currOffset +=
-                                ((decodeUintAsInt(input, currOffset) / Type.MAX_BYTE_LENGTH) + 2)
-                                        * MAX_BYTE_LENGTH_FOR_HEX_STRING;
+                        if (Utils.isDynamic(staticReference)) {
+                            // e.g. bytes[2][2]: the head holds an offset to each inner array
+                            int dataOffset = decodeUintAsInt(input, currOffset) << 1;
+                            value =
+                                    (T)
+                                            TypeDecoder.decodeStaticArray(
+                                                    input,
+                                                    offset + dataOffset,
+                                                    staticReference,
+                                                    staticLength);
+                            currOffset += MAX_BYTE_LENGTH_FOR_HEX_STRING;
+                        } else {
+                            // e.g. uint256[2][2]: inner arrays are encoded in place
+                            value =
+                                    (T)
+                                            TypeDecoder.decodeStaticArray(
+                                                    input,
+                                                    currOffset,
+                                                    staticReference,
+                                                    staticLength);
+                            currOffset +=
+                                    Utils.staticSizeInWords(staticReference)
+                                            * MAX_BYTE_LENGTH_FOR_HEX_STRING;
+                        }
                     }
                     elements.add(value);
                 }

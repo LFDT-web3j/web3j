@@ -86,7 +86,11 @@ public class DefaultFunctionEncoder extends FunctionEncoder {
     private static int getLength(final List<Type> parameters) {
         int count = 0;
         for (final Type type : parameters) {
-            if (type instanceof StaticArray
+            if (TypeEncoder.isDynamic(type)) {
+                // Dynamic values (including static arrays of dynamic elements such as bytes[2])
+                // take a single offset word in the head
+                count++;
+            } else if (type instanceof StaticArray
                     && StaticStruct.class.isAssignableFrom(
                             ((StaticArray) type).getComponentType())) {
                 count +=

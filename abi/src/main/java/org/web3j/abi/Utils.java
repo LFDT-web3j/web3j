@@ -261,6 +261,58 @@ public class Utils {
     }
 
     /**
+     * Returns true if a value of the given type is dynamic in the ABI sense, i.e. it is encoded in
+     * the tail and referenced by an offset in the head: {@code bytes}, {@code string}, {@code T[]},
+     * dynamic structs, and {@code T[k]} where {@code T} is dynamic at any nesting depth (e.g.
+     * {@code bytes[2]}, {@code uint256[][2]}, {@code bytes[2][2]}).
+     */
+    static boolean isDynamic(TypeReference<?> typeReference) throws ClassNotFoundException {
+        Class<?> type = typeReference.getClassType();
+        if (DynamicBytes.class.isAssignableFrom(type)
+                || Utf8String.class.isAssignableFrom(type)
+                || DynamicArray.class.isAssignableFrom(type)) {
+            return true;
+        }
+        if (StaticArray.class.isAssignableFrom(type)
+                && !StaticStruct.class.isAssignableFrom(type)) {
+            TypeReference<?> elementType = typeReference.getSubTypeReference();
+            return elementType != null && isDynamic(elementType);
+        }
+        return false;
+    }
+
+    /**
+     * Returns the number of 32-byte words a static (non-dynamic) type occupies in place, e.g. 1 for
+     * {@code uint256}, 4 for {@code uint256[2][2]}, or the flattened field count for a static
+     * struct.
+     */
+    @SuppressWarnings("unchecked")
+    static int staticSizeInWords(TypeReference<?> typeReference) throws ClassNotFoundException {
+        Class<?> type = typeReference.getClassType();
+        if (StaticStruct.class.isAssignableFrom(type)) {
+            return staticStructNestedPublicFieldsFlatList((Class<Type>) type).size();
+        }
+        if (StaticArray.class.isAssignableFrom(type)) {
+            TypeReference<?> elementType = typeReference.getSubTypeReference();
+            int elementWords = elementType == null ? 1 : staticSizeInWords(elementType);
+            return staticArrayLength(typeReference) * elementWords;
+        }
+        return 1;
+    }
+
+    private static int staticArrayLength(TypeReference<?> typeReference)
+            throws ClassNotFoundException {
+        if (typeReference instanceof TypeReference.StaticArrayTypeReference) {
+            return ((TypeReference.StaticArrayTypeReference<?>) typeReference).getSize();
+        }
+        return Integer.parseInt(
+                typeReference
+                        .getClassType()
+                        .getSimpleName()
+                        .substring(StaticArray.class.getSimpleName().length()));
+    }
+
+    /**
      * Returns flat list of canonical fields in a static struct. Example: struct Baz { Struct Bar {
      * int a, int b }, int c } will return {a, b, c}.
      *
