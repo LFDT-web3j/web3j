@@ -13,7 +13,9 @@
 package org.web3j.abi;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
@@ -28,6 +30,7 @@ import org.web3j.abi.datatypes.Type;
 import org.web3j.abi.datatypes.Uint;
 import org.web3j.abi.datatypes.Utf8String;
 import org.web3j.abi.datatypes.generated.Bytes1;
+import org.web3j.abi.datatypes.generated.Bytes32;
 import org.web3j.abi.datatypes.generated.Bytes4;
 import org.web3j.abi.datatypes.generated.Bytes6;
 import org.web3j.abi.datatypes.generated.Int104;
@@ -97,6 +100,7 @@ import org.web3j.abi.datatypes.generated.Uint8;
 import org.web3j.abi.datatypes.generated.Uint80;
 import org.web3j.abi.datatypes.generated.Uint88;
 import org.web3j.abi.datatypes.generated.Uint96;
+import org.web3j.utils.Numeric;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -1280,5 +1284,87 @@ public class TypeDecoderTest {
         assertEquals(staticArray3StaticArray3.getComponentType(), StaticArray3.class);
         row1 = staticArray3StaticArray3.getValue().get(1).getValue().get(1);
         assertEquals(row1.getValue().get(1), (new Uint256(2)));
+    }
+
+    @Test
+    public void testDirectlyConstructedTypesDecodeAtOffset() {
+        String uint8Word = "00000000000000000000000000000000000000000000000000000000000000ff";
+        String int128Word = "ffffffffffffffffffffffffffffffff80000000000000000000000000000000";
+        String int256Word = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+        String addressWord = "000000000000000000000000be5422d15f39373eb0a97ff8c10fbd0e40e29338";
+        String bytes32Word = "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20";
+        String bytes4Word = "deadbeef00000000000000000000000000000000000000000000000000000000";
+        String uint256Word = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+        String input =
+                uint8Word
+                        + int128Word
+                        + int256Word
+                        + addressWord
+                        + bytes32Word
+                        + bytes4Word
+                        + uint256Word;
+
+        Uint8 uint8 = TypeDecoder.decode(input, 0, Uint8.class);
+        Int128 int128 = TypeDecoder.decode(input, 64, Int128.class);
+        Int256 int256 = TypeDecoder.decode(input, 128, Int256.class);
+        Address address = TypeDecoder.decode(input, 192, Address.class);
+        Bytes32 bytes32 = TypeDecoder.decode(input, 256, Bytes32.class);
+        Bytes4 bytes4 = TypeDecoder.decode(input, 320, Bytes4.class);
+        Uint256 uint256 = TypeDecoder.decode(input, 384, Uint256.class);
+
+        assertEquals(new Uint8(255), uint8);
+        assertEquals(new Int128(BigInteger.ONE.shiftLeft(127).negate()), int128);
+        assertEquals(new Int256(BigInteger.ONE.negate()), int256);
+        assertEquals(new Address("0xbe5422d15f39373eb0a97ff8c10fbd0e40e29338"), address);
+        assertEquals(new Bytes32(Numeric.hexStringToByteArray(bytes32Word)), bytes32);
+        assertEquals(
+                new Bytes4(new byte[] {(byte) 0xde, (byte) 0xad, (byte) 0xbe, (byte) 0xef}),
+                bytes4);
+        assertEquals(new Uint256(BigInteger.ONE.shiftLeft(256).subtract(BigInteger.ONE)), uint256);
+    }
+
+    @Test
+    public void testDecodeNumericReadsOnlyFirstWord() {
+        String word = "0000000000000000000000000000000000000000000000000000000000000007";
+        String trailing = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+
+        assertEquals(new Uint256(7), TypeDecoder.decodeNumeric(word + trailing, Uint256.class));
+        assertEquals(
+                new Uint256(7), TypeDecoder.decodeNumeric("0x" + word + trailing, Uint256.class));
+        assertEquals(new Uint24(7), TypeDecoder.decodeNumeric("0x" + word, Uint24.class));
+        assertEquals(
+                new Address("0x0000000000000000000000000000000000000007"),
+                TypeDecoder.decodeAddress("0x" + word + trailing));
+    }
+
+    @Test
+    public void testDecodeBytesWithMalformedInputKeepsReflectiveError() {
+        String input = "0x" + "11".repeat(32);
+
+        UnsupportedOperationException e =
+                assertThrows(
+                        UnsupportedOperationException.class,
+                        () -> TypeDecoder.decodeBytes(input, Bytes32.class));
+
+        assertEquals("Unable to create instance of " + Bytes32.class.getName(), e.getMessage());
+    }
+
+    @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public void testDecodeLargeNumberOfValues() {
+        int count = 4000;
+        StringBuilder input = new StringBuilder("0x");
+        List<TypeReference<Type>> outputParameters = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) {
+            input.append(Numeric.toHexStringNoPrefixZeroPadded(BigInteger.valueOf(i), 64));
+            outputParameters.add((TypeReference) new TypeReference<Uint256>() {});
+        }
+
+        List<Type> result = FunctionReturnDecoder.decode(input.toString(), outputParameters);
+
+        assertEquals(count, result.size());
+        for (int i = 0; i < count; i++) {
+            assertEquals(new Uint256(i), result.get(i));
+        }
     }
 }

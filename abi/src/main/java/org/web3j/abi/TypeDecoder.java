@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.web3j.abi.datatypes.AbiTypes;
 import org.web3j.abi.datatypes.Address;
@@ -48,7 +49,21 @@ import org.web3j.abi.datatypes.Type;
 import org.web3j.abi.datatypes.Ufixed;
 import org.web3j.abi.datatypes.Uint;
 import org.web3j.abi.datatypes.Utf8String;
+import org.web3j.abi.datatypes.generated.Bytes1;
+import org.web3j.abi.datatypes.generated.Bytes20;
+import org.web3j.abi.datatypes.generated.Bytes32;
+import org.web3j.abi.datatypes.generated.Bytes4;
+import org.web3j.abi.datatypes.generated.Int128;
+import org.web3j.abi.datatypes.generated.Int256;
+import org.web3j.abi.datatypes.generated.Int32;
+import org.web3j.abi.datatypes.generated.Int64;
+import org.web3j.abi.datatypes.generated.Uint128;
+import org.web3j.abi.datatypes.generated.Uint16;
 import org.web3j.abi.datatypes.generated.Uint160;
+import org.web3j.abi.datatypes.generated.Uint256;
+import org.web3j.abi.datatypes.generated.Uint32;
+import org.web3j.abi.datatypes.generated.Uint64;
+import org.web3j.abi.datatypes.generated.Uint8;
 import org.web3j.abi.datatypes.primitive.Double;
 import org.web3j.abi.datatypes.primitive.Float;
 import org.web3j.utils.Numeric;
@@ -74,6 +89,29 @@ public class TypeDecoder {
 
     private static final ConcurrentHashMap<Class<?>, Integer> TYPE_LENGTH_CACHE =
             new ConcurrentHashMap<>();
+
+    // Direct constructors for the most frequently decoded types, avoiding a reflective lookup
+    // per value. Other types fall back to reflection.
+    private static final Map<Class<?>, Function<BigInteger, NumericType>> NUMERIC_CONSTRUCTORS =
+            Map.ofEntries(
+                    Map.entry(Uint256.class, Uint256::new),
+                    Map.entry(Uint160.class, Uint160::new),
+                    Map.entry(Uint128.class, Uint128::new),
+                    Map.entry(Uint64.class, Uint64::new),
+                    Map.entry(Uint32.class, Uint32::new),
+                    Map.entry(Uint16.class, Uint16::new),
+                    Map.entry(Uint8.class, Uint8::new),
+                    Map.entry(Int256.class, Int256::new),
+                    Map.entry(Int128.class, Int128::new),
+                    Map.entry(Int64.class, Int64::new),
+                    Map.entry(Int32.class, Int32::new));
+
+    private static final Map<Class<?>, Function<byte[], Bytes>> BYTES_CONSTRUCTORS =
+            Map.of(
+                    Bytes32.class, Bytes32::new,
+                    Bytes20.class, Bytes20::new,
+                    Bytes4.class, Bytes4::new,
+                    Bytes1.class, Bytes1::new);
 
     public static Type instantiateType(String solidityType, Object value)
             throws InvocationTargetException,
@@ -115,9 +153,9 @@ public class TypeDecoder {
     @SuppressWarnings("unchecked")
     public static <T extends Type> T decode(String input, int offset, Class<T> type) {
         if (NumericType.class.isAssignableFrom(type)) {
-            return (T) decodeNumeric(input.substring(offset), (Class<NumericType>) type);
+            return (T) decodeNumeric(input, offset, (Class<NumericType>) type);
         } else if (Address.class.isAssignableFrom(type)) {
-            return (T) decodeAddress(input.substring(offset));
+            return (T) decodeAddress(input, offset);
         } else if (Bool.class.isAssignableFrom(type)) {
             return (T) decodeBool(input, offset);
         } else if (Bytes.class.isAssignableFrom(type)) {
@@ -144,12 +182,23 @@ public class TypeDecoder {
     }
 
     public static Address decodeAddress(String input) {
-        return new Address(decodeNumeric(input, Uint160.class));
+        return decodeAddress(input, 0);
+    }
+
+    private static Address decodeAddress(String input, int offset) {
+        byte[] inputByteArray = firstWordToByteArray(input, offset);
+        return new Address(new Uint160(new BigInteger(1, inputByteArray, 12, 20)));
     }
 
     public static <T extends NumericType> T decodeNumeric(String input, Class<T> type) {
+        return decodeNumeric(input, 0, type);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T extends NumericType> T decodeNumeric(
+            String input, int offset, Class<T> type) {
         try {
-            byte[] inputByteArray = Numeric.hexStringToByteArray(input);
+            byte[] inputByteArray = firstWordToByteArray(input, offset);
             int typeLengthAsBytes = getTypeLengthInBytes(type);
             int valueOffset = Type.MAX_BYTE_LENGTH - typeLengthAsBytes;
 
@@ -158,6 +207,10 @@ public class TypeDecoder {
                 numericValue = new BigInteger(1, inputByteArray, valueOffset, typeLengthAsBytes);
             } else {
                 numericValue = new BigInteger(inputByteArray, valueOffset, typeLengthAsBytes);
+            }
+            Function<BigInteger, NumericType> constructor = NUMERIC_CONSTRUCTORS.get(type);
+            if (constructor != null) {
+                return (T) constructor.apply(numericValue);
             }
             return type.getConstructor(BigInteger.class).newInstance(numericValue);
 
@@ -170,6 +223,25 @@ public class TypeDecoder {
             throw new UnsupportedOperationException(
                     "Unable to create instance of " + type.getName(), e);
         }
+    }
+
+    /**
+     * Converts only the first 32-byte word of {@code input} (starting at {@code offset}, after an
+     * optional 0x prefix) to bytes. Numeric values are always read from the first word, so
+     * converting the rest of the payload is wasted work: it made decoding N values O(N^2).
+     * Odd-length or short input keeps the previous whole-string conversion, so malformed input
+     * behaves exactly as before.
+     */
+    private static byte[] firstWordToByteArray(String input, int offset) {
+        int start = input.startsWith("0x", offset) ? offset + 2 : offset;
+        int remaining = input.length() - start;
+        if (remaining >= MAX_BYTE_LENGTH_FOR_HEX_STRING
+                && remaining % 2 == 0
+                && !input.startsWith("0x", start)) {
+            return Numeric.hexStringToByteArray(
+                    input.substring(start, start + MAX_BYTE_LENGTH_FOR_HEX_STRING));
+        }
+        return Numeric.hexStringToByteArray(input.substring(offset));
     }
 
     static <T extends NumericType> int getTypeLengthInBytes(Class<T> type) {
@@ -315,6 +387,7 @@ public class TypeDecoder {
         return decodeBytes(input, 0, type);
     }
 
+    @SuppressWarnings("unchecked")
     public static <T extends Bytes> T decodeBytes(String input, int offset, Class<T> type) {
         try {
             String simpleName = type.getSimpleName();
@@ -324,6 +397,12 @@ public class TypeDecoder {
 
             byte[] bytes =
                     Numeric.hexStringToByteArray(input.substring(offset, offset + hexStringLength));
+            Function<byte[], Bytes> constructor = BYTES_CONSTRUCTORS.get(type);
+            // Malformed input (e.g. a 0x prefix inside the slice) gives the wrong byte count; let
+            // the reflective path report it so the exception stays the same.
+            if (constructor != null && bytes.length == length) {
+                return (T) constructor.apply(bytes);
+            }
             return type.getConstructor(byte[].class).newInstance(bytes);
         } catch (NoSuchMethodException
                 | SecurityException
