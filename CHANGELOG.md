@@ -7,7 +7,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
--
+- Fix integration tests failing to start on Docker Engine 29 by upgrading Testcontainers to 1.21.4 [#PR_NUMBER](https://github.com/LFDT-web3j/web3j/pull/PR_NUMBER)
 ### Features
 
 - 

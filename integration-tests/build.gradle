@@ -39,6 +39,14 @@ dependencies {
     testImplementation "org.hyperledger.besu.internal:besu-util:$besuDepVersion",withoutAbi
     testImplementation "org.hyperledger.besu:gnark:$besuNativeDepVersion",withoutAbi
     testImplementation "org.hyperledger.besu:secp256k1:$besuNativeDepVersion",withoutAbi
+
+    constraints {
+        // web3j-unit brings Testcontainers 1.19.8, whose Docker client uses API 1.32.
+        // Docker Engine 29+ rejects API versions below 1.40, so no container can start.
+        testImplementation("org.testcontainers:testcontainers:$testcontainersVersion") {
+            because 'Testcontainers 1.21.4+ is required for Docker Engine 29 compatibility'
+        }
+    }
 }
 
 
