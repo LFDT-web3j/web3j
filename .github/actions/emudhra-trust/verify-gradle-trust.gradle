@@ -1,0 +1,23 @@
+import java.security.KeyStore
+import java.security.MessageDigest
+import javax.net.ssl.TrustManagerFactory
+import javax.net.ssl.X509TrustManager
+
+def expectedStore = System.getenv('WEB3J_CI_TRUSTSTORE')
+if (!expectedStore || System.getProperty('javax.net.ssl.trustStore') != expectedStore) {
+    throw new GradleException('Gradle is not using the verified CI truststore')
+}
+def factory = TrustManagerFactory.getInstance(TrustManagerFactory.defaultAlgorithm)
+factory.init((KeyStore) null)
+def manager = factory.trustManagers.find { it instanceof X509TrustManager }
+def blockedRoots = [
+    '86A1ECBA089C4A8D3BBE2734C612BA341D813E043CF9E8A862CD5C57A36BBE6B',
+    'D7A7A0FB5D7E2731D771E9484EBCDEF71D5F0C3E0A2948782BC83EE0EA699EF4'
+]
+manager.acceptedIssuers.each { certificate ->
+    def fingerprint = MessageDigest.getInstance('SHA-256').digest(certificate.encoded).encodeHex().toString().toUpperCase(Locale.ROOT)
+    if (blockedRoots.contains(fingerprint)) {
+        throw new GradleException('An affected eMudhra issuer path is still trusted by Gradle')
+    }
+}
+println "Verified Gradle CI truststore: ${expectedStore}; Java ${System.getProperty('java.version')}"

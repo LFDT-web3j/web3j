@@ -35,6 +35,8 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: 21
+      - name: Contain compromised eMudhra certificate paths
+        uses: ./.github/actions/emudhra-trust
       - name: Cache Gradle packages
         uses: actions/cache@v4
         with:
@@ -61,6 +63,8 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: 21
+      - name: Contain compromised eMudhra certificate paths
+        uses: ./.github/actions/emudhra-trust
       - name: Cache Gradle packages
         uses: actions/cache@v4
         with:
