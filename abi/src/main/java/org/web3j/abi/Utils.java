@@ -70,8 +70,13 @@ public class Utils {
         Class[] itemTypes = constructor.getParameterTypes();
         for (int i = 0; i < itemTypes.length; ++i) {
             final Class cls = itemTypes[i];
+            final TypeReference<Type> arrayType =
+                    staticArrayParameterType(constructor.getGenericParameterTypes()[i]);
             if (StructType.class.isAssignableFrom(cls)) {
                 sb.append(getStructType(cls));
+            } else if (arrayType != null) {
+                // e.g. a StaticArray2<DynamicBytes> field is bytes[2]
+                sb.append(getTypeName(arrayType));
             } else {
                 Class parameterAnnotation =
                         extractParameterFromAnnotation(constructor.getParameterAnnotations()[i]);
@@ -290,7 +295,7 @@ public class Utils {
     static int staticSizeInWords(TypeReference<?> typeReference) throws ClassNotFoundException {
         Class<?> type = typeReference.getClassType();
         if (StaticStruct.class.isAssignableFrom(type)) {
-            return staticStructNestedPublicFieldsFlatList((Class<Type>) type).size();
+            return staticStructSizeInWords(type);
         }
         if (StaticArray.class.isAssignableFrom(type)) {
             TypeReference<?> elementType = typeReference.getSubTypeReference();
@@ -300,8 +305,7 @@ public class Utils {
         return 1;
     }
 
-    private static int staticArrayLength(TypeReference<?> typeReference)
-            throws ClassNotFoundException {
+    static int staticArrayLength(TypeReference<?> typeReference) throws ClassNotFoundException {
         if (typeReference instanceof TypeReference.StaticArrayTypeReference) {
             return ((TypeReference.StaticArrayTypeReference<?>) typeReference).getSize();
         }
@@ -310,6 +314,76 @@ public class Utils {
                         .getClassType()
                         .getSimpleName()
                         .substring(StaticArray.class.getSimpleName().length()));
+    }
+
+    /**
+     * Returns the number of 32-byte words a static struct occupies in place. Fields that are static
+     * arrays count at their full size, e.g. a {@code uint256[2][2]} field is 4 words. Structs
+     * without static-array fields keep the flattened field count.
+     */
+    @SuppressWarnings("unchecked")
+    static int staticStructSizeInWords(Class<?> structClass) {
+        if (!hasStaticArrayField(structClass)) {
+            return staticStructNestedPublicFieldsFlatList((Class<Type>) structClass).size();
+        }
+        int words = 0;
+        for (java.lang.reflect.Type parameter :
+                findStructConstructor(structClass).getGenericParameterTypes()) {
+            TypeReference<Type> arrayType = staticArrayParameterType(parameter);
+            Class<?> parameterClass =
+                    parameter instanceof ParameterizedType
+                            ? (Class<?>) ((ParameterizedType) parameter).getRawType()
+                            : (Class<?>) parameter;
+            if (arrayType != null) {
+                try {
+                    words += staticSizeInWords(arrayType);
+                } catch (ClassNotFoundException e) {
+                    throw new UnsupportedOperationException(
+                            "Unable to access parameterized type " + parameter.getTypeName(), e);
+                }
+            } else if (StaticStruct.class.isAssignableFrom(parameterClass)) {
+                words += staticStructSizeInWords(parameterClass);
+            } else {
+                words++;
+            }
+        }
+        return words;
+    }
+
+    private static boolean hasStaticArrayField(Class<?> structClass) {
+        final Constructor<?> constructor;
+        try {
+            constructor = findStructConstructor(structClass);
+        } catch (RuntimeException e) {
+            return false;
+        }
+        for (java.lang.reflect.Type parameter : constructor.getGenericParameterTypes()) {
+            if (staticArrayParameterType(parameter) != null
+                    || (parameter instanceof Class
+                            && parameter != structClass
+                            && StaticStruct.class.isAssignableFrom((Class<?>) parameter)
+                            && hasStaticArrayField((Class<?>) parameter))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Returns a type reference for a struct constructor parameter declared as a static array with
+     * its element type, e.g. {@code StaticArray2<DynamicBytes>}, or null for any other parameter.
+     */
+    static <T extends Type> TypeReference<T> staticArrayParameterType(
+            java.lang.reflect.Type parameter) {
+        if (parameter instanceof ParameterizedType
+                && ((ParameterizedType) parameter).getRawType() instanceof Class) {
+            Class<?> rawType = (Class<?>) ((ParameterizedType) parameter).getRawType();
+            if (StaticArray.class.isAssignableFrom(rawType)
+                    && !StaticStruct.class.isAssignableFrom(rawType)) {
+                return new TypeReference<T>(parameter, false) {};
+            }
+        }
+        return null;
     }
 
     /**
