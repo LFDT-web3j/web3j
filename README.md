@@ -87,7 +87,7 @@ We provide this functionality using the [Web3j CLI](http://docs.web3j.io/latest/
 For Unix:
 
 ```shell script
-curl -sSfL https://get.web3j.io | sh && source ~/.web3j/source.sh
+curl -L https://get.web3j.io | sh && source ~/.web3j/source.sh
 ```
 
 For Windows, in Powershell:
