@@ -36,6 +36,8 @@ jobs:
       with:
         distribution: 'zulu'
         java-version: 21
+    - name: Contain compromised eMudhra certificate paths
+      uses: ./.github/actions/emudhra-trust
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL

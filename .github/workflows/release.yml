@@ -8,6 +8,7 @@ on:
   pull_request:
     branches: [ main ]
     paths:
+      - '.github/actions/emudhra-trust/**'
       - '.github/workflows/build.yml'
       - '.github/workflows/release.yml'
       - '**/*.gradle'
@@ -102,6 +103,8 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: 21
+      - name: Contain compromised eMudhra certificate paths
+        uses: ./.github/actions/emudhra-trust
       - name: Cache Gradle packages
         uses: actions/cache@v4
         with:
@@ -222,6 +225,8 @@ jobs:
         with:
           distribution: zulu
           java-version: 21
+      - name: Contain compromised eMudhra certificate paths
+        uses: ./.github/actions/emudhra-trust
       - name: Generate Javadocs
         env:
           RELEASE_VERSION: ${{ needs.release.outputs.version }}
