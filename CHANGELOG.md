@@ -9,6 +9,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 - Fix maxPriorityFeePerGas exceeding maxFeePerGas in DynamicEIP1559GasProvider [#2264](https://github.com/LFDT-web3j/web3j/pull/2264)
 - Fix nested array type strings (static/dynamic combinations) and multidimensional dynamic array decoding [#2287](https://github.com/LFDT-web3j/web3j/pull/2287)
+- Replaced `printStackTrace()` with SLF4J warning logging in `StructuredDataEncoder`, preserving existing fallback behavior [#2324](https://github.com/LFDT-web3j/web3j/pull/2324)
 
 ### Features
 
