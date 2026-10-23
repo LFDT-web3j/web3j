@@ -87,9 +87,7 @@ We provide this functionality using the [Web3j CLI](http://docs.web3j.io/latest/
 For Unix:
 
 ```shell script
-installer=$(mktemp) &&
-curl --disable --proto '=https' --proto-redir '=https' --fail --show-error --silent --location https://get.web3j.io -o "$installer" &&
-bash "$installer" && rm -f "$installer" && source ~/.web3j/source.sh
+curl -sSfL https://get.web3j.io | sh && source ~/.web3j/source.sh
 ```
 
 For Windows, in Powershell:
