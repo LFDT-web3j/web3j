@@ -8,6 +8,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 - Fix integration test issues on Docker Engine 29 by upgrading Testcontainers to 1.21.4 and correcting `-Pintegration-tests=false` to properly disable tests [#2327](https://github.com/LFDT-web3j/web3j/pull/2327)
+- Fix generated wrappers for nested arrays (`uint256[][]` is now returned as `List<List<BigInteger>>` for calls and events) and for structs with static-array fields (`bytes[2]`, `uint256[][2]`, `uint256[2][2]`) [#2335](https://github.com/LFDT-web3j/web3j/pull/2335)
 ### Features
 
 - 

@@ -12,6 +12,7 @@
  */
 package org.web3j.abi.datatypes;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -69,6 +70,21 @@ public class DynamicArrayTest {
                                                 new DynamicArray<>(
                                                         Uint256.class, new ArrayList<>())))));
         assertEquals("uint256[][][]", array.getTypeAsString());
+    }
+
+    @Test
+    public void testNativeValueCopyOfNestedArrays() {
+        DynamicArray<DynamicArray> array =
+                new DynamicArray<>(
+                        DynamicArray.class,
+                        List.of(
+                                new DynamicArray<>(Uint256.class, new Uint256(1), new Uint256(2)),
+                                new DynamicArray<>(Uint256.class, new Uint256(3))));
+
+        // uint256[][] becomes List<List<BigInteger>>, not a List of Uint256 lists
+        assertEquals(
+                List.of(List.of(BigInteger.ONE, BigInteger.TWO), List.of(BigInteger.valueOf(3))),
+                array.getNativeValueCopy());
     }
 
     @Test

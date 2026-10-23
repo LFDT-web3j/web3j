@@ -290,9 +290,9 @@ public class AbiDefinition {
         }
 
         public boolean isDynamic() {
-            if (getType().equals("string")
-                    || getType().equals("bytes")
-                    || getType().contains("[]")) {
+            // T[k] is dynamic when T is, so the base type of a static array is checked too
+            String baseType = getType().split("\\[", 2)[0];
+            if (baseType.equals("string") || baseType.equals("bytes") || getType().contains("[]")) {
                 return true;
             }
             return components.stream().anyMatch(NamedType::isDynamic);
