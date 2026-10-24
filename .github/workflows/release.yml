@@ -223,7 +223,6 @@ jobs:
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          distribution: zulu
           java-version: 21
       - name: Contain compromised eMudhra certificate paths
         uses: ./.github/actions/emudhra-trust
