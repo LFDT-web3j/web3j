@@ -7,8 +7,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
-- Fix integration tests failing to start on Docker Engine 29 by upgrading Testcontainers to 1.21.4 [#PR_NUMBER](https://github.com/LFDT-web3j/web3j/pull/PR_NUMBER)
-- Fix `-Pintegration-tests=false` enabling the integration tests instead of disabling them [#PR_NUMBER](https://github.com/LFDT-web3j/web3j/pull/PR_NUMBER)
+- Fix integration test issues on Docker Engine 29 by upgrading Testcontainers to 1.21.4 and correcting `-Pintegration-tests=false` to properly disable tests [#2327](https://github.com/LFDT-web3j/web3j/pull/2327)
 ### Features
 
 - 
