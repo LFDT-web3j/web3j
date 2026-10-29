@@ -3,13 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
-# [6.1.0]() (Upcoming)
+# [6.1.1]() (Upcoming)
+
+### Bug Fixes
+
+-
+### Features
+
+- 
+### BREAKING CHANGES
+
+# [6.1.0](https://github.com/LFDT-web3j/web3j/releases/tag/v6.1.0) (2026-10-23)
 
 ### Bug Fixes
 
 - Fix maxPriorityFeePerGas exceeding maxFeePerGas in DynamicEIP1559GasProvider [#2264](https://github.com/LFDT-web3j/web3j/pull/2264)
 - Fix nested array type strings (static/dynamic combinations) and multidimensional dynamic array decoding [#2287](https://github.com/LFDT-web3j/web3j/pull/2287)
 - Replaced `printStackTrace()` with SLF4J warning logging in `StructuredDataEncoder`, preserving existing fallback behavior [#2324](https://github.com/LFDT-web3j/web3j/pull/2324)
+- Contain compromised eMudhra issuer paths in CI-[#2325](https://github.com/LFDT-web3j/web3j/pull/2325)
 
 ### Features
 
@@ -19,7 +30,6 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 - Dependency update jackson, bouncycastle[#2303](https://github.com/LFDT-web3j/web3j/pull/2303)
 - Bump various dependencies (Jackson, Bouncy Castle, OkHttp, Logback, etc.) [#2322](https://github.com/LFDT-web3j/web3j/pull/2322)
 - cache type bit-width parsing in TypeDecoder.getTypeLength[#2280](https://github.com/LFDT-web3j/web3j/pull/2280)
-
 
 ### BREAKING CHANGES
 
