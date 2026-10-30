@@ -17,10 +17,13 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import io.reactivex.Flowable;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ArrayNode;
 
@@ -85,11 +88,12 @@ public abstract class Service implements Web3jService {
                                 : null;
                 ArrayNode nodes = (ArrayNode) objectMapper.readTree(responseBytes);
                 List<Response<?>> responses = new ArrayList<>(nodes.size());
+                List<JsonNode> byRequest = matchById(nodes, batchRequest.getRequests());
 
                 for (int i = 0; i < nodes.size(); i++) {
                     Request<?, ? extends Response<?>> request = batchRequest.getRequests().get(i);
                     Response<?> response =
-                            objectMapper.treeToValue(nodes.get(i), request.getResponseType());
+                            objectMapper.treeToValue(byRequest.get(i), request.getResponseType());
                     if (rawResponse != null) {
                         response.setRawResponse(rawResponse);
                     }
@@ -101,6 +105,30 @@ public abstract class Service implements Web3jService {
                 return null;
             }
         }
+    }
+
+    // JSON-RPC 2.0 allows batch responses in any order, so pair them with requests by id.
+    // Fails if the ids don't map one-to-one, rather than returning data for the wrong request.
+    private static List<JsonNode> matchById(
+            ArrayNode nodes, List<Request<?, ? extends Response<?>>> requests) throws IOException {
+        if (nodes.size() != requests.size()) {
+            throw new IOException("Batch response size does not match request size");
+        }
+        Map<Long, JsonNode> byId = new HashMap<>();
+        for (JsonNode node : nodes) {
+            if (byId.put(node.path("id").asLong(-1), node) != null) {
+                throw new IOException("Duplicate id in batch response: " + node.path("id"));
+            }
+        }
+        List<JsonNode> matched = new ArrayList<>(requests.size());
+        for (Request<?, ? extends Response<?>> request : requests) {
+            JsonNode node = byId.remove(request.getId());
+            if (node == null) {
+                throw new IOException("No batch response for request id: " + request.getId());
+            }
+            matched.add(node);
+        }
+        return matched;
     }
 
     @Override

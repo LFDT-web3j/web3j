@@ -7,7 +7,8 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
--
+- Fix `sendBatch` pairing out-of-order batch responses with the wrong requests [#2323](https://github.com/LFDT-web3j/web3j/pull/2323)
+
 ### Features
 
 - 
