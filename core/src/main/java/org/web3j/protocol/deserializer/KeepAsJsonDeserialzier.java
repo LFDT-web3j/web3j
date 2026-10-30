@@ -25,6 +25,9 @@ public class KeepAsJsonDeserialzier extends ValueDeserializer<String> {
         if (jp.currentToken() == JsonToken.VALUE_NULL) {
             return null;
         }
+        if (jp.currentToken() == JsonToken.VALUE_STRING) {
+            return jp.getString();
+        }
 
         TreeNode tree = jp.readValueAsTree();
         return tree != null ? tree.toString() : null;

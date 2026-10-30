@@ -134,6 +134,42 @@ class ResponseTest extends ResponseTester {
     }
 
     @Test
+    void testErrorResponseStringData() {
+        buildResponse(
+                "{"
+                        + "  \"jsonrpc\":\"2.0\","
+                        + "  \"id\":1,"
+                        + "  \"error\":{"
+                        + "    \"code\":3,"
+                        + "    \"message\":\"execution reverted\","
+                        + "    \"data\":\"0x1234\""
+                        + "  }"
+                        + "}");
+
+        EthCall ethCall = deserialiseResponse(EthCall.class);
+        assertTrue(ethCall.hasError());
+        assertEquals("0x1234", ethCall.getError().getData());
+        assertEquals("0x1234", ethCall.getRevertReasonEncodedData());
+    }
+
+    @Test
+    void testErrorResponseEscapedStringData() {
+        buildResponse(
+                "{"
+                        + "  \"jsonrpc\":\"2.0\","
+                        + "  \"id\":1,"
+                        + "  \"error\":{"
+                        + "    \"code\":3,"
+                        + "    \"message\":\"execution reverted\","
+                        + "    \"data\":\"\\\"quoted\\\"\\nline\""
+                        + "  }"
+                        + "}");
+
+        EthCall ethCall = deserialiseResponse(EthCall.class);
+        assertEquals("\"quoted\"\nline", ethCall.getError().getData());
+    }
+
+    @Test
     void testErrorResponseComplexData() {
         buildResponse(
                 "{"

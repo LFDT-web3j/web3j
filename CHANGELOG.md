@@ -7,7 +7,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
--
+- Fix extra quotes in string-valued JSON-RPC error data [#2312](https://github.com/LFDT-web3j/web3j/issues/2312)
 ### Features
 
 - 
