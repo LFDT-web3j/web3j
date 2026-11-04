@@ -23,12 +23,15 @@ import io.reactivex.Flowable;
 import io.reactivex.FlowableEmitter;
 import io.reactivex.Scheduler;
 import io.reactivex.schedulers.Schedulers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.DefaultBlockParameterNumber;
 import org.web3j.protocol.core.Request;
+import org.web3j.protocol.core.Response;
 import org.web3j.protocol.core.filters.BlockFilter;
 import org.web3j.protocol.core.filters.LogFilter;
 import org.web3j.protocol.core.filters.PendingTransactionFilter;
@@ -39,6 +42,8 @@ import org.web3j.utils.Flowables;
 
 /** web3j reactive API implementation. */
 public class JsonRpc2_0Rx {
+
+    private static final Logger log = LoggerFactory.getLogger(JsonRpc2_0Rx.class);
 
     private final Web3j web3j;
     private final ScheduledExecutorService scheduledExecutorService;
@@ -87,7 +92,18 @@ public class JsonRpc2_0Rx {
             long pollingInterval) {
 
         filter.run(scheduledExecutorService, pollingInterval);
-        emitter.setCancellable(filter::cancel);
+        emitter.setCancellable(() -> cancel(filter));
+    }
+
+    private static void cancel(org.web3j.protocol.core.filters.Filter<?> filter) {
+        // The cancellable runs on dispose, when no subscriber can receive an error anymore, so a
+        // failure would end up in RxJavaPlugins.onError as an UndeliverableException. The polling
+        // is already stopped at this point, and the node expires an unused filter on its own.
+        try {
+            filter.cancel();
+        } catch (RuntimeException e) {
+            log.debug("Could not uninstall filter: {}", e.getMessage(), e);
+        }
     }
 
     public Flowable<Transaction> transactionFlowable(long pollingInterval) {
@@ -96,9 +112,7 @@ public class JsonRpc2_0Rx {
 
     public Flowable<Transaction> pendingTransactionFlowable(long pollingInterval) {
         return ethPendingTransactionHashFlowable(pollingInterval)
-                .flatMap(
-                        transactionHash ->
-                                web3j.ethGetTransactionByHash(transactionHash).flowable())
+                .flatMap(transactionHash -> send(web3j.ethGetTransactionByHash(transactionHash)))
                 .filter(ethTransaction -> ethTransaction.getTransaction().isPresent())
                 .map(ethTransaction -> ethTransaction.getTransaction().get());
     }
@@ -107,8 +121,14 @@ public class JsonRpc2_0Rx {
         return ethBlockHashFlowable(pollingInterval)
                 .flatMap(
                         blockHash ->
-                                web3j.ethGetBlockByHash(blockHash, fullTransactionObjects)
-                                        .flowable());
+                                send(web3j.ethGetBlockByHash(blockHash, fullTransactionObjects)));
+    }
+
+    private static <T extends Response<?>> Flowable<T> send(Request<?, T> request) {
+        // flatMap does not cancel its upstream when a Callable source such as Request.flowable()
+        // fails, so the filter would keep polling after the subscriber received the error. hide()
+        // makes flatMap subscribe to the request, and a failure then cancels the filter.
+        return request.flowable().hide();
     }
 
     public Flowable<EthBlock> replayBlocksFlowable(
