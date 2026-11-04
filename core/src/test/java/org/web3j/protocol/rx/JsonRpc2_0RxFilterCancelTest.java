@@ -17,8 +17,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -45,6 +48,7 @@ import org.web3j.protocol.core.methods.response.EthUninstallFilter;
 import org.web3j.protocol.exceptions.ClientConnectionException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -64,6 +68,10 @@ class JsonRpc2_0RxFilterCancelTest {
 
     private final List<Throwable> undeliverable = new CopyOnWriteArrayList<>();
 
+    private final List<ScheduledFuture<?>> polling = new CopyOnWriteArrayList<>();
+
+    private final AtomicInteger uninstalls = new AtomicInteger();
+
     private ScheduledThreadPoolExecutor executor;
 
     private Web3jService web3jService;
@@ -80,9 +88,19 @@ class JsonRpc2_0RxFilterCancelTest {
     @BeforeEach
     void setUp() {
         RxJavaPlugins.setErrorHandler(undeliverable::add);
-        // a cancelled polling task leaves the queue, so an empty queue means polling stopped
-        executor = new ScheduledThreadPoolExecutor(1);
-        executor.setRemoveOnCancelPolicy(true);
+        // keep the future of the polling task: the queue is empty while the task runs, so only
+        // the future tells whether the filter was cancelled
+        executor =
+                new ScheduledThreadPoolExecutor(1) {
+                    @Override
+                    public ScheduledFuture<?> scheduleAtFixedRate(
+                            Runnable command, long initialDelay, long period, TimeUnit unit) {
+                        ScheduledFuture<?> future =
+                                super.scheduleAtFixedRate(command, initialDelay, period, unit);
+                        polling.add(future);
+                        return future;
+                    }
+                };
         web3jService = mock(Web3jService.class);
         web3j = Web3j.build(web3jService, 10, executor);
     }
@@ -105,7 +123,7 @@ class JsonRpc2_0RxFilterCancelTest {
         subscription.dispose();
 
         assertTrue(subscription.isDisposed());
-        assertTrue(executor.getQueue().isEmpty(), "filter is still polled");
+        assertFilterCancelled();
         assertEquals(Collections.emptyList(), undeliverable);
     }
 
@@ -133,7 +151,7 @@ class JsonRpc2_0RxFilterCancelTest {
 
         subscription.dispose();
 
-        assertTrue(executor.getQueue().isEmpty(), "filter is still polled");
+        assertFilterCancelled();
         assertEquals(Collections.emptyList(), undeliverable);
     }
 
@@ -166,8 +184,15 @@ class JsonRpc2_0RxFilterCancelTest {
 
         assertTrue(failed.await(5, TimeUnit.SECONDS), "subscriber did not receive the error");
         assertSame(lookupFailure, received.get());
-        assertTrue(executor.getQueue().isEmpty(), "filter is still polled");
+        // flatMap cancels its upstream before it passes the error on, so this is deterministic
+        assertFilterCancelled();
         assertEquals(Collections.emptyList(), undeliverable);
+    }
+
+    private void assertFilterCancelled() {
+        assertFalse(polling.isEmpty(), "filter was not polled");
+        assertTrue(polling.stream().allMatch(Future::isCancelled), "filter is still polled");
+        assertEquals(1, uninstalls.get(), "filter was not uninstalled");
     }
 
     private void mockNode(CountDownLatch polled, UninstallFailure failure) throws IOException {
@@ -197,6 +222,7 @@ class JsonRpc2_0RxFilterCancelTest {
                                 case "eth_getTransactionByHash":
                                     throw lookupFailure;
                                 case "eth_uninstallFilter":
+                                    uninstalls.incrementAndGet();
                                     return uninstall(failure);
                                 default:
                                     throw new IOException("Unexpected " + request.getMethod());
