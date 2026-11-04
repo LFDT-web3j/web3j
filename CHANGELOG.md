@@ -7,7 +7,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
--
+- Filter flowables stop polling when a block or transaction lookup fails, and a failed filter uninstall on dispose is logged instead of reported as an `UndeliverableException` [#2331](https://github.com/LFDT-web3j/web3j/pull/2331)
 ### Features
 
 - 
