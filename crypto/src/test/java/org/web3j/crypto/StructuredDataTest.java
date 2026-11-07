@@ -546,4 +546,86 @@ public class StructuredDataTest {
 
         assertEquals(Numeric.toHexString(structHashDomain), expectedDomainStructHash);
     }
+
+    @Test
+    public void testInvalidBytes32ScalarValueThrows() throws IOException {
+        StructuredDataEncoder dataEncoder =
+                new StructuredDataEncoder(
+                        getResource(
+                                "build/resources/test/"
+                                        + "structured_data_json_files/"
+                                        + "InvalidMessageBytes32NumericValue.json"));
+        assertThrows(RuntimeException.class, dataEncoder::hashStructuredData);
+    }
+
+    @Test
+    public void testInvalidBytes32ArrayItemFailsExplicitly() throws IOException {
+        String invalidStructuredDataJSONFilePath =
+                "build/resources/test/"
+                        + "structured_data_json_files/"
+                        + "InvalidMessageBytes32ArrayNumericItem.json";
+        StructuredDataEncoder dataEncoder =
+                new StructuredDataEncoder(getResource(invalidStructuredDataJSONFilePath));
+        RuntimeException e = assertThrows(RuntimeException.class, dataEncoder::hashStructuredData);
+        assertEquals("Unable to encode array item of type 'bytes32'", e.getMessage());
+        assertThrows(
+                RuntimeException.class,
+                () ->
+                        Sign.signTypedData(
+                                getResource(invalidStructuredDataJSONFilePath),
+                                SampleKeys.KEY_PAIR));
+    }
+
+    @Test
+    public void testInvalidUintArrayItemFailsExplicitly() throws IOException {
+        String invalidStructuredDataJSONFilePath =
+                "build/resources/test/"
+                        + "structured_data_json_files/"
+                        + "InvalidMessageUintArrayNonNumericItem.json";
+        StructuredDataEncoder dataEncoder =
+                new StructuredDataEncoder(getResource(invalidStructuredDataJSONFilePath));
+        RuntimeException e = assertThrows(RuntimeException.class, dataEncoder::hashStructuredData);
+        assertEquals("Unable to encode array item of type 'uint256'", e.getMessage());
+        assertThrows(
+                RuntimeException.class,
+                () ->
+                        Sign.signTypedData(
+                                getResource(invalidStructuredDataJSONFilePath),
+                                SampleKeys.KEY_PAIR));
+    }
+
+    // Expected hashes generated with @metamask/eth-sig-util 8.2.0 (TypedDataUtils, V4)
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testBoolArrayEncoding() throws IOException {
+        StructuredDataEncoder dataEncoder =
+                new StructuredDataEncoder(
+                        getResource(
+                                "build/resources/test/"
+                                        + "structured_data_json_files/"
+                                        + "ValidStructuredDataWithBoolArray.json"));
+        assertEquals(
+                "0xfdad1f5be4b39f2ae17b80269ce056f37cf3b000fed00939a837eff2a72cc155",
+                Numeric.toHexString(
+                        dataEncoder.hashMessage(
+                                dataEncoder.jsonMessageObject.getPrimaryType(),
+                                (HashMap<String, Object>)
+                                        dataEncoder.jsonMessageObject.getMessage())));
+        assertEquals(
+                "0x9e97ef6c18d0662037cc8d848a26a09e018538140985c76fbe5d2e79a7a51a19",
+                Numeric.toHexString(dataEncoder.hashStructuredData()));
+    }
+
+    @Test
+    public void testBoolArrayNumericStringItemsEncodeAsBooleans() throws IOException {
+        StructuredDataEncoder dataEncoder =
+                new StructuredDataEncoder(
+                        getResource(
+                                "build/resources/test/"
+                                        + "structured_data_json_files/"
+                                        + "ValidStructuredDataWithBoolArrayAsNumericStrings.json"));
+        assertEquals(
+                "0x9e97ef6c18d0662037cc8d848a26a09e018538140985c76fbe5d2e79a7a51a19",
+                Numeric.toHexString(dataEncoder.hashStructuredData()));
+    }
 }

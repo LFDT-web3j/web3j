@@ -30,8 +30,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import tools.jackson.databind.ObjectMapper;
 
 import org.web3j.abi.TypeEncoder;
@@ -44,8 +42,6 @@ import static org.web3j.crypto.Hash.sha3;
 import static org.web3j.crypto.Hash.sha3String;
 
 public class StructuredDataEncoder {
-    private static final Logger log = LoggerFactory.getLogger(StructuredDataEncoder.class);
-
     public static ObjectMapper mapper = new ObjectMapper();
     public final StructuredData.EIP712Message jsonMessageObject;
 
@@ -262,14 +258,17 @@ public class StructuredDataEncoder {
                 hashBytes = Numeric.hexStringToByteArray(sha3String((String) data));
             } else if (baseType.equals("bytes")) {
                 hashBytes = sha3(Numeric.hexStringToByteArray((String) data));
+            } else if (baseType.equals("bool") && data instanceof Boolean) {
+                BigInteger value = ((Boolean) data) ? BigInteger.ONE : BigInteger.ZERO;
+                hashBytes = Numeric.toBytesPadded(value, MAX_BYTE_LENGTH);
             } else {
                 byte[] b = convertArgToBytes((String) data);
                 BigInteger bi = new BigInteger(1, b);
-                hashBytes = Numeric.toBytesPadded(bi, 32);
+                hashBytes = Numeric.toBytesPadded(bi, MAX_BYTE_LENGTH);
             }
         } catch (Exception e) {
-            log.warn("Unable to convert structured data item for type '{}'", baseType, e);
-            hashBytes = new byte[0];
+            throw new RuntimeException(
+                    String.format("Unable to encode array item of type '%s'", baseType), e);
         }
 
         return hashBytes;

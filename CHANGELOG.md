@@ -7,7 +7,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
--
+- `StructuredDataEncoder` now throws on invalid EIP-712 primitive array items instead of silently encoding them as empty bytes, and encodes `bool[]` correctly [#2317](https://github.com/LFDT-web3j/web3j/issues/2317)
 ### Features
 
 - 
