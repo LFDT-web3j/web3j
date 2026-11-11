@@ -12,8 +12,12 @@
  */
 package org.web3j.abi.datatypes;
 
+import java.lang.reflect.Array;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 public class DynamicStruct extends DynamicArray<Type> implements StructType {
@@ -65,5 +69,78 @@ public class DynamicStruct extends DynamicArray<Type> implements StructType {
         }
         type.append(")");
         return type.toString();
+    }
+
+    // overriding toString method in SFWJ file
+    @Override
+    public String toString() {
+        // Try to use reflection
+        try {
+            Field[] declared = getClass().getDeclaredFields();
+            List<Field> publicFields = new ArrayList<>();
+            for (Field f : declared) {
+                int mod = f.getModifiers();
+                if (!Modifier.isStatic(mod) && Modifier.isPublic(mod) && !f.isSynthetic()) {
+                    publicFields.add(f);
+                }
+            }
+
+            if (!publicFields.isEmpty()) {
+                StringBuilder sb = new StringBuilder(getClass().getSimpleName()).append("(");
+                for (int i = 0; i < publicFields.size(); i++) {
+                    Field f = publicFields.get(i);
+                    Object value = f.get(this);
+                    sb.append(f.getName()).append(": ").append(unwrap(value));
+                    if (i < publicFields.size() - 1) sb.append(", ");
+                }
+                sb.append(")");
+                return sb.toString();
+            }
+        } catch (Exception e) {
+            // If reflection fails, fallback below
+        }
+
+        // original behaviour with field0, field1...
+        StringBuilder sb = new StringBuilder("DynamicStruct(");
+        List<Type> values = getValue();
+        for (int i = 0; i < values.size(); i++) {
+            sb.append("field").append(i).append(": ").append(values.get(i));
+            if (i < values.size() - 1) sb.append(", ");
+        }
+        sb.append(")");
+        return sb.toString();
+    }
+
+    private static Object unwrap(Object o) {
+        if (o == null) return null;
+
+        return switch (o) {
+            case DynamicStruct ds -> ds.toString();
+
+            case Type<?> t -> unwrap(t.getValue());
+
+            case Collection<?> col -> {
+                List<Object> out = new ArrayList<>();
+                for (Object e : col) out.add(unwrap(e));
+                yield out;
+            }
+
+            case Object[] arr -> {
+                List<Object> out = new ArrayList<>(arr.length);
+                for (Object e : arr) out.add(unwrap(e));
+                yield out;
+            }
+
+            default -> {
+                if (o.getClass().isArray()) {
+                    int n = Array.getLength(o);
+                    List<Object> out = new ArrayList<>(n);
+                    for (int i = 0; i < n; i++) out.add(unwrap(Array.get(o, i)));
+                    yield out;
+                } else {
+                    yield o;
+                }
+            }
+        };
     }
 }
