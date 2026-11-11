@@ -106,7 +106,8 @@ public class DefaultFunctionReturnDecoder extends FunctionReturnDecoder {
                     result =
                             TypeDecoder.decodeStaticArray(
                                     input, hexStringDataOffset, typeReference, length);
-                    offset += length * MAX_BYTE_LENGTH_FOR_HEX_STRING;
+                    offset +=
+                            staticArrayOffset(typeReference, length, MAX_BYTE_LENGTH_FOR_HEX_STRING);
 
                 } else if (StaticStruct.class.isAssignableFrom(classType)) {
                     result =
@@ -124,24 +125,8 @@ public class DefaultFunctionReturnDecoder extends FunctionReturnDecoder {
                     result =
                             TypeDecoder.decodeStaticArray(
                                     input, hexStringDataOffset, typeReference, length);
-                    if (DynamicStruct.class.isAssignableFrom(
-                            getParameterizedTypeFromArray(typeReference))) {
-                        offset += MAX_BYTE_LENGTH_FOR_HEX_STRING;
-                    } else if (StaticStruct.class.isAssignableFrom(
-                            getParameterizedTypeFromArray(typeReference))) {
-                        offset +=
-                                staticStructNestedPublicFieldsFlatList(
-                                                        getParameterizedTypeFromArray(
-                                                                typeReference))
-                                                .size()
-                                        * length
-                                        * MAX_BYTE_LENGTH_FOR_HEX_STRING;
-                    } else if (Utf8String.class.isAssignableFrom(
-                            getParameterizedTypeFromArray(typeReference))) {
-                        offset += MAX_BYTE_LENGTH_FOR_HEX_STRING;
-                    } else {
-                        offset += length * MAX_BYTE_LENGTH_FOR_HEX_STRING;
-                    }
+                    offset +=
+                            staticArrayOffset(typeReference, length, MAX_BYTE_LENGTH_FOR_HEX_STRING);
                 } else {
                     result = TypeDecoder.decode(input, hexStringDataOffset, classType);
                     offset += MAX_BYTE_LENGTH_FOR_HEX_STRING;
@@ -188,6 +173,25 @@ public class DefaultFunctionReturnDecoder extends FunctionReturnDecoder {
                             || isDynamic(getParameterizedTypeFromArray(typeReference)));
         } catch (ClassCastException e) {
             return false;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static int staticArrayOffset(
+            TypeReference<?> typeReference, int length, int slotSize)
+            throws ClassNotFoundException {
+        Class<?> paramType = getParameterizedTypeFromArray(typeReference);
+        if (DynamicStruct.class.isAssignableFrom(paramType)
+                || DynamicBytes.class.isAssignableFrom(paramType)
+                || DynamicArray.class.isAssignableFrom(paramType)
+                || Utf8String.class.isAssignableFrom(paramType)) {
+            return slotSize;
+        } else if (StaticStruct.class.isAssignableFrom(paramType)) {
+            return staticStructNestedPublicFieldsFlatList((Class<Type>) paramType).size()
+                    * length
+                    * slotSize;
+        } else {
+            return length * slotSize;
         }
     }
 }
