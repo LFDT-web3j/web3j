@@ -10,7 +10,8 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 - Fix integration test issues on Docker Engine 29 by upgrading Testcontainers to 1.21.4 and correcting `-Pintegration-tests=false` to properly disable tests [#2327](https://github.com/LFDT-web3j/web3j/pull/2327)
 ### Features
 
-- 
+- Make Web3jService AutoCloseable and provide default close() on Web3j [#2266](https://github.com/LFDT-web3j/web3j/pull/2266)
+
 ### BREAKING CHANGES
 
 # [6.1.0](https://github.com/LFDT-web3j/web3j/releases/tag/v6.1.0) (2026-10-23)
