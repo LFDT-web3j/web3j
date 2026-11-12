@@ -22,8 +22,6 @@ import org.web3j.abi.datatypes.StaticStruct;
 import org.web3j.abi.datatypes.Type;
 import org.web3j.abi.datatypes.Uint;
 
-import static org.web3j.abi.Utils.staticStructNestedPublicFieldsFlatList;
-
 public class DefaultFunctionEncoder extends FunctionEncoder {
 
     @Override
@@ -86,13 +84,15 @@ public class DefaultFunctionEncoder extends FunctionEncoder {
     private static int getLength(final List<Type> parameters) {
         int count = 0;
         for (final Type type : parameters) {
-            if (type instanceof StaticArray
+            if (TypeEncoder.isDynamic(type)) {
+                // Dynamic values (including static arrays of dynamic elements such as bytes[2])
+                // take a single offset word in the head
+                count++;
+            } else if (type instanceof StaticArray
                     && StaticStruct.class.isAssignableFrom(
                             ((StaticArray) type).getComponentType())) {
                 count +=
-                        staticStructNestedPublicFieldsFlatList(
-                                                ((StaticArray) type).getComponentType())
-                                        .size()
+                        Utils.staticStructSizeInWords(((StaticArray) type).getComponentType())
                                 * ((StaticArray) type).getValue().size();
             } else if (type instanceof StaticArray
                     && DynamicStruct.class.isAssignableFrom(

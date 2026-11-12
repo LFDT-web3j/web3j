@@ -57,9 +57,10 @@ public class TypeEncoder {
         }
 
         if (parameter instanceof StaticArray) {
-            StaticArray staticArray = (StaticArray) parameter;
-            Class componentType = staticArray.getComponentType();
-            return isDynamic(componentType);
+            StaticArray<?> staticArray = (StaticArray<?>) parameter;
+            // A static array is dynamic if its elements are, at any nesting depth (bytes[2][2])
+            return isDynamic(staticArray.getComponentType())
+                    || staticArray.getValue().stream().anyMatch(TypeEncoder::isDynamic);
         }
 
         return false;
@@ -87,7 +88,7 @@ public class TypeEncoder {
         } else if (parameter instanceof Utf8String) {
             return encodeString((Utf8String) parameter);
         } else if (parameter instanceof StaticArray) {
-            if (isDynamic(((StaticArray) parameter).getComponentType())) {
+            if (isDynamic(parameter)) {
                 return encodeStaticArrayWithDynamicValues((StaticArray) parameter);
             } else {
                 return encodeArrayValues((StaticArray) parameter);
@@ -359,7 +360,11 @@ public class TypeEncoder {
         boolean arrayOfDynamicStructs =
                 !value.getValue().isEmpty() && value.getValue().get(0) instanceof DynamicStruct;
         boolean arrayOfDynamicArrays =
-                !value.getValue().isEmpty() && value.getValue().get(0) instanceof DynamicArray;
+                !value.getValue().isEmpty()
+                        && (value.getValue().get(0) instanceof DynamicArray
+                                // e.g. bytes[2][]: static arrays with dynamic elements
+                                || (value.getValue().get(0) instanceof StaticArray
+                                        && isDynamic(value.getValue().get(0))));
         if (arrayOfBytes || arrayOfString) {
             long offset = 0;
             for (int i = 0; i < value.getValue().size(); i++) {
