@@ -764,12 +764,9 @@ public class SolidityFunctionWrapper extends Generator {
 
                 constructorBuilder.addStatement("this." + componentName + " = " + componentName);
                 nativeConstructorBuilder.addStatement(
-                        "this."
-                                + componentName
-                                + " = "
-                                + componentName
-                                + adjustToNativeTypeIfNecessary(component),
-                        Collectors.class);
+                        CodeBlock.of("this.$L = $L", componentName, componentName).toBuilder()
+                                .add(adjustToNativeTypeIfNecessary(component))
+                                .build());
             }
 
             builder.superclass(namedType.isDynamic() ? DynamicStruct.class : StaticStruct.class);
@@ -798,18 +795,43 @@ public class SolidityFunctionWrapper extends Generator {
         return structName;
     }
 
-    private String adjustToNativeTypeIfNecessary(NamedType component) {
+    private CodeBlock adjustToNativeTypeIfNecessary(NamedType component) {
         if (useNativeJavaTypes && structClassNameMap.get(component.structIdentifier()) == null) {
             if (ARRAY_SUFFIX.matcher(component.getType()).find()
                     && structClassNameMap.get(normalizeNamedType(component).structIdentifier())
                             == null) {
-                return ".getValue().stream().map(v -> v.getValue()).collect($T.toList())";
+                int dimensions =
+                        component.getType().startsWith("tuple")
+                                ? 1
+                                : (int) ARRAY_SUFFIX.matcher(component.getType()).results().count();
+                return CodeBlock.of(
+                        ".getValue().stream().map($L).collect($T.toList())",
+                        nativeArrayElementMapper("v", dimensions - 1),
+                        Collectors.class);
             } else {
-                return ".getValue()";
+                return CodeBlock.of(".getValue()");
             }
         } else {
-            return "";
+            return CodeBlock.of("");
         }
+    }
+
+    /**
+     * Lambda that converts one element of a (possibly multidimensional) array to its native Java
+     * type, e.g. {@code v -> v.getValue()} for {@code uint256[]} or {@code v -> v.getValue()
+     * .stream().map(v1 -> v1.getValue()).collect(Collectors.toList())} for {@code uint256[][]}.
+     */
+    private static CodeBlock nativeArrayElementMapper(String variable, int nestedDimensions) {
+        if (nestedDimensions == 0) {
+            return CodeBlock.of("$L -> $L.getValue()", variable, variable);
+        }
+        String inner = "v" + nestedDimensions;
+        return CodeBlock.of(
+                "$L -> $L.getValue().stream().map($L).collect($T.toList())",
+                variable,
+                variable,
+                nativeArrayElementMapper(inner, nestedDimensions - 1),
+                Collectors.class);
     }
 
     private NamedType normalizeNamedType(NamedType namedType) {
@@ -1327,31 +1349,14 @@ public class SolidityFunctionWrapper extends Generator {
             if (typeNames.size() != 1) {
                 throw new UnsupportedOperationException(
                         "Only a single parameterized type is supported");
-            } else if (structClassNameMap.values().stream()
-                    .map(ClassName::simpleName)
-                    .anyMatch(
-                            name ->
-                                    name.equals(
-                                            ((ClassName)
-                                                            ((ParameterizedTypeName)
-                                                                            parameterSpec.type)
-                                                                    .typeArguments.get(0))
-                                                    .simpleName()))) {
-                String structName =
-                        structClassNameMap.values().stream()
-                                .map(ClassName::simpleName)
-                                .filter(
-                                        name ->
-                                                name.equals(
-                                                        ((ClassName)
-                                                                        ((ParameterizedTypeName)
-                                                                                        parameterSpec
-                                                                                                .type)
-                                                                                .typeArguments.get(
-                                                                                        0))
-                                                                .simpleName()))
-                                .collect(Collectors.toList())
-                                .get(0);
+            } else if (typeNames.get(0) instanceof ClassName
+                    && structClassNameMap.values().stream()
+                            .map(ClassName::simpleName)
+                            .anyMatch(
+                                    name ->
+                                            name.equals(
+                                                    ((ClassName) typeNames.get(0)).simpleName()))) {
+                String structName = ((ClassName) typeNames.get(0)).simpleName();
                 return "new "
                         + parameterSpec.type
                         + "("
@@ -2286,16 +2291,13 @@ public class SolidityFunctionWrapper extends Generator {
     }
 
     private boolean isNotArrayOfStructs(NamedTypeName namedTypeName) {
-        return structClassNameMap.values().stream()
-                .map(ClassName::simpleName)
-                .noneMatch(
-                        name ->
-                                name.equals(
-                                        ((ClassName)
-                                                        ((ParameterizedTypeName)
-                                                                        namedTypeName.typeName)
-                                                                .typeArguments.get(0))
-                                                .simpleName()));
+        TypeName elementType =
+                ((ParameterizedTypeName) namedTypeName.typeName).typeArguments.get(0);
+        // the element type of a nested array such as uint256[][] is itself parameterized
+        return !(elementType instanceof ClassName)
+                || structClassNameMap.values().stream()
+                        .map(ClassName::simpleName)
+                        .noneMatch(name -> name.equals(((ClassName) elementType).simpleName()));
     }
 
     static TypeName buildTypeName(String typeDeclaration) throws ClassNotFoundException {

@@ -71,7 +71,8 @@ public abstract class Array<T extends Type> implements Type<List<T>> {
     public List<Object> getNativeValueCopy() {
         List<Object> copy = new ArrayList<>(value.size());
         for (T t : value) {
-            copy.add(t.getValue());
+            // nested arrays, e.g. uint256[][], are converted at every level
+            copy.add(t instanceof Array ? ((Array<?>) t).getNativeValueCopy() : t.getValue());
         }
         return Collections.unmodifiableList(copy);
     }
