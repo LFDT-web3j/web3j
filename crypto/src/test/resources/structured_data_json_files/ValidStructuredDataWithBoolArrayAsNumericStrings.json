@@ -1,0 +1,19 @@
+{
+	"types": {
+		"EIP712Domain": [
+			{"name": "name", "type": "string"},
+			{"name": "chainId", "type": "uint256"}
+		],
+		"Flags": [
+			{"name": "flags", "type": "bool[]"}
+		]
+	},
+	"primaryType": "Flags",
+	"domain": {
+		"name": "Bool Array Test",
+		"chainId": 1
+	},
+	"message": {
+		"flags": ["1", "0", "1"]
+	}
+}
