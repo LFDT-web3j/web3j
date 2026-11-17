@@ -53,9 +53,28 @@ class JsonRpc2_0Web3jTest {
     }
 
     @Test
-    void shouldShutdownOnAutoClose() throws Exception {
-        try (Web3j web3j = Web3j.build(service, 10, scheduledExecutorService)) {}
+    void shouldShutdownOnAutoClose() throws IOException {
+        try (Web3j web3j = Web3j.build(service, 10, scheduledExecutorService)) {
+            // Web3j.close() delegates to shutdown() and requires no checked Exception handling
+        }
         verifyServicesClosed();
+    }
+
+    @Test
+    void shouldCloseWithoutCheckedExceptionHandling() {
+        try (Web3j web3j = Web3j.build(service, 10, scheduledExecutorService)) {
+            // Verifies Web3j can be used in try-with-resources without catching or declaring
+            // Exception
+        }
+        verify(scheduledExecutorService).shutdown();
+    }
+
+    @Test
+    void shouldCloseWeb3jServiceOnAutoClose() throws IOException {
+        try (Web3jService web3jService = service) {
+            // Verifies Web3jService can be used in try-with-resources directly
+        }
+        verify(service).close();
     }
 
     private void verifyServicesClosed() throws IOException {
