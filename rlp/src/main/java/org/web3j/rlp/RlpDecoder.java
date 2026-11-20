@@ -150,6 +150,11 @@ public class RlpDecoder {
 
                     byte listLen = (byte) (prefix - OFFSET_SHORT_LIST);
 
+                    // Input validation
+                    if (listLen > endPos - (startPos + 1)) {
+                        throw new RuntimeException("RLP length mismatch");
+                    }
+
                     RlpList newLevelList = new RlpList(new ArrayList<>());
                     traverse(data, startPos + 1, startPos + listLen + 1, newLevelList);
                     rlpList.getValues().add(newLevelList);
@@ -167,6 +172,11 @@ public class RlpDecoder {
 
                     byte lenOfListLen = (byte) (prefix - OFFSET_LONG_LIST);
                     int listLen = calcLength(lenOfListLen, data, startPos);
+
+                    // Input validation
+                    if (listLen > endPos - (startPos + lenOfListLen + 1)) {
+                        throw new RuntimeException("RLP length mismatch");
+                    }
 
                     RlpList newLevelList = new RlpList(new ArrayList<>());
                     traverse(
