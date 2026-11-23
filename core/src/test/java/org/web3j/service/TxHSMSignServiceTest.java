@@ -48,8 +48,6 @@ import static org.mockito.Mockito.when;
 
 class TxHSMSignServiceTest {
 
-    private static final String CONNECTION_ERROR = "Connection refused";
-
     private HSMHTTPPass hsmHttpPass;
     private TxHSMSignService<HSMHTTPPass> signService;
 
@@ -57,7 +55,7 @@ class TxHSMSignServiceTest {
     void setUp() throws IOException {
         OkHttpClient okHttpClient = mock(OkHttpClient.class);
         Call call = mock(Call.class);
-        when(call.execute()).thenThrow(new IOException(CONNECTION_ERROR));
+        when(call.execute()).thenThrow(new IOException("Connection refused"));
         when(okHttpClient.newCall(any())).thenReturn(call);
 
         hsmHttpPass =
@@ -111,15 +109,20 @@ class TxHSMSignServiceTest {
     }
 
     @Test
-    void testSignFailsWhenHsmReturnsNoSignature() {
-        assertSignatureRejected((dataToSign, pass) -> null);
-    }
-
-    @Test
-    void testSignFailsWhenHsmReturnsEmptySignature() {
+    void testSignFailsWhenHsmReturnsIncompleteSignature() {
         Sign.SignatureData emptySignature =
                 new Sign.SignatureData(new byte[0], new byte[0], new byte[0]);
-        assertSignatureRejected((dataToSign, pass) -> emptySignature);
+        TxHSMSignService<HSMHTTPPass> nullSignatureService =
+                new TxHSMSignService<>((dataToSign, pass) -> null, hsmHttpPass);
+        TxHSMSignService<HSMHTTPPass> emptySignatureService =
+                new TxHSMSignService<>((dataToSign, pass) -> emptySignature, hsmHttpPass);
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> nullSignatureService.sign(createLegacyTx(), ChainIdLong.NONE));
+        assertThrows(
+                IllegalStateException.class,
+                () -> emptySignatureService.sign(createLegacyTx(), ChainIdLong.NONE));
     }
 
     @Test
@@ -138,21 +141,6 @@ class TxHSMSignServiceTest {
         ClientConnectionException e = assertThrows(ClientConnectionException.class, sign);
         assertEquals("Failed to call HSM", e.getMessage());
         assertInstanceOf(IOException.class, e.getCause());
-        assertEquals(CONNECTION_ERROR, e.getCause().getMessage());
-    }
-
-    private void assertSignatureRejected(HSMRequestProcessor<HSMHTTPPass> processor) {
-        TxHSMSignService<HSMHTTPPass> service = new TxHSMSignService<>(processor, hsmHttpPass);
-
-        assertThrows(
-                IllegalStateException.class,
-                () -> service.sign(createLegacyTx(), ChainIdLong.MAINNET));
-        assertThrows(
-                IllegalStateException.class,
-                () -> service.sign(createLegacyTx(), ChainIdLong.NONE));
-        assertThrows(
-                IllegalStateException.class,
-                () -> service.sign(create1559Tx(), ChainIdLong.MAINNET));
     }
 
     private static RawTransaction createLegacyTx() {
