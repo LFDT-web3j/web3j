@@ -19,8 +19,6 @@ import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.ResponseBody;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.web3j.crypto.CryptoUtils;
 import org.web3j.crypto.ECDSASignature;
@@ -37,8 +35,6 @@ import org.web3j.utils.Numeric;
 public abstract class HSMHTTPRequestProcessor<T extends HSMHTTPPass>
         implements HSMRequestProcessor<HSMHTTPPass> {
 
-    private static final Logger log = LoggerFactory.getLogger(HSMHTTPRequestProcessor.class);
-
     public static final MediaType JSON = MediaType.parse("application/json");
 
     private final OkHttpClient client;
@@ -54,15 +50,15 @@ public abstract class HSMHTTPRequestProcessor<T extends HSMHTTPPass>
         try (okhttp3.Response response = client.newCall(request).execute()) {
             ResponseBody responseBody = response.body();
             if (response.isSuccessful()) {
-                if (responseBody != null) {
-                    String signHex = readResponse(responseBody.byteStream());
-                    byte[] signBytes = Numeric.hexStringToByteArray(signHex);
-                    ECDSASignature signature = CryptoUtils.fromDerFormat(signBytes);
-
-                    return Sign.createSignatureData(signature, pass.getPublicKey(), dataToSign);
-                } else {
-                    return null;
+                String signHex =
+                        responseBody == null ? null : readResponse(responseBody.byteStream());
+                if (signHex == null || signHex.isBlank()) {
+                    throw new ClientConnectionException("Empty response received from HSM");
                 }
+                byte[] signBytes = Numeric.hexStringToByteArray(signHex);
+                ECDSASignature signature = CryptoUtils.fromDerFormat(signBytes);
+
+                return Sign.createSignatureData(signature, pass.getPublicKey(), dataToSign);
             } else {
                 int code = response.code();
                 String text = responseBody == null ? "N/A" : responseBody.string();
@@ -70,10 +66,11 @@ public abstract class HSMHTTPRequestProcessor<T extends HSMHTTPPass>
                         code, "Invalid response received: " + code + "; " + text);
             }
         } catch (IOException e) {
-            log.error(e.getMessage(), e);
+            ClientConnectionException exception =
+                    new ClientConnectionException("Failed to call HSM");
+            exception.initCause(e);
+            throw exception;
         }
-
-        return null;
     }
 
     protected abstract Request createRequest(byte[] dataToSign, HSMHTTPPass pass);

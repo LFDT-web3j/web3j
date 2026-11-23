@@ -52,6 +52,9 @@ public class TxHSMSignService<T extends HSMPass> implements TxSignService {
         byte[] messageHash = Hash.sha3(encodedTransaction);
 
         signatureData = hsmRequestProcessor.callHSM(messageHash, hsmPass);
+        if (!isComplete(signatureData)) {
+            throw new IllegalStateException("HSM returned no signature");
+        }
 
         if (isLegacy) {
             signatureData = createEip155SignatureData(signatureData, chainId);
@@ -65,5 +68,16 @@ public class TxHSMSignService<T extends HSMPass> implements TxSignService {
     @Override
     public String getAddress() {
         return hsmPass.getAddress();
+    }
+
+    private static boolean isComplete(Sign.SignatureData signatureData) {
+        return signatureData != null
+                && isNotEmpty(signatureData.getV())
+                && isNotEmpty(signatureData.getR())
+                && isNotEmpty(signatureData.getS());
+    }
+
+    private static boolean isNotEmpty(byte[] value) {
+        return value != null && value.length > 0;
     }
 }

@@ -8,6 +8,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 - Fix integration test issues on Docker Engine 29 by upgrading Testcontainers to 1.21.4 and correcting `-Pintegration-tests=false` to properly disable tests [#2327](https://github.com/LFDT-web3j/web3j/pull/2327)
+- `HSMHTTPRequestProcessor` now throws `ClientConnectionException` when the HSM cannot be reached or returns an empty response, and `TxHSMSignService` rejects a missing signature, instead of returning an unsigned transaction or throwing `NullPointerException` [#2333](https://github.com/LFDT-web3j/web3j/issues/2333)
 ### Features
 
 - 
