@@ -57,7 +57,6 @@ import static org.web3j.abi.DefaultFunctionReturnDecoder.getDataOffset;
 import static org.web3j.abi.TypeReference.makeTypeReference;
 import static org.web3j.abi.Utils.findStructConstructor;
 import static org.web3j.abi.Utils.getSimpleTypeName;
-import static org.web3j.abi.Utils.staticStructNestedPublicFieldsFlatList;
 
 /**
  * Ethereum Contract Application Binary Interface (ABI) decoding for types. Decoding is not
@@ -293,7 +292,7 @@ public class TypeDecoder {
             // length field + data value
             return (decodeUintAsInt(input, offset) / Type.MAX_BYTE_LENGTH) + 2;
         } else if (StaticStruct.class.isAssignableFrom(type)) {
-            return staticStructNestedPublicFieldsFlatList((Class<Type>) type).size();
+            return Utils.staticStructSizeInWords(type);
         } else {
             return 1;
         }
@@ -464,21 +463,29 @@ public class TypeDecoder {
                 T value;
                 final Class<T> declaredField = (Class<T>) constructor.getParameterTypes()[i];
 
+                final TypeReference<T> arrayFieldType =
+                        Utils.staticArrayParameterType(constructor.getGenericParameterTypes()[i]);
+
                 if (StaticStruct.class.isAssignableFrom(declaredField)) {
                     final int nestedStructLength =
-                            classType
-                                            .getDeclaredFields()[i]
-                                            .getType()
-                                            .getConstructors()[0]
-                                            .getParameters()
-                                            .length
-                                    * 64;
+                            Utils.staticStructSizeInWords(declaredField) * 64;
                     value =
                             decodeStaticStruct(
                                     input.substring(currOffset, currOffset + nestedStructLength),
                                     0,
                                     TypeReference.create(declaredField));
                     currOffset += nestedStructLength;
+                } else if (arrayFieldType != null) {
+                    // e.g. a uint256[2] or uint256[2][2] field, encoded in place
+                    value =
+                            decodeStaticArray(
+                                    input,
+                                    currOffset,
+                                    arrayFieldType,
+                                    Utils.staticArrayLength(arrayFieldType));
+                    currOffset +=
+                            Utils.staticSizeInWords(arrayFieldType)
+                                    * MAX_BYTE_LENGTH_FOR_HEX_STRING;
                 } else {
                     value = decode(input.substring(currOffset, currOffset + 64), 0, declaredField);
                     currOffset += 64;
@@ -677,9 +684,11 @@ public class TypeDecoder {
             final List<Integer> parameterOffsets = new ArrayList<>();
             for (int i = 0; i < length; ++i) {
                 final Class<T> declaredField = (Class<T>) constructor.getParameterTypes()[i];
+                final TypeReference<T> arrayFieldType =
+                        Utils.staticArrayParameterType(constructor.getGenericParameterTypes()[i]);
                 final T value;
                 final int beginIndex = offset + staticOffset;
-                if (isDynamic(declaredField)) {
+                if (isDynamicStructParameter(constructor, i)) {
                     final int parameterOffset =
                             decodeDynamicStructDynamicParameterOffset(
                                             input.substring(beginIndex, beginIndex + 64))
@@ -694,8 +703,18 @@ public class TypeDecoder {
                                         0,
                                         TypeReference.create(declaredField));
                         staticOffset +=
-                                staticStructNestedPublicFieldsFlatList((Class<Type>) declaredField)
-                                                .size()
+                                Utils.staticStructSizeInWords(declaredField)
+                                        * MAX_BYTE_LENGTH_FOR_HEX_STRING;
+                    } else if (arrayFieldType != null) {
+                        // e.g. a uint256[2] or uint256[2][2] field, encoded in place
+                        value =
+                                decodeStaticArray(
+                                        input,
+                                        beginIndex,
+                                        arrayFieldType,
+                                        Utils.staticArrayLength(arrayFieldType));
+                        staticOffset +=
+                                Utils.staticSizeInWords(arrayFieldType)
                                         * MAX_BYTE_LENGTH_FOR_HEX_STRING;
                     } else {
                         value = decode(input.substring(beginIndex), 0, declaredField);
@@ -705,11 +724,15 @@ public class TypeDecoder {
                 }
             }
             int dynamicParametersProcessed = 0;
-            int dynamicParametersToProcess =
-                    getDynamicStructDynamicParametersCount(constructor.getParameterTypes());
+            int dynamicParametersToProcess = 0;
+            for (int i = 0; i < length; ++i) {
+                if (isDynamicStructParameter(constructor, i)) {
+                    dynamicParametersToProcess++;
+                }
+            }
             for (int i = 0; i < length; ++i) {
                 final Class<T> declaredField = (Class<T>) constructor.getParameterTypes()[i];
-                if (isDynamic(declaredField)) {
+                if (isDynamicStructParameter(constructor, i)) {
                     final boolean isLastParameterInStruct =
                             dynamicParametersProcessed == (dynamicParametersToProcess - 1);
                     final int parameterLength =
@@ -752,10 +775,18 @@ public class TypeDecoder {
         }
     }
 
+    /**
+     * Returns true if struct constructor parameter {@code i} is dynamic, including static arrays of
+     * dynamic elements such as a {@code bytes[2]} field.
+     */
     @SuppressWarnings("unchecked")
-    private static <T extends Type> int getDynamicStructDynamicParametersCount(
-            final Class<?>[] cls) {
-        return (int) Arrays.stream(cls).filter(c -> isDynamic((Class<T>) c)).count();
+    private static boolean isDynamicStructParameter(Constructor<?> constructor, int i)
+            throws ClassNotFoundException {
+        TypeReference<Type> arrayFieldType =
+                Utils.staticArrayParameterType(constructor.getGenericParameterTypes()[i]);
+        return arrayFieldType != null
+                ? Utils.isDynamic(arrayFieldType)
+                : isDynamic((Class<Type>) constructor.getParameterTypes()[i]);
     }
 
     @SuppressWarnings("unchecked")
@@ -791,6 +822,12 @@ public class TypeDecoder {
                 typeRef = Utils.getDynamicArrayTypeReference(parameter);
             }
             value = (T) decodeDynamicArray(dynamicElementData, 0, typeRef);
+        } else if (Utils.staticArrayParameterType(genericParameterType) != null) {
+            // e.g. a bytes[2] field: the array is in the tail, its elements are behind offsets
+            TypeReference<T> typeRef = Utils.staticArrayParameterType(genericParameterType);
+            value =
+                    decodeStaticArray(
+                            dynamicElementData, 0, typeRef, Utils.staticArrayLength(typeRef));
         } else {
             value = decode(dynamicElementData, declaredField);
         }
@@ -864,6 +901,15 @@ public class TypeDecoder {
             Class<? extends StaticArray> arrayClass =
                     (Class<? extends StaticArray>)
                             Class.forName("org.web3j.abi.datatypes.generated.StaticArray" + length);
+            T first = elements.get(0);
+            if (first instanceof Array) {
+                // The List-only constructor resolves the component type from the element's type
+                // string, which AbiTypes cannot do for arrays such as "uint256[]" or "uint256[2]".
+                return (T)
+                        arrayClass
+                                .getConstructor(Class.class, List.class)
+                                .newInstance(first.getClass(), elements);
+            }
             return (T) arrayClass.getConstructor(List.class).newInstance(elements);
         } catch (ReflectiveOperationException e) {
             throw new UnsupportedOperationException(e);
@@ -1006,13 +1052,30 @@ public class TypeDecoder {
                                         };
                                     }
                                 };
-                        value =
-                                (T)
-                                        TypeDecoder.decodeStaticArray(
-                                                input, currOffset, staticReference, staticLength);
-                        currOffset +=
-                                ((decodeUintAsInt(input, currOffset) / Type.MAX_BYTE_LENGTH) + 2)
-                                        * MAX_BYTE_LENGTH_FOR_HEX_STRING;
+                        if (Utils.isDynamic(staticReference)) {
+                            // e.g. bytes[2][2]: the head holds an offset to each inner array
+                            int dataOffset = decodeUintAsInt(input, currOffset) << 1;
+                            value =
+                                    (T)
+                                            TypeDecoder.decodeStaticArray(
+                                                    input,
+                                                    offset + dataOffset,
+                                                    staticReference,
+                                                    staticLength);
+                            currOffset += MAX_BYTE_LENGTH_FOR_HEX_STRING;
+                        } else {
+                            // e.g. uint256[2][2]: inner arrays are encoded in place
+                            value =
+                                    (T)
+                                            TypeDecoder.decodeStaticArray(
+                                                    input,
+                                                    currOffset,
+                                                    staticReference,
+                                                    staticLength);
+                            currOffset +=
+                                    Utils.staticSizeInWords(staticReference)
+                                            * MAX_BYTE_LENGTH_FOR_HEX_STRING;
+                        }
                     }
                     elements.add(value);
                 }

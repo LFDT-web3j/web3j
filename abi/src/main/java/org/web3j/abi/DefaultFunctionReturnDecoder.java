@@ -31,9 +31,7 @@ import org.web3j.utils.Numeric;
 import org.web3j.utils.Strings;
 
 import static org.web3j.abi.TypeDecoder.MAX_BYTE_LENGTH_FOR_HEX_STRING;
-import static org.web3j.abi.TypeDecoder.isDynamic;
 import static org.web3j.abi.Utils.getParameterizedTypeFromArray;
-import static org.web3j.abi.Utils.staticStructNestedPublicFieldsFlatList;
 
 /**
  * Ethereum Contract Application Binary Interface (ABI) encoding for functions. Further details are
@@ -106,14 +104,14 @@ public class DefaultFunctionReturnDecoder extends FunctionReturnDecoder {
                     result =
                             TypeDecoder.decodeStaticArray(
                                     input, hexStringDataOffset, typeReference, length);
-                    offset += length * MAX_BYTE_LENGTH_FOR_HEX_STRING;
+                    offset += staticArrayHeadLength(typeReference);
 
                 } else if (StaticStruct.class.isAssignableFrom(classType)) {
                     result =
                             TypeDecoder.decodeStaticStruct(
                                     input, hexStringDataOffset, typeReference);
                     offset +=
-                            staticStructNestedPublicFieldsFlatList(classType).size()
+                            Utils.staticStructSizeInWords(classType)
                                     * MAX_BYTE_LENGTH_FOR_HEX_STRING;
                 } else if (StaticArray.class.isAssignableFrom(classType)) {
                     int length =
@@ -130,17 +128,12 @@ public class DefaultFunctionReturnDecoder extends FunctionReturnDecoder {
                     } else if (StaticStruct.class.isAssignableFrom(
                             getParameterizedTypeFromArray(typeReference))) {
                         offset +=
-                                staticStructNestedPublicFieldsFlatList(
-                                                        getParameterizedTypeFromArray(
-                                                                typeReference))
-                                                .size()
+                                Utils.staticStructSizeInWords(
+                                                getParameterizedTypeFromArray(typeReference))
                                         * length
                                         * MAX_BYTE_LENGTH_FOR_HEX_STRING;
-                    } else if (Utf8String.class.isAssignableFrom(
-                            getParameterizedTypeFromArray(typeReference))) {
-                        offset += MAX_BYTE_LENGTH_FOR_HEX_STRING;
                     } else {
-                        offset += length * MAX_BYTE_LENGTH_FOR_HEX_STRING;
+                        offset += staticArrayHeadLength(typeReference);
                     }
                 } else {
                     result = TypeDecoder.decode(input, hexStringDataOffset, classType);
@@ -153,6 +146,19 @@ public class DefaultFunctionReturnDecoder extends FunctionReturnDecoder {
             }
         }
         return results;
+    }
+
+    /**
+     * Returns how many hex characters a static array occupies in the head of a tuple: one offset
+     * word if any element is dynamic (e.g. {@code bytes[2]}, {@code uint256[][2]}), otherwise the
+     * full in-place size of the array (e.g. 4 words for {@code uint256[2][2]}).
+     */
+    private static int staticArrayHeadLength(TypeReference<?> typeReference)
+            throws ClassNotFoundException {
+        if (Utils.isDynamic(typeReference)) {
+            return MAX_BYTE_LENGTH_FOR_HEX_STRING;
+        }
+        return Utils.staticSizeInWords(typeReference) * MAX_BYTE_LENGTH_FOR_HEX_STRING;
     }
 
     public static <T extends Type> int getDataOffset(
@@ -185,7 +191,7 @@ public class DefaultFunctionReturnDecoder extends FunctionReturnDecoder {
             return StaticArray.class.isAssignableFrom(type)
                     && (DynamicStruct.class.isAssignableFrom(
                                     getParameterizedTypeFromArray(typeReference))
-                            || isDynamic(getParameterizedTypeFromArray(typeReference)));
+                            || Utils.isDynamic(typeReference));
         } catch (ClassCastException e) {
             return false;
         }
