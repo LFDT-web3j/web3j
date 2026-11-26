@@ -28,6 +28,7 @@ import org.web3j.abi.EventValues;
 import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Address;
+import org.web3j.abi.datatypes.DynamicArray;
 import org.web3j.abi.datatypes.Event;
 import org.web3j.abi.datatypes.Function;
 import org.web3j.abi.datatypes.Type;
@@ -112,6 +113,24 @@ class ContractTest extends ManagedTransactionTester {
                         web3j,
                         getVerifiedTransactionManager(SampleKeys.CREDENTIALS),
                         new DefaultGasProvider());
+    }
+
+    @Test
+    void testConvertToNativeConvertsNestedArrays() {
+        List<Type> values =
+                Arrays.asList(
+                        new DynamicArray<>(Uint256.class, new Uint256(1), new Uint256(2)),
+                        new DynamicArray<>(Uint256.class, new Uint256(3)));
+
+        // uint256[][] is returned as List<List<BigInteger>> by generated wrappers
+        List<List<BigInteger>> nativeValues = Contract.convertToNative(values);
+
+        assertEquals(
+                Arrays.asList(
+                        Arrays.asList(BigInteger.ONE, BigInteger.TWO),
+                        singletonList(BigInteger.valueOf(3))),
+                nativeValues);
+        assertEquals(BigInteger.valueOf(3), nativeValues.get(1).get(0));
     }
 
     @Test

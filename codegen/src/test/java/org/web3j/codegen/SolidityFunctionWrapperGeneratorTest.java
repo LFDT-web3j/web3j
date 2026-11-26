@@ -277,6 +277,28 @@ public class SolidityFunctionWrapperGeneratorTest extends TempFileProvider {
     }
 
     @Test
+    public void testStaticArraysInStructGeneration() throws Exception {
+        // Two structs plus a struct with a nested-array field used to fail with a
+        // ClassCastException; uint256[][2] / uint256[2][2] fields used to produce code that does
+        // not compile.
+        testCodeGeneration("staticarraysinstruct", "StaticArraysInStruct", JAVA_TYPES_ARG, false);
+        testCodeGeneration(
+                "staticarraysinstruct", "StaticArraysInStruct", SOLIDITY_TYPES_ARG, false);
+
+        String source =
+                new String(
+                        Files.readAllBytes(
+                                new File(
+                                                tempDirPath,
+                                                "org/web3j/unittests/solidity/StaticArraysInStruct.java")
+                                        .toPath()));
+        // bytes[2] and string[2] are dynamic, so structs that contain them are dynamic too
+        assertTrue(source.contains("class Pair extends DynamicStruct"));
+        assertTrue(source.contains("class Labels extends DynamicStruct"));
+        assertTrue(source.contains("class Square extends StaticStruct"));
+    }
+
+    @Test
     public void testCustomErrorGeneration() throws Exception {
         testCodeGeneration("customerror", "CustomError", JAVA_TYPES_ARG, false);
         testCodeGeneration("customerror", "CustomError", SOLIDITY_TYPES_ARG, false);

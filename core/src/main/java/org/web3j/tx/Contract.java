@@ -31,6 +31,7 @@ import org.web3j.abi.FunctionEncoder;
 import org.web3j.abi.FunctionReturnDecoder;
 import org.web3j.abi.TypeReference;
 import org.web3j.abi.datatypes.Address;
+import org.web3j.abi.datatypes.Array;
 import org.web3j.abi.datatypes.Event;
 import org.web3j.abi.datatypes.Function;
 import org.web3j.abi.datatypes.StructType;
@@ -930,6 +931,9 @@ public abstract class Contract extends ManagedTransaction {
         for (final S s : arr) {
             if (StructType.class.isAssignableFrom(s.getClass())) {
                 out.add((T) s);
+            } else if (s instanceof Array) {
+                // nested arrays, e.g. uint256[][], are converted at every level
+                out.add((T) convertToNative((List<Type>) ((Array<?>) s).getValue()));
             } else {
                 out.add((T) s.getValue());
             }
