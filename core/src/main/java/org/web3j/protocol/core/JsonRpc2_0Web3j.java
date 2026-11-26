@@ -1025,9 +1025,4 @@ public class JsonRpc2_0Web3j implements Web3j {
         }
         return output.divide(updateFraction);
     }
-
-    @Override
-    public void close() throws Exception {
-        this.shutdown();
-    }
 }
