@@ -1,0 +1,19 @@
+{
+	"types": {
+		"EIP712Domain": [
+			{"name": "name", "type": "string"},
+			{"name": "chainId", "type": "uint256"}
+		],
+		"Hash": [
+			{"name": "item", "type": "bytes32"}
+		]
+	},
+	"primaryType": "Hash",
+	"domain": {
+		"name": "Bytes32 Test",
+		"chainId": 1
+	},
+	"message": {
+		"item": 12345
+	}
+}

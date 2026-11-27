@@ -1,0 +1,19 @@
+{
+	"types": {
+		"EIP712Domain": [
+			{"name": "name", "type": "string"},
+			{"name": "chainId", "type": "uint256"}
+		],
+		"Amounts": [
+			{"name": "values", "type": "uint256[]"}
+		]
+	},
+	"primaryType": "Amounts",
+	"domain": {
+		"name": "Uint Array Test",
+		"chainId": 1
+	},
+	"message": {
+		"values": ["1", "abc"]
+	}
+}
