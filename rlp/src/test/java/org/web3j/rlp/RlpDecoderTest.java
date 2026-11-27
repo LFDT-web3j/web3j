@@ -333,4 +333,24 @@ public class RlpDecoderTest {
                                     (byte) 0xbb, (byte) 0x7f, (byte) 0xff, (byte) 0xff, (byte) 0xff
                                 })));
     }
+
+    @Test
+    public void testNestedListExceedingParentLengthIsRejected() {
+        // outer list declares a 2 byte payload, but the nested list claims 3 bytes,
+        // reaching past the end of its parent: [0xc2, 0xc3, 0x01, 0x02, 0x03]
+        assertThrows(
+                RuntimeException.class,
+                () ->
+                        RlpDecoder.decode(
+                                new byte[] {
+                                    (byte) 0xc2, (byte) 0xc3, (byte) 0x01, (byte) 0x02, (byte) 0x03
+                                }));
+
+        // same for a long list nested in a short list
+        byte[] longList = new byte[60];
+        longList[0] = (byte) 0xc2;
+        longList[1] = (byte) 0xf8;
+        longList[2] = (byte) 56;
+        assertThrows(RuntimeException.class, () -> RlpDecoder.decode(longList));
+    }
 }

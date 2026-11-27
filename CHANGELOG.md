@@ -8,6 +8,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 - Fix integration test issues on Docker Engine 29 by upgrading Testcontainers to 1.21.4 and correcting `-Pintegration-tests=false` to properly disable tests [#2327](https://github.com/LFDT-web3j/web3j/pull/2327)
+- Reject RLP nested lists whose length overruns the parent list [#2337](https://github.com/LFDT-web3j/web3j/pull/2337)
 ### Features
 
 - Make `Web3jService` AutoCloseable and provide default `close()` on `Web3j` [#2266](https://github.com/LFDT-web3j/web3j/pull/2266)
