@@ -143,6 +143,11 @@ public class StaticArrayOfStructsInStruct extends Contract {
             this.addr = addr.getValue();
             this.timeLeft = timeLeft.getValue();
         }
+
+        @Override
+        public String toString() {
+            return "{ addr='" + addr + "', timeLeft='" + timeLeft + "', }";
+        }
     }
 
     public static class Config extends StaticStruct {
@@ -161,6 +166,10 @@ public class StaticArrayOfStructsInStruct extends Contract {
             super(index, players);
             this.index = index.getValue();
             this.players = players.getValue();
+        }
+        @Override
+        public String toString() {
+            return "{ index='" + index + "', players='" + players + "', }";
         }
     }
 }
