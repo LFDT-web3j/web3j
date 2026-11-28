@@ -15,10 +15,21 @@ package org.web3j.protocol.http;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import okhttp3.CipherSuite;
 import okhttp3.ConnectionSpec;
@@ -33,6 +44,7 @@ import org.slf4j.LoggerFactory;
 
 import org.web3j.protocol.Service;
 import org.web3j.protocol.exceptions.ClientConnectionException;
+import org.web3j.protocol.exceptions.RateLimitException;
 
 import static okhttp3.ConnectionSpec.CLEARTEXT;
 
@@ -50,9 +62,11 @@ public class HttpService extends Service {
                 CipherSuite.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
                 CipherSuite.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
 
-                // Note that the following cipher suites are all on HTTP/2's bad cipher suites list.
+                // Note that the following cipher suites are all on HTTP/2's bad cipher suites
+                // list.
                 // We'll
-                // continue to include them until better suites are commonly available. For example,
+                // continue to include them until better suites are commonly available. For
+                // example,
                 // none
                 // of the better cipher suites listed above shipped with Android 4.4 or Java 7.
                 CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
@@ -85,6 +99,30 @@ public class HttpService extends Service {
             MediaType.parse("application/json; charset=utf-8");
 
     public static final String DEFAULT_URL = "http://localhost:8545/";
+
+    private static final int HTTP_TOO_MANY_REQUESTS = 429;
+
+    private static final String RETRY_AFTER_HEADER = "Retry-After";
+
+    /**
+     * Upper bound applied to parsed {@code Retry-After} values to guard against buggy or
+     * adversarial servers stalling callers indefinitely.
+     */
+    static final long MAX_RETRY_AFTER_SECONDS = 86_400L;
+
+    private static final BigDecimal MAX_RETRY_AFTER_BIG_DECIMAL =
+            BigDecimal.valueOf(MAX_RETRY_AFTER_SECONDS);
+
+    private static final Pattern DECIMAL_DELAY_PATTERN = Pattern.compile("^-?\\d+(?:\\.\\d+)?$");
+
+    private static final DateTimeFormatter RFC_1123_ZONE_NAME_FORMATTER =
+            DateTimeFormatter.ofPattern("EEE, d MMM yyyy HH:mm:ss z", Locale.ENGLISH);
+
+    private static final DateTimeFormatter RFC_850_FORMATTER =
+            DateTimeFormatter.ofPattern("EEEE, dd-MMM-yy HH:mm:ss z", Locale.ENGLISH);
+
+    private static final DateTimeFormatter ASCTIME_FORMATTER =
+            DateTimeFormatter.ofPattern("EEE MMM ppd HH:mm:ss yyyy", Locale.ENGLISH);
 
     private static final Logger log = LoggerFactory.getLogger(HttpService.class);
 
@@ -167,7 +205,19 @@ public class HttpService extends Service {
                 }
             } else {
                 int code = response.code();
-                String text = responseBody == null ? "N/A" : responseBody.string();
+                String rawBody = responseBody == null ? null : responseBody.string();
+                if (rawBody != null && rawBody.isEmpty()) {
+                    // OkHttp 5 returns an empty ResponseBody when the server omits a payload
+                    rawBody = null;
+                }
+                String text = rawBody == null ? "N/A" : rawBody;
+
+                if (code == HTTP_TOO_MANY_REQUESTS) {
+                    long retryAfterSeconds =
+                            parseRetryAfterSeconds(response.header(RETRY_AFTER_HEADER));
+                    throw new RateLimitException(
+                            "Too many requests (429); " + text, retryAfterSeconds, rawBody);
+                }
 
                 throw new ClientConnectionException(
                         code, "Invalid response received: " + code + "; " + text);
@@ -177,6 +227,71 @@ public class HttpService extends Service {
 
     protected void processHeaders(Headers headers) {
         // Default implementation is empty
+    }
+
+    /**
+     * Parses the {@code Retry-After} header per <a
+     * href="https://www.rfc-editor.org/rfc/rfc9110#section-10.2.3">RFC 9110 Section 10.2.3</a>.
+     *
+     * @param retryAfterValue the raw header value, may be {@code null}
+     * @return seconds to wait before retrying, in the range {@code [0, MAX_RETRY_AFTER_SECONDS]}
+     */
+    static long parseRetryAfterSeconds(String retryAfterValue) {
+        return parseRetryAfterSeconds(retryAfterValue, Instant.now());
+    }
+
+    static long parseRetryAfterSeconds(String retryAfterValue, Instant now) {
+        if (retryAfterValue == null || now == null) {
+            return 0L;
+        }
+        String trimmed = retryAfterValue.trim();
+        if (trimmed.isEmpty()) {
+            return 0L;
+        }
+
+        if (DECIMAL_DELAY_PATTERN.matcher(trimmed).matches()) {
+            if (trimmed.startsWith("-")) {
+                return 0L;
+            }
+            BigDecimal seconds = new BigDecimal(trimmed);
+            if (seconds.compareTo(MAX_RETRY_AFTER_BIG_DECIMAL) >= 0) {
+                return MAX_RETRY_AFTER_SECONDS;
+            }
+            return Math.min(
+                    MAX_RETRY_AFTER_SECONDS,
+                    seconds.setScale(0, RoundingMode.CEILING).longValueExact());
+        }
+
+        Instant retryAt = parseHttpDate(trimmed);
+        if (retryAt == null) {
+            log.debug("Unparseable Retry-After header value: {}", trimmed);
+            return 0L;
+        }
+
+        Duration wait = Duration.between(now, retryAt);
+        if (wait.isNegative() || wait.isZero()) {
+            return 0L;
+        }
+        long waitSeconds = wait.getSeconds() + (wait.getNano() > 0 ? 1L : 0L);
+        return Math.min(MAX_RETRY_AFTER_SECONDS, waitSeconds);
+    }
+
+    private static Instant parseHttpDate(String value) {
+        for (DateTimeFormatter formatter :
+                Arrays.asList(
+                        DateTimeFormatter.RFC_1123_DATE_TIME,
+                        RFC_1123_ZONE_NAME_FORMATTER,
+                        RFC_850_FORMATTER)) {
+            try {
+                return ZonedDateTime.parse(value, formatter).toInstant();
+            } catch (DateTimeParseException ignored) {
+            }
+        }
+        try {
+            return LocalDateTime.parse(value, ASCTIME_FORMATTER).toInstant(ZoneOffset.UTC);
+        } catch (DateTimeParseException ignored) {
+            return null;
+        }
     }
 
     private InputStream buildInputStream(ResponseBody responseBody) throws IOException {
